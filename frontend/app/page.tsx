@@ -1,6 +1,6 @@
-"use client"; // Add this line at the top of your component
+"use client";
 
-import { auth, googleProvider } from "./config/firebase";
+import { auth, googleProvider } from "../config/firebase";
 import { signInWithPopup, signOut } from "firebase/auth";
 
 export default function Home() {
@@ -8,7 +8,7 @@ export default function Home() {
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (e) {
-      console.error(e);
+      console.error("Error signing in with Google:", e);
     }
   };
 
@@ -16,7 +16,7 @@ export default function Home() {
     try {
       await signOut(auth);
     } catch (e) {
-      console.error(e);
+      console.error("Error signing out:", e);
     }
   };
 
