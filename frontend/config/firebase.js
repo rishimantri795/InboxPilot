@@ -12,7 +12,8 @@ const firebaseConfig = {
 };
 
 // Ensure Firebase is only initialized once
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+const app =
+  getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
 // Initialize Firebase Auth and Google Auth Provider
 const auth = getAuth(app);

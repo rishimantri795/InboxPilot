@@ -4,8 +4,10 @@ const app = express();
 const users = require("./routes/users");
 const admin = require("./api/firebase.js"); // Import Firebase Admin from firebase.js
 require("dotenv").config(); // For environment variables
+const cors = require("cors");
 
 app.use(express.json());
+app.use(cors());
 
 // Initialize Firebase Admin
 // const serviceAccount = require(process.env.FIREBASE_SERVICE_ACCOUNT ||
@@ -16,6 +18,8 @@ app.use(express.json());
 // });
 
 // Routes
+// app.use(passport.initialize());
+
 app.use("/api/users", users);
 
 // Error handling middleware
