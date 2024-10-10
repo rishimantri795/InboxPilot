@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { auth, googleProvider } from "../config/firebase";
-import { signInWithPopup, signOut } from "firebase/auth";
+import { signInWithPopup, signOut, GoogleAuthProvider, UserCredential } from "firebase/auth";
+
 import axios from "axios"; // Import axios
 
 // api endpoints for dropdown menu
@@ -17,7 +18,25 @@ export default function Home() {
   const signInWithGoogle = async () => {
     try {
       // Sign in with Google and get the result
-      const result = await signInWithPopup(auth, googleProvider);
+      // const result = await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider) as UserCredential & {
+        _tokenResponse?: {
+          refreshToken: string;
+        };
+      };
+
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential === null) {
+        throw new Error("No credential returned from Google.");
+      }
+      // const accessToken = credential.accessToken;
+      const refreshToken = result._tokenResponse?.refreshToken;
+      if (!refreshToken) {
+        console.warn('No refresh token received. User might have already granted permissions.');
+        return;
+      }
+
+      console.log("Access Token:", refreshToken);
 
       // Get the ID token from the authenticated user
       const idToken = await result.user.getIdToken();
@@ -41,6 +60,7 @@ export default function Home() {
       console.error("Error signing in with Google:", e);
     }
   };
+
 
   const signOutWithGoogle = async () => {
     try {

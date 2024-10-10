@@ -19,4 +19,13 @@ const app =
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
+// googleProvider.addScope('https://www.googleapis.com/auth/calendar');
+// googleProvider.addScope('https://www.googleapis.com/auth/drive');
+googleProvider.addScope('https://www.googleapis.com/auth/gmail.readonly');
+
+googleProvider.setCustomParameters({
+        access_type: 'offline',  // This requests a refresh token
+        prompt: 'consent'        // Forces consent screen to ensure refresh token
+      });
+
 export { auth, googleProvider };
