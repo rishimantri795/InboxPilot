@@ -2,13 +2,21 @@
 
 import { useState } from "react";
 import { auth, googleProvider } from "../config/firebase";
-import { signInWithPopup, signOut, GoogleAuthProvider, UserCredential } from "firebase/auth";
+import {
+  signInWithPopup,
+  signOut,
+  GoogleAuthProvider,
+  UserCredential,
+} from "firebase/auth";
 
 import axios from "axios"; // Import axios
 
 // api endpoints for dropdown menu
 const apiOptions = [
-  { label: "Verify Token", endpoint: "http://localhost:3010/api/users/verifyToken" },
+  {
+    label: "Verify Token",
+    endpoint: "http://localhost:3010/api/users/verifyToken",
+  },
   { label: "Fake API", endpoint: "http://localhost:3010/api/users/fakeAPI" },
 ];
 
@@ -16,24 +24,51 @@ export default function Home() {
   const [inputText, setInputText] = useState("");
   const [selectedApi, setSelectedApi] = useState(apiOptions[0].endpoint);
   const signInWithGoogle = async () => {
+    const apple = "apple";
     try {
       // Sign in with Google and get the result
       // const result = await signInWithPopup(auth, googleProvider);
-      const result = await signInWithPopup(auth, googleProvider) as UserCredential & {
+      const result = (await signInWithPopup(
+        auth,
+        googleProvider
+      )) as UserCredential & {
         _tokenResponse?: {
           refreshToken: string;
         };
       };
+
+      if (!result) {
+        throw new Error("No result returned from Google.");
+      }
 
       const credential = GoogleAuthProvider.credentialFromResult(result);
       if (credential === null) {
         throw new Error("No credential returned from Google.");
       }
       // const accessToken = credential.accessToken;
+      //check this. It is not working.
       const refreshToken = result._tokenResponse?.refreshToken;
       if (!refreshToken) {
-        console.warn('No refresh token received. User might have already granted permissions.');
+        console.warn(
+          "No refresh token received. User might have already granted permissions."
+        );
         return;
+      }
+
+      console.log(refreshToken);
+
+      let response2 = await axios.post(
+        "http://localhost:3010/api/users/verifyRefreshToken",
+        {
+          refreshToken: refreshToken,
+        }
+      );
+
+      if (response2.status === 200) {
+        console.log("Refresh token verified successfully!");
+        console.log(response2.data);
+      } else {
+        console.error("Failed to verify refresh token.", response2.data);
       }
 
       console.log("Access Token:", refreshToken);
@@ -60,7 +95,6 @@ export default function Home() {
       console.error("Error signing in with Google:", e);
     }
   };
-
 
   const signOutWithGoogle = async () => {
     try {
@@ -99,8 +133,10 @@ export default function Home() {
         <button onClick={signOutWithGoogle}>Google Sign Out</button>
       </div>
       <div className="mt-4">
-        <label htmlFor="apiDropdown" className="block mb-2">Select API Call:</label>
-        <select 
+        <label htmlFor="apiDropdown" className="block mb-2">
+          Select API Call:
+        </label>
+        <select
           id="apiDropdown"
           value={selectedApi}
           onChange={(e) => setSelectedApi(e.target.value)}
@@ -114,7 +150,9 @@ export default function Home() {
         </select>
       </div>
       <div className="mt-4">
-        <label htmlFor="apiInput" className="block mb-2">Text Input:</label>
+        <label htmlFor="apiInput" className="block mb-2">
+          Text Input:
+        </label>
         <input
           type="text"
           id="apiInput"
@@ -122,7 +160,9 @@ export default function Home() {
           onChange={(e) => setInputText(e.target.value)}
           className="text-black bg-white border border-gray-300 p-2 text-base"
         />
-        <button onClick={handleApiCall}>Send Text to API (Prints text and api into console)</button>
+        <button onClick={handleApiCall}>
+          Send Text to API (Prints text and api into console)
+        </button>
       </div>
     </div>
   );

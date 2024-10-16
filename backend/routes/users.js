@@ -2,8 +2,10 @@ const express = require("express");
 const admin = require("../api/firebase.js"); // Import the `admin` object from firebase.js
 
 const router = express.Router();
+require("dotenv").config();
 
 const db = admin.firestore();
+const axios = require("axios");
 
 router.get("/auth", async (req, res) => {
   //   passport.authenticate("google", { scope: ["profile", "email"] })(req, res);
@@ -49,6 +51,45 @@ router.post("/verifyToken", async (req, res) => {
       .send({ id: newUserRef.id, message: "User created successfully!" });
   } catch (error) {
     res.status(401).send("Unauthorized");
+  }
+});
+
+router.post("/verifyRefreshToken", async (req, res) => {
+  try {
+    const refreshToken = req.body.refreshToken;
+
+    const tokenEndpoint = "https://oauth2.googleapis.com/token";
+
+    const response = await axios.post(
+      tokenEndpoint,
+      new URLSearchParams({
+        client_id: process.env.CLIENT_ID,
+        client_secret: process.env.CLIENT_SECRET,
+        refresh_token: refreshToken,
+        grant_type: "refresh_token",
+      }),
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      }
+    );
+
+    if (response.data.access_token) {
+      res.status(200).json({ valid: true, message: "Refresh token is valid." });
+    } else {
+      res.status(400).json({ valid: false, message: "Invalid refresh token." });
+    }
+  } catch (error) {
+    // If Google returns a 4xx status (client error)
+    if (error.response && error.response.status === 400) {
+      res.status(400).json({ valid: false, message: "Invalid refresh token." });
+    } else {
+      console.error("Error verifying token:", error);
+      res
+        .status(500)
+        .json({ valid: false, message: "Token verification failed." });
+    }
   }
 });
 
