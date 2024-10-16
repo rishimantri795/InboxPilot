@@ -1,0 +1,101 @@
+/* app/main/pages.css */
+
+body{
+  font-family: "Inter", sans-serif;
+  background-color: white;
+  color: black;
+}
+
+/* page.css */
+
+.avatar-wrapper {
+  display: flex; /* Use Flexbox for layout */
+  align-items: center; /* Center align items vertically */
+  padding: 10px; /* Add some padding */
+}
+
+.avatar-container {
+  width: 40px; /* Set a fixed width for the avatar box */
+  height: 40px; /* Set a fixed height for the avatar box */
+  background-color: #2C2C2C; /* Background color for the avatar box */
+  border-radius: 8px; /* Make it circular */
+  display: flex; /* Use Flexbox to center content */
+  justify-content: center; /* Center content horizontally */
+  align-items: center; /* Center content vertically */
+  color: white;
+}
+
+.avatar {
+  font-size: 20px; /* Size of the avatar text */
+}
+
+.avatar-info {
+  margin-left: 10px; /* Add some space between avatar and info */
+  display: flex;
+  flex-direction: column; /* Stack info vertically */
+}
+
+.avatar-info p {
+  font-size: 13px;
+  margin: 0; /* Remove default margin for paragraphs */
+ }
+
+#header {
+  font-weight: bold;
+}
+
+.data-table {
+  border-collapse: collapse;
+  margin-top: 20px;
+  margin-left: 20px;
+  width: calc(100% - 40px); /* Calculate width to maintain 20px distance from sides */
+  border-radius: 100px; /* Add rounded corners */
+}
+
+.data-table th, .data-table td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: left;
+}
+
+.data-table th {
+  background-color: #f2f2f2;
+}
+
+.add-button {
+  margin-left: 20px;
+  margin-top: 20px;
+  padding: 10px 15px;
+  background-color: #2C2C2C;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.add-button:hover {
+  background-color: #2C2C2C;
+}
+
+.popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.popup-content {
+  background: white;
+  padding: 20px;
+  border-radius: 5px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.popup-content h2 {
+  margin-top: 0;
+}
