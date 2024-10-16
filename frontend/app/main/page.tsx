@@ -20,24 +20,24 @@ const Avatar: React.FC = () => {
 
 const Table: React.FC<{ data: Array<{ rule: string, grouping: string, description: string }> }> = ({ data }) => {
   return (
-    <table className="data-table">
-      <thead>
-        <tr>
-          <th>Rule</th>
-          <th>Grouping</th>
-          <th>Description</th>
-        </tr>
-      </thead>
+    <div className='table'>
+      <table className="data-table">
       <tbody>
-        {data.map((item, index) => (
-          <tr key={index}>
-            <td>{item.rule}</td>
-            <td>{item.grouping}</td>
-            <td>{item.description}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+        <tr id='table-header'>
+          <td>Rule</td>
+          <td>Grouping</td>
+          <td>Description</td>
+        </tr>
+          {data.map((item, index) => (
+            <tr key={index}>
+              <td>{item.rule}</td>
+              <td>{item.grouping}</td>
+              <td>{item.description}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 };
 
