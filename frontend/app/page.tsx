@@ -23,11 +23,10 @@ const apiOptions = [
 export default function Home() {
   const [inputText, setInputText] = useState("");
   const [selectedApi, setSelectedApi] = useState(apiOptions[0].endpoint);
+
   const signInWithGoogle = async () => {
-    const apple = "apple";
     try {
       // Sign in with Google and get the result
-      // const result = await signInWithPopup(auth, googleProvider);
       const result = (await signInWithPopup(
         auth,
         googleProvider
@@ -45,8 +44,7 @@ export default function Home() {
       if (credential === null) {
         throw new Error("No credential returned from Google.");
       }
-      // const accessToken = credential.accessToken;
-      //check this. It is not working.
+
       const refreshToken = result._tokenResponse?.refreshToken;
       if (!refreshToken) {
         console.warn(
@@ -105,6 +103,15 @@ export default function Home() {
     }
   };
 
+  const passPortAuth = async () => {
+    try {
+      // Redirect to the Passport.js authentication route
+      window.location.href = "http://localhost:3010/api/users/google/auth"; // Change this URL based on your server configuration
+    } catch (e) {
+      console.error("Error during Passport authentication:", e);
+    }
+  };
+
   const handleApiCall = async () => {
     try {
       console.log("Selected API:", selectedApi);
@@ -131,6 +138,9 @@ export default function Home() {
       </div>
       <div className="mt-4">
         <button onClick={signOutWithGoogle}>Google Sign Out</button>
+      </div>
+      <div className="mt-4">
+        <button onClick={passPortAuth}>Sign In with Google (Passport)</button>
       </div>
       <div className="mt-4">
         <label htmlFor="apiDropdown" className="block mb-2">

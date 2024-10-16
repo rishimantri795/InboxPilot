@@ -11,4 +11,5 @@ admin.initializeApp({
 });
 
 // Export the initialized `admin` object
+
 module.exports = admin;

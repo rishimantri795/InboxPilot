@@ -1,11 +1,41 @@
 const express = require("express");
 const admin = require("../api/firebase.js"); // Import the `admin` object from firebase.js
+const passport = require("passport");
 
 const router = express.Router();
 require("dotenv").config();
 
 const db = admin.firestore();
 const axios = require("axios");
+
+router.get("/google/auth", (req, res) => {
+  passport.authenticate("google", {
+    scope: [
+      "profile", // Corrected scope
+      "email",
+    ],
+    accessType: "offline",
+    approvalPrompt: "force",
+  })(req, res);
+});
+
+router.get(
+  "/google/auth/callback",
+  passport.authenticate("google", {
+    failureRedirect: "http://localhost:3000/",
+  }),
+  async (req, res) => {
+    try {
+      res.redirect("http://localhost:3000/");
+    } catch (error) {
+      console.error("Callback error:", error);
+      res.status(500).send("Internal Server Error");
+    }
+  }
+);
+
+//firebase auth below
+//   ***************************************************************************************************
 
 router.get("/auth", async (req, res) => {
   //   passport.authenticate("google", { scope: ["profile", "email"] })(req, res);
