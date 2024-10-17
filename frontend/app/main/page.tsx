@@ -24,7 +24,7 @@ const Table: React.FC<{ data: Array<{ rule: string, grouping: string, descriptio
       <table className="data-table">
       <tbody>
         <tr id='table-header'>
-          <td>Rule</td>
+          <td>Rule</td> 
           <td>Grouping</td>
           <td>Description</td>
         </tr>
