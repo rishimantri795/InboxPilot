@@ -19,7 +19,7 @@ export default function Home() {
     try {
       // Sign in with Google and get the result
       // const result = await signInWithPopup(auth, googleProvider);
-      const result = await signInWithPopup(auth, googleProvider) as UserCredential & {
+      const result = (await signInWithPopup(auth, googleProvider)) as UserCredential & {
         _tokenResponse?: {
           refreshToken: string;
         };
@@ -32,7 +32,7 @@ export default function Home() {
       // const accessToken = credential.accessToken;
       const refreshToken = result._tokenResponse?.refreshToken;
       if (!refreshToken) {
-        console.warn('No refresh token received. User might have already granted permissions.');
+        console.warn("No refresh token received. User might have already granted permissions.");
         return;
       }
 
@@ -43,12 +43,9 @@ export default function Home() {
       console.log("ID Token:", idToken);
 
       // Send the ID token to the backend for verification using axios
-      const response = await axios.post(
-        "http://localhost:3010/api/users/verifyToken",
-        {
-          idToken: idToken, // Send ID token as part of request body
-        }
-      );
+      const response = await axios.post("http://localhost:3010/api/users/verifyToken", {
+        idToken: idToken, // Send ID token as part of request body
+      });
 
       if (response.status === 200) {
         console.log("Token verified successfully!");
@@ -60,7 +57,6 @@ export default function Home() {
       console.error("Error signing in with Google:", e);
     }
   };
-
 
   const signOutWithGoogle = async () => {
     try {
@@ -99,13 +95,10 @@ export default function Home() {
         <button onClick={signOutWithGoogle}>Google Sign Out</button>
       </div>
       <div className="mt-4">
-        <label htmlFor="apiDropdown" className="block mb-2">Select API Call:</label>
-        <select 
-          id="apiDropdown"
-          value={selectedApi}
-          onChange={(e) => setSelectedApi(e.target.value)}
-          className="text-black bg-white border border-gray-300 p-2 text-base"
-        >
+        <label htmlFor="apiDropdown" className="block mb-2">
+          Select API Call:
+        </label>
+        <select id="apiDropdown" value={selectedApi} onChange={(e) => setSelectedApi(e.target.value)} className="text-black bg-white border border-gray-300 p-2 text-base">
           {apiOptions.map((option, index) => (
             <option key={index} value={option.endpoint}>
               {option.label}
@@ -114,14 +107,10 @@ export default function Home() {
         </select>
       </div>
       <div className="mt-4">
-        <label htmlFor="apiInput" className="block mb-2">Text Input:</label>
-        <input
-          type="text"
-          id="apiInput"
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          className="text-black bg-white border border-gray-300 p-2 text-base"
-        />
+        <label htmlFor="apiInput" className="block mb-2">
+          Text Input:
+        </label>
+        <input type="text" id="apiInput" value={inputText} onChange={(e) => setInputText(e.target.value)} className="text-black bg-white border border-gray-300 p-2 text-base" />
         <button onClick={handleApiCall}>Send Text to API (Prints text and api into console)</button>
       </div>
     </div>
