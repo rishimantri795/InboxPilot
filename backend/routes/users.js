@@ -10,10 +10,7 @@ const axios = require("axios");
 
 router.get("/google/auth", (req, res) => {
   passport.authenticate("google", {
-    scope: [
-      "profile", // Corrected scope
-      "email",
-    ],
+    scope: ["profile", "email", "https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.modify"],
     accessType: "offline",
     approvalPrompt: "force",
   })(req, res);
@@ -76,9 +73,7 @@ router.post("/verifyToken", async (req, res) => {
     });
 
     // Send a success response
-    res
-      .status(200)
-      .send({ id: newUserRef.id, message: "User created successfully!" });
+    res.status(200).send({ id: newUserRef.id, message: "User created successfully!" });
   } catch (error) {
     res.status(401).send("Unauthorized");
   }
@@ -116,9 +111,7 @@ router.post("/verifyRefreshToken", async (req, res) => {
       res.status(400).json({ valid: false, message: "Invalid refresh token." });
     } else {
       console.error("Error verifying token:", error);
-      res
-        .status(500)
-        .json({ valid: false, message: "Token verification failed." });
+      res.status(500).json({ valid: false, message: "Token verification failed." });
     }
   }
 });

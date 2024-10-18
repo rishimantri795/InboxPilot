@@ -2,12 +2,7 @@
 
 import { useState } from "react";
 import { auth, googleProvider } from "../config/firebase";
-import {
-  signInWithPopup,
-  signOut,
-  GoogleAuthProvider,
-  UserCredential,
-} from "firebase/auth";
+import { signInWithPopup, signOut, GoogleAuthProvider, UserCredential } from "firebase/auth";
 
 import axios from "axios"; // Import axios
 
@@ -27,10 +22,7 @@ export default function Home() {
   const signInWithGoogle = async () => {
     try {
       // Sign in with Google and get the result
-      const result = (await signInWithPopup(
-        auth,
-        googleProvider
-      )) as UserCredential & {
+      const result = (await signInWithPopup(auth, googleProvider)) as UserCredential & {
         _tokenResponse?: {
           refreshToken: string;
         };
@@ -47,20 +39,15 @@ export default function Home() {
 
       const refreshToken = result._tokenResponse?.refreshToken;
       if (!refreshToken) {
-        console.warn(
-          "No refresh token received. User might have already granted permissions."
-        );
+        console.warn("No refresh token received. User might have already granted permissions.");
         return;
       }
 
       console.log(refreshToken);
 
-      let response2 = await axios.post(
-        "http://localhost:3010/api/users/verifyRefreshToken",
-        {
-          refreshToken: refreshToken,
-        }
-      );
+      const response2 = await axios.post("http://localhost:3010/api/users/verifyRefreshToken", {
+        refreshToken: refreshToken,
+      });
 
       if (response2.status === 200) {
         console.log("Refresh token verified successfully!");
@@ -76,12 +63,9 @@ export default function Home() {
       console.log("ID Token:", idToken);
 
       // Send the ID token to the backend for verification using axios
-      const response = await axios.post(
-        "http://localhost:3010/api/users/verifyToken",
-        {
-          idToken: idToken, // Send ID token as part of request body
-        }
-      );
+      const response = await axios.post("http://localhost:3010/api/users/verifyToken", {
+        idToken: idToken, // Send ID token as part of request body
+      });
 
       if (response.status === 200) {
         console.log("Token verified successfully!");
@@ -146,12 +130,7 @@ export default function Home() {
         <label htmlFor="apiDropdown" className="block mb-2">
           Select API Call:
         </label>
-        <select
-          id="apiDropdown"
-          value={selectedApi}
-          onChange={(e) => setSelectedApi(e.target.value)}
-          className="text-black bg-white border border-gray-300 p-2 text-base"
-        >
+        <select id="apiDropdown" value={selectedApi} onChange={(e) => setSelectedApi(e.target.value)} className="text-black bg-white border border-gray-300 p-2 text-base">
           {apiOptions.map((option, index) => (
             <option key={index} value={option.endpoint}>
               {option.label}
@@ -163,16 +142,8 @@ export default function Home() {
         <label htmlFor="apiInput" className="block mb-2">
           Text Input:
         </label>
-        <input
-          type="text"
-          id="apiInput"
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          className="text-black bg-white border border-gray-300 p-2 text-base"
-        />
-        <button onClick={handleApiCall}>
-          Send Text to API (Prints text and api into console)
-        </button>
+        <input type="text" id="apiInput" value={inputText} onChange={(e) => setInputText(e.target.value)} className="text-black bg-white border border-gray-300 p-2 text-base" />
+        <button onClick={handleApiCall}>Send Text to API (Prints text and api into console)</button>
       </div>
     </div>
   );
