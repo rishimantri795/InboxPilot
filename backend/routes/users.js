@@ -1,9 +1,38 @@
 const express = require("express");
 const admin = require("../api/firebase.js"); // Import the `admin` object from firebase.js
+const passport = require("passport");
 
 const router = express.Router();
+require("dotenv").config();
 
 const db = admin.firestore();
+const axios = require("axios");
+
+router.get("/google/auth", (req, res) => {
+  passport.authenticate("google", {
+    scope: ["profile", "email", "https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.modify"],
+    accessType: "offline",
+    approvalPrompt: "force",
+  })(req, res);
+});
+
+router.get(
+  "/google/auth/callback",
+  passport.authenticate("google", {
+    failureRedirect: "http://localhost:3000/",
+  }),
+  async (req, res) => {
+    try {
+      res.redirect("http://localhost:3000/");
+    } catch (error) {
+      console.error("Callback error:", error);
+      res.status(500).send("Internal Server Error");
+    }
+  }
+);
+
+//firebase auth below
+//   ***************************************************************************************************
 
 router.get("/auth", async (req, res) => {
   //   passport.authenticate("google", { scope: ["profile", "email"] })(req, res);
@@ -44,12 +73,72 @@ router.post("/verifyToken", async (req, res) => {
     });
 
     // Send a success response
-    res
-      .status(200)
-      .send({ id: newUserRef.id, message: "User created successfully!" });
+    res.status(200).send({ id: newUserRef.id, message: "User created successfully!" });
   } catch (error) {
     res.status(401).send("Unauthorized");
   }
+});
+
+router.post("/verifyRefreshToken", async (req, res) => {
+  try {
+    const refreshToken = req.body.refreshToken;
+
+    const tokenEndpoint = "https://oauth2.googleapis.com/token";
+
+    const response = await axios.post(
+      tokenEndpoint,
+      new URLSearchParams({
+        client_id: process.env.CLIENT_ID,
+        client_secret: process.env.CLIENT_SECRET,
+        refresh_token: refreshToken,
+        grant_type: "refresh_token",
+      }),
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      }
+    );
+
+    if (response.data.access_token) {
+      res.status(200).json({ valid: true, message: "Refresh token is valid." });
+    } else {
+      res.status(400).json({ valid: false, message: "Invalid refresh token." });
+    }
+  } catch (error) {
+    // If Google returns a 4xx status (client error)
+    if (error.response && error.response.status === 400) {
+      res.status(400).json({ valid: false, message: "Invalid refresh token." });
+    } else {
+      console.error("Error verifying token:", error);
+      res.status(500).json({ valid: false, message: "Token verification failed." });
+    }
+  }
+});
+
+router.get("/current-user", (req, res) => {
+  if (req.isAuthenticated()) {
+    res.json({ user: req.user });
+  } else {
+    res.json({ user: null });
+  }
+});
+
+router.post("/logout", (req, res) => {
+  req.logout(function(err) {
+    if (err) { 
+      console.error("Error during logout:", err);
+      return res.status(500).send("Error logging out");
+    }
+    req.session.destroy(function(err) {
+      if (err) { 
+        console.error("Error destroying session:", err);
+        return res.status(500).send("Error destroying session");
+      }
+      res.clearCookie("connect.sid", { path: '/' });
+      res.status(200).send("Logged out successfully");
+    });
+  });
 });
 
 router.get("/auth/google/callback", async (req, res) => {

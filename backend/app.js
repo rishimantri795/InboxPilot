@@ -5,9 +5,30 @@ const users = require("./routes/users");
 const admin = require("./api/firebase.js"); // Import Firebase Admin from firebase.js
 require("dotenv").config(); // For environment variables
 const cors = require("cors");
+const passport = require("passport");
+require("./middleware/passport.js");
+const session = require("express-session");
 
 app.use(express.json());
-app.use(cors());
+
+const corsOptions = {
+  origin: "http://localhost:3000",
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
+
+app.use(
+  session({
+    secret: "happy",
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false }
+  })
+);
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Initialize Firebase Admin
 // const serviceAccount = require(process.env.FIREBASE_SERVICE_ACCOUNT ||

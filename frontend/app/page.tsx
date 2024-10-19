@@ -1,39 +1,91 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { auth, googleProvider } from "../config/firebase";
 import { signInWithPopup, signOut, GoogleAuthProvider, UserCredential } from "firebase/auth";
 
 import axios from "axios"; // Import axios
+axios.defaults.withCredentials = true;
 
 // api endpoints for dropdown menu
 const apiOptions = [
-  { label: "Verify Token", endpoint: "http://localhost:3010/api/users/verifyToken" },
+  {
+    label: "Verify Token",
+    endpoint: "http://localhost:3010/api/users/verifyToken",
+  },
   { label: "Fake API", endpoint: "http://localhost:3010/api/users/fakeAPI" },
 ];
 
 export default function Home() {
   const [inputText, setInputText] = useState("");
   const [selectedApi, setSelectedApi] = useState(apiOptions[0].endpoint);
+
+  const [user, setUser] = useState<{ id: string; email: string; refreshToken?: string; createdAt?: any } | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await axios.get("http://localhost:3010/api/users/current-user");
+  
+        if (response.data.user) {
+          const mappedUser = {
+            id: response.data.user.id,
+            email: response.data.user.Email, // Map 'Email' to 'email'
+            refreshToken: response.data.user.refreshToken,
+            createdAt: response.data.user.createdAt,
+          };
+          setUser(mappedUser || null);
+          console.log("Authenticated user:", response.data.user);
+        } else {
+          setUser(null);
+          console.log("No authenticated user.");
+        }
+      } catch (error) {
+        console.error("Error fetching current user:", error);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchCurrentUser();
+  }, []);
+
   const signInWithGoogle = async () => {
     try {
-      // Sign in with Google and get the result
-      // const result = await signInWithPopup(auth, googleProvider);
       const result = (await signInWithPopup(auth, googleProvider)) as UserCredential & {
         _tokenResponse?: {
           refreshToken: string;
         };
       };
 
+      if (!result) {
+        throw new Error("No result returned from Google.");
+      }
+
       const credential = GoogleAuthProvider.credentialFromResult(result);
       if (credential === null) {
         throw new Error("No credential returned from Google.");
       }
-      // const accessToken = credential.accessToken;
+
       const refreshToken = result._tokenResponse?.refreshToken;
       if (!refreshToken) {
         console.warn("No refresh token received. User might have already granted permissions.");
         return;
+      }
+
+      console.log(refreshToken);
+
+      const response2 = await axios.post("http://localhost:3010/api/users/verifyRefreshToken", {
+        refreshToken: refreshToken,
+      });
+
+      if (response2.status === 200) {
+        console.log("Refresh token verified successfully!");
+        console.log(response2.data);
+      } else {
+        console.error("Failed to verify refresh token.", response2.data);
       }
 
       console.log("Access Token:", refreshToken);
@@ -67,6 +119,15 @@ export default function Home() {
     }
   };
 
+  const passPortAuth = async () => {
+    try {
+      // Redirect to the Passport.js authentication route
+      window.location.href = "http://localhost:3010/api/users/google/auth"; // Change this URL based on your server configuration
+    } catch (e) {
+      console.error("Error during Passport authentication:", e);
+    }
+  };
+
   const handleApiCall = async () => {
     try {
       console.log("Selected API:", selectedApi);
@@ -86,13 +147,44 @@ export default function Home() {
     }
   };
 
+  const signOutPassport = async () => {
+    try {
+      const response = await axios.post("http://localhost:3010/api/users/logout");
+      if (response.status === 200) {
+        setUser(null);
+        console.log("Logged out successfully");
+      } else {
+        console.error("Failed to log out", response.data);
+      }
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
+
   return (
+    
     <div className="min-h-screen p-8 pb-20">
+      <div className="mt-4">
+        {loading ? (
+          <p>Loading...</p>
+        ) : user ? (
+          <p>Signed in as: {user.email}</p>
+        ) : (
+          <p>Not signed in.</p>
+        )}
+      </div>
+
       <div className="mt-4">
         <button onClick={signInWithGoogle}>Google Sign In</button>
       </div>
       <div className="mt-4">
         <button onClick={signOutWithGoogle}>Google Sign Out</button>
+      </div>
+      <div className="mt-4">
+        <button onClick={passPortAuth}>Sign In with Google (Passport)</button>
+      </div>
+      <div className="mt-4">
+        <button onClick={signOutPassport}>Sign Out (Passport)</button>
       </div>
       <div className="mt-4">
         <label htmlFor="apiDropdown" className="block mb-2">
