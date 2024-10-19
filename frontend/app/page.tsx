@@ -52,72 +52,72 @@ export default function Home() {
     fetchCurrentUser();
   }, []);
 
-  const signInWithGoogle = async () => {
-    try {
-      const result = (await signInWithPopup(auth, googleProvider)) as UserCredential & {
-        _tokenResponse?: {
-          refreshToken: string;
-        };
-      };
+  // const signInWithGoogle = async () => {
+  //   try {
+  //     const result = (await signInWithPopup(auth, googleProvider)) as UserCredential & {
+  //       _tokenResponse?: {
+  //         refreshToken: string;
+  //       };
+  //     };
 
-      if (!result) {
-        throw new Error("No result returned from Google.");
-      }
+  //     if (!result) {
+  //       throw new Error("No result returned from Google.");
+  //     }
 
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      if (credential === null) {
-        throw new Error("No credential returned from Google.");
-      }
+  //     const credential = GoogleAuthProvider.credentialFromResult(result);
+  //     if (credential === null) {
+  //       throw new Error("No credential returned from Google.");
+  //     }
 
-      const refreshToken = result._tokenResponse?.refreshToken;
-      if (!refreshToken) {
-        console.warn("No refresh token received. User might have already granted permissions.");
-        return;
-      }
+  //     const refreshToken = result._tokenResponse?.refreshToken;
+  //     if (!refreshToken) {
+  //       console.warn("No refresh token received. User might have already granted permissions.");
+  //       return;
+  //     }
 
-      console.log(refreshToken);
+  //     console.log(refreshToken);
 
-      const response2 = await axios.post("http://localhost:3010/api/users/verifyRefreshToken", {
-        refreshToken: refreshToken,
-      });
+  //     const response2 = await axios.post("http://localhost:3010/api/users/verifyRefreshToken", {
+  //       refreshToken: refreshToken,
+  //     });
 
-      if (response2.status === 200) {
-        console.log("Refresh token verified successfully!");
-        console.log(response2.data);
-      } else {
-        console.error("Failed to verify refresh token.", response2.data);
-      }
+  //     if (response2.status === 200) {
+  //       console.log("Refresh token verified successfully!");
+  //       console.log(response2.data);
+  //     } else {
+  //       console.error("Failed to verify refresh token.", response2.data);
+  //     }
 
-      console.log("Access Token:", refreshToken);
+  //     console.log("Access Token:", refreshToken);
 
-      // Get the ID token from the authenticated user
-      const idToken = await result.user.getIdToken();
-      console.log("ID Token:", idToken);
+  //     // Get the ID token from the authenticated user
+  //     const idToken = await result.user.getIdToken();
+  //     console.log("ID Token:", idToken);
 
-      // Send the ID token to the backend for verification using axios
-      const response = await axios.post("http://localhost:3010/api/users/verifyToken", {
-        idToken: idToken, // Send ID token as part of request body
-      });
+  //     // Send the ID token to the backend for verification using axios
+  //     const response = await axios.post("http://localhost:3010/api/users/verifyToken", {
+  //       idToken: idToken, // Send ID token as part of request body
+  //     });
 
-      if (response.status === 200) {
-        console.log("Token verified successfully!");
-        console.log(response.data);
-      } else {
-        console.error("Failed to verify token.", response.data);
-      }
-    } catch (e) {
-      console.error("Error signing in with Google:", e);
-    }
-  };
+  //     if (response.status === 200) {
+  //       console.log("Token verified successfully!");
+  //       console.log(response.data);
+  //     } else {
+  //       console.error("Failed to verify token.", response.data);
+  //     }
+  //   } catch (e) {
+  //     console.error("Error signing in with Google:", e);
+  //   }
+  // };
 
-  const signOutWithGoogle = async () => {
-    try {
-      await signOut(auth);
-      console.log("User signed out successfully");
-    } catch (e) {
-      console.error("Error signing out:", e);
-    }
-  };
+  // const signOutWithGoogle = async () => {
+  //   try {
+  //     await signOut(auth);
+  //     console.log("User signed out successfully");
+  //   } catch (e) {
+  //     console.error("Error signing out:", e);
+  //   }
+  // };
 
   const passPortAuth = async () => {
     try {
@@ -174,12 +174,6 @@ export default function Home() {
         )}
       </div>
 
-      <div className="mt-4">
-        <button onClick={signInWithGoogle}>Google Sign In</button>
-      </div>
-      <div className="mt-4">
-        <button onClick={signOutWithGoogle}>Google Sign Out</button>
-      </div>
       <div className="mt-4">
         <button onClick={passPortAuth}>Sign In with Google (Passport)</button>
       </div>
