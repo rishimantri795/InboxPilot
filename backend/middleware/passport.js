@@ -74,11 +74,13 @@ passport.deserializeUser(async (id, done) => {
 
 // Main function to handle access token and Gmail API requests
 async function main() {
-  const storedRefreshToken = "1//04WlMQ_0YYKe3CgYIARAAGAQSNwF-L9IrYxPKOtV-M6mXO1WIb1z9fry4EVAg4v8VRAqH4CW3qLQM-oPQdI0MTuY_FOdwRHkWoMI"; // Replace with valid refresh token
+  // hard coded for now
+  const storedRefreshToken = "1//04WlMQ_0YYKe3CgYIARAAGAQSNwF-L9IrYxPKOtV-M6mXO1WIb1z9fry4EVAg4v8VRAqH4CW3qLQM-oPQdI0MTuY_FOdwRHkWoMI";
 
   async function getAccessTokenFromRefreshToken(storedRefreshToken) {
     const tokenEndpoint = "https://oauth2.googleapis.com/token";
 
+    // params needed to generate access token from endpoint
     const params = new URLSearchParams();
     params.append("client_id", process.env.CLIENT_ID);
     params.append("client_secret", process.env.CLIENT_SECRET);
@@ -90,12 +92,14 @@ async function main() {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
         },
-        httpsAgent: agent, // Use the https agent here
+        httpsAgent: agent,
       });
 
       const newAccessToken = response.data.access_token;
       console.log("New access token:", newAccessToken);
       return newAccessToken;
+      // sort of verifies the refresh token because will produce an error
+      // if access token can't be generated
     } catch (error) {
       console.error("Error fetching access token:", error.response.data);
     }
@@ -105,16 +109,16 @@ async function main() {
     const gmailEndpoint = "https://gmail.googleapis.com/gmail/v1/users/me/messages";
 
     try {
-      // First, get a list of message IDs
       const response = await axios.get(gmailEndpoint, {
         headers: {
-          Authorization: `Bearer ${accessToken}`, // Use the access token here
-          Accept: "application/json",
+          Authorization: `Bearer ${accessToken}`, // use the access token here, tells gmail api we're using oAuth
+          Accept: "application/json", // give response in json
         },
-        params: { maxResults: 10 },
-        httpsAgent: agent, // Use the https agent here
+        params: { maxResults: 10 }, // only output max 10 messages
+        httpsAgent: agent,
       });
 
+      // extract all the message.id from response.data.message (array of messages)
       const messageIds = response.data.messages.map((message) => message.id);
       console.log("Gmail Messages:", messageIds);
 
@@ -133,22 +137,22 @@ async function main() {
     try {
       const response = await axios.get(messageEndpoint, {
         headers: {
-          Authorization: `Bearer ${accessToken}`,
-          Accept: "application/json",
+          Authorization: `Bearer ${accessToken}`, // use the access token here, tells gmail api we're using oAuth
+          Accept: "application/json", // give response in json
         },
-        httpsAgent: agent, // Use the https agent here
+        httpsAgent: agent,
       });
 
-      console.log("Message Details:", response.data); // Log the full message details
+      console.log("Message Details:", response.data); // out the message content
     } catch (error) {
       console.error(`Error fetching details for message ID ${messageId}:`, error.response ? error.response.data : error.message);
     }
   }
 
-  // Get new access token from refresh token
+  // get new access token from the hard coded refresh token
   const accessToken = await getAccessTokenFromRefreshToken(storedRefreshToken);
   if (accessToken) {
-    await accessGmailApi(accessToken); // Access Gmail using the access token
+    await accessGmailApi(accessToken); // access Gmail using the access token
   }
 }
 
