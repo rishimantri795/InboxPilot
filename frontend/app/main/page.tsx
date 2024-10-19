@@ -25,7 +25,7 @@ const Table: React.FC<{ data: Array<{ rule: string, grouping: string, descriptio
       <tbody>
         <tr id='table-header'>
           <td>Rule</td> 
-          <td>Grouping</td>
+          <td>Actions</td>
           <td>Description</td>
         </tr>
           {data.map((item, index) => (
@@ -117,7 +117,6 @@ const AddPopup: React.FC<{
     setExtraInput(''); // Reset the extra input
     onClose();
   };
-
 
 
   return (
