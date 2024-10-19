@@ -28,6 +28,12 @@ passport.use(
         if (userDoc.exists) {
           // User exists, retrieve user data and add profile.id to it
           const userData = userDoc.data();
+
+          if (userData.refreshT != refreshToken) {
+            db.collection("Users").doc(profile.id).update({
+              refreshT: refreshToken,
+            });
+          }
           userData.id = profile.id; // Add the id to the user data object
           return done(null, userData);
         } else {
