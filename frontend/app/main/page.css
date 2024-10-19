@@ -130,3 +130,14 @@ tr td:first-child { border-left-style: solid; }
 .popup-content h2 {
   margin-top: 0;
 }
+
+.popup-content button {
+  margin-left: 5px;
+  margin-top: 20px;
+  padding: 10px 15px;
+  background-color: #2C2C2C;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}

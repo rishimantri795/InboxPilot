@@ -41,20 +41,84 @@ const Table: React.FC<{ data: Array<{ rule: string, grouping: string, descriptio
   );
 };
 
-const AddPopup: React.FC<{ isOpen: boolean; onClose: () => void; onAdd: (newEntry: { rule: string; grouping: string; description: string }) => void }> = ({ isOpen, onClose, onAdd }) => {
+// const AddPopup: React.FC<{ isOpen: boolean; onClose: () => void; onAdd: (newEntry: { rule: string; grouping: string; description: string }) => void }> = ({ isOpen, onClose, onAdd }) => {
+//   const [rule, setRule] = useState('');
+//   const [grouping, setGrouping] = useState('');
+//   const [description, setDescription] = useState('');
+
+//   if (!isOpen) return null;
+
+//   const handleSubmit = () => {
+//     onAdd({ rule, grouping, description });
+//     setRule('');
+//     setGrouping('');
+//     setDescription('');
+//     onClose();
+//   };
+
+//   return (
+//     <div className="popup">
+//       <div className="popup-content">
+//         <h2>Add New Entry</h2>
+//         <div>
+//           <label>Rule:</label>
+//           <input
+//             type="text"
+//             value={rule}
+//             onChange={(e) => setRule(e.target.value)}
+//           />
+//         </div>
+//         <div>
+//           <label>Grouping:</label>
+//           <input
+//             type="text"
+//             value={grouping}
+//             onChange={(e) => setGrouping(e.target.value)}
+//           />
+//         </div>
+//         <div>
+//           <label>Description:</label>
+//           <input
+//             type="text"
+//             value={description}
+//             onChange={(e) => setDescription(e.target.value)}
+//           />
+//         </div>
+//         <button onClick={handleSubmit}>Add</button>
+//         <button onClick={onClose}>Close</button>
+//       </div>
+//     </div>
+//   );
+// };
+
+const AddPopup: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onAdd: (newEntry: { rule: string; grouping: string; description: string }) => void;
+}> = ({ isOpen, onClose, onAdd }) => {
   const [rule, setRule] = useState('');
   const [grouping, setGrouping] = useState('');
   const [description, setDescription] = useState('');
+  const [extraInput, setExtraInput] = useState(''); // State for the label name or forwarding email
 
   if (!isOpen) return null;
 
   const handleSubmit = () => {
-    onAdd({ rule, grouping, description });
+    // Include the extra input in the description if grouping is "Labeling" or "Forwarding"
+    const fullDescription = (grouping === 'Labeling' || grouping === 'Forwarding') 
+      ? `${description} - ${extraInput}` 
+      : description;
+
+      
+    onAdd({ rule, grouping, description: fullDescription });
     setRule('');
     setGrouping('');
     setDescription('');
+    setExtraInput(''); // Reset the extra input
     onClose();
   };
+
+
 
   return (
     <div className="popup">
@@ -69,13 +133,27 @@ const AddPopup: React.FC<{ isOpen: boolean; onClose: () => void; onAdd: (newEntr
           />
         </div>
         <div>
-          <label>Grouping:</label>
-          <input
-            type="text"
+          {/* <label>Grouping:</label> */}
+          <select
             value={grouping}
             onChange={(e) => setGrouping(e.target.value)}
-          />
+          >
+            <option value="">Select Grouping</option>
+            <option value="Labeling">Labeling</option>
+            <option value="Forwarding">Forwarding</option>
+            <option value="Auto Drafting">Auto Drafting</option>
+          </select>
         </div>
+        {(grouping === 'Labeling' || grouping === 'Forwarding') && (
+          <div>
+            <label>{grouping === 'Labeling' ? 'Label Name:' : 'Forwarding Email:'}</label>
+            <input
+              type="text"
+              value={extraInput}
+              onChange={(e) => setExtraInput(e.target.value)}
+            />
+          </div>
+        )}
         <div>
           <label>Description:</label>
           <input
