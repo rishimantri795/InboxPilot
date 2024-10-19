@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { auth, googleProvider } from "../config/firebase";
 import { signInWithPopup, signOut, GoogleAuthProvider, UserCredential } from "firebase/auth";
 
 import axios from "axios"; // Import axios
+axios.defaults.withCredentials = true;
 
 // api endpoints for dropdown menu
 const apiOptions = [
@@ -18,6 +19,38 @@ const apiOptions = [
 export default function Home() {
   const [inputText, setInputText] = useState("");
   const [selectedApi, setSelectedApi] = useState(apiOptions[0].endpoint);
+
+  const [user, setUser] = useState<{ id: string; email: string; refreshToken?: string; createdAt?: any } | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await axios.get("http://localhost:3010/api/users/current-user");
+  
+        if (response.data.user) {
+          const mappedUser = {
+            id: response.data.user.id,
+            email: response.data.user.Email, // Map 'Email' to 'email'
+            refreshToken: response.data.user.refreshToken,
+            createdAt: response.data.user.createdAt,
+          };
+          setUser(mappedUser || null);
+          console.log("Authenticated user:", response.data.user);
+        } else {
+          setUser(null);
+          console.log("No authenticated user.");
+        }
+      } catch (error) {
+        console.error("Error fetching current user:", error);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchCurrentUser();
+  }, []);
 
   const signInWithGoogle = async () => {
     try {
@@ -115,8 +148,33 @@ export default function Home() {
     }
   };
 
+  const signOutPassport = async () => {
+    try {
+      const response = await axios.post("http://localhost:3010/api/users/logout");
+      if (response.status === 200) {
+        setUser(null);
+        console.log("Logged out successfully");
+      } else {
+        console.error("Failed to log out", response.data);
+      }
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
+
   return (
+    
     <div className="min-h-screen p-8 pb-20">
+      <div className="mt-4">
+        {loading ? (
+          <p>Loading...</p>
+        ) : user ? (
+          <p>Signed in as: {user.email}</p>
+        ) : (
+          <p>Not signed in.</p>
+        )}
+      </div>
+
       <div className="mt-4">
         <button onClick={signInWithGoogle}>Google Sign In</button>
       </div>
@@ -125,6 +183,9 @@ export default function Home() {
       </div>
       <div className="mt-4">
         <button onClick={passPortAuth}>Sign In with Google (Passport)</button>
+      </div>
+      <div className="mt-4">
+        <button onClick={signOutPassport}>Sign Out (Passport)</button>
       </div>
       <div className="mt-4">
         <label htmlFor="apiDropdown" className="block mb-2">
