@@ -116,6 +116,31 @@ router.post("/verifyRefreshToken", async (req, res) => {
   }
 });
 
+router.get("/current-user", (req, res) => {
+  if (req.isAuthenticated()) {
+    res.json({ user: req.user });
+  } else {
+    res.json({ user: null });
+  }
+});
+
+router.post("/logout", (req, res) => {
+  req.logout(function(err) {
+    if (err) { 
+      console.error("Error during logout:", err);
+      return res.status(500).send("Error logging out");
+    }
+    req.session.destroy(function(err) {
+      if (err) { 
+        console.error("Error destroying session:", err);
+        return res.status(500).send("Error destroying session");
+      }
+      res.clearCookie("connect.sid", { path: '/' });
+      res.status(200).send("Logged out successfully");
+    });
+  });
+});
+
 router.get("/auth/google/callback", async (req, res) => {
   //   passport.authenticate("google", {
   //     successRedirect: "/failure",
