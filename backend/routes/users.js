@@ -175,35 +175,80 @@ router.get("/", async (req, res) => {
 
 router.post("/:id", async (req, res) => {
   const { id } = req.params;
+  const { action, prompt, type } = req.body;
 
   if (!id) {
     res.status(400).send("Missing user id");
     return;
   }
 
-  if (!req.body) {
-    res.status(400).send("Missing user data");
-    return;
+  // if (!req.body) {
+  //   res.status(400).send("Missing user data");
+  //   return;
+  // }
+
+  if (!action || !prompt || !type) {
+    return res.status(400).json({ error: "Missing rule data" });
   }
 
   let User = await db.collection("Users").doc(`${id}`);
 
-  index = 0;
   try {
-    User = await User.update({
-      Rules: {
-        [`${index}`]: {
-          action: req.body.action,
-          prompt: req.body.prompt,
-          type: req.body.type,
-        },
+    const userRef = db.collection("Users").doc(id);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userData = userDoc.data();
+    const existingRules = userData.Rules || {};
+
+    const existingIndices = Object.keys(existingRules)
+      .map(Number)
+      .filter((num) => !isNaN(num));
+    const nextIndex = existingIndices.length > 0 ? Math.max(...existingIndices) + 1 : 0;
+
+    await userRef.update({
+      [`Rules.${nextIndex}`]: {
+        action,
+        prompt,
+        type,
       },
     });
-    res.status(200).send(User);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error updating user");
+
+    // Fetch the updated document
+    const updatedUserDoc = await userRef.get();
+    const updatedUserData = updatedUserDoc.data();
+
+    return res.status(200).json({
+      message: "Rule added successfully",
+      user: {
+        id: updatedUserDoc.id,
+        ...updatedUserData,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating user:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
+
+  // index = 0;
+  // try {
+  //   User = await User.update({
+  //     Rules: {
+  //       [`${index}`]: {
+  //         action: req.body.action,
+  //         prompt: req.body.prompt,
+  //         type: req.body.type,
+  //       },
+  //     },
+  //   });
+  //   res.status(200).send(User);
+  // } catch (err) {
+  //   console.error(err);
+  //   res.status(500).send("Error updating user");
+  // }
 });
 
 router.delete("/", (req, res) => {});

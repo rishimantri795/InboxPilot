@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { auth, googleProvider } from "../config/firebase";
 import { signInWithPopup, signOut, GoogleAuthProvider, UserCredential } from "firebase/auth";
+import Link from 'next/link';
 
 import axios from "axios"; // Import axios
 axios.defaults.withCredentials = true;
@@ -179,6 +180,13 @@ export default function Home() {
       </div>
       <div className="mt-4">
         <button onClick={signOutPassport}>Sign Out (Passport)</button>
+      </div>
+      <div className="mt-4">
+        <Link href="/main">
+          <button>
+            Go to add rules page
+          </button>
+        </Link>
       </div>
       <div className="mt-4">
         <label htmlFor="apiDropdown" className="block mb-2">
