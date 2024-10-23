@@ -1,8 +1,11 @@
 // app/main/pages.tsx
 "use client"; // Mark this file as a Client Component
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './page.css'; // Import a CSS file for styling
+
+import axios from "axios"; // Import axios
+axios.defaults.withCredentials = true;
 
 const Avatar: React.FC = () => {
   return (
@@ -171,6 +174,34 @@ const AddPopup: React.FC<{
 const Pages: React.FC = () => {
   const [data, setData] = useState<{ rule: string; grouping: string; description: string }[]>([]);
   const [isPopupOpen, setPopupOpen] = useState(false);
+  const [user, setUser] = useState<{ id: string; email: string; refreshToken?: string; createdAt?: any } | null>(null);
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await axios.get("http://localhost:3010/api/users/current-user");
+  
+        if (response.data.user) {
+          const mappedUser = {
+            id: response.data.user.id,
+            email: response.data.user.Email, // Map 'Email' to 'email'
+            refreshToken: response.data.user.refreshToken,
+            createdAt: response.data.user.createdAt,
+          };
+          setUser(mappedUser || null);
+          console.log("Authenticated user:", response.data.user);
+        } else {
+          setUser(null);
+          console.log("No authenticated user.");
+        }
+      } catch (error) {
+        console.error("Error fetching current user:", error);
+        setUser(null);
+      }
+    };
+  
+    fetchCurrentUser();
+  }, []);
 
   const handleAddButtonClick = () => {
     setPopupOpen(true);
@@ -180,8 +211,14 @@ const Pages: React.FC = () => {
     setPopupOpen(false);
   };
 
-  const handleAddEntry = (newEntry: { rule: string; grouping: string; description: string }) => {
+  const handleAddEntry = async (newEntry: { rule: string; grouping: string; description: string }) => {
     setData([...data, newEntry]);
+    console.log(user);
+    if (user) {
+      const entry = {action: newEntry.rule, prompt: newEntry.grouping, type: newEntry.description}
+      const response = await axios.post(`http://localhost:3010/api/users/${user.id}`, entry, { withCredentials: true });
+      console.log(response);
+    }
   };
 
   return (
