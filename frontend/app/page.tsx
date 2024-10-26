@@ -54,7 +54,6 @@ export default function Home() {
 
   const signInWithGoogle = async () => {
     try {
-      // Sign in with Google and get the result
       const result = (await signInWithPopup(auth, googleProvider)) as UserCredential & {
         _tokenResponse?: {
           refreshToken: string;
