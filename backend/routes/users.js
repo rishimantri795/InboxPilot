@@ -182,11 +182,6 @@ router.post("/:id", async (req, res) => {
     return;
   }
 
-  // if (!req.body) {
-  //   res.status(400).send("Missing user data");
-  //   return;
-  // }
-
   if (!action || !prompt || !type) {
     return res.status(400).json({ error: "Missing rule data" });
   }
@@ -233,22 +228,6 @@ router.post("/:id", async (req, res) => {
     return res.status(500).json({ error: "Internal Server Error" });
   }
 
-  // index = 0;
-  // try {
-  //   User = await User.update({
-  //     Rules: {
-  //       [`${index}`]: {
-  //         action: req.body.action,
-  //         prompt: req.body.prompt,
-  //         type: req.body.type,
-  //       },
-  //     },
-  //   });
-  //   res.status(200).send(User);
-  // } catch (err) {
-  //   console.error(err);
-  //   res.status(500).send("Error updating user");
-  // }
 });
 
 router.delete("/", (req, res) => {});

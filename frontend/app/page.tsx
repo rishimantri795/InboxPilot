@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { auth, googleProvider } from "../config/firebase";
-import { signInWithPopup, signOut, GoogleAuthProvider, UserCredential } from "firebase/auth";
 import Link from 'next/link';
 
 import axios from "axios"; // Import axios
@@ -27,17 +25,29 @@ export default function Home() {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const response = await axios.get("http://localhost:3010/api/users/current-user");
+
+        interface User {
+          id: string;
+          Email: string;
+          refreshToken: string;
+          createdAt: string;
+        }
+
+        interface ResponseData {
+          user?: User;
+        }
+
+        const response: { data: ResponseData } = await axios.get("http://localhost:3010/api/users/current-user");
   
         if (response.data.user) {
           const mappedUser = {
             id: response.data.user.id,
-            email: response.data.user.Email, // Map 'Email' to 'email'
+            email: response.data.user.Email,
             refreshToken: response.data.user.refreshToken,
             createdAt: response.data.user.createdAt,
           };
           setUser(mappedUser || null);
-          console.log("Authenticated user:", response.data.user);
+          console.log("Authenticated user:", mappedUser);
         } else {
           setUser(null);
           console.log("No authenticated user.");
@@ -52,73 +62,6 @@ export default function Home() {
   
     fetchCurrentUser();
   }, []);
-
-  // const signInWithGoogle = async () => {
-  //   try {
-  //     const result = (await signInWithPopup(auth, googleProvider)) as UserCredential & {
-  //       _tokenResponse?: {
-  //         refreshToken: string;
-  //       };
-  //     };
-
-  //     if (!result) {
-  //       throw new Error("No result returned from Google.");
-  //     }
-
-  //     const credential = GoogleAuthProvider.credentialFromResult(result);
-  //     if (credential === null) {
-  //       throw new Error("No credential returned from Google.");
-  //     }
-
-  //     const refreshToken = result._tokenResponse?.refreshToken;
-  //     if (!refreshToken) {
-  //       console.warn("No refresh token received. User might have already granted permissions.");
-  //       return;
-  //     }
-
-  //     console.log(refreshToken);
-
-  //     const response2 = await axios.post("http://localhost:3010/api/users/verifyRefreshToken", {
-  //       refreshToken: refreshToken,
-  //     });
-
-  //     if (response2.status === 200) {
-  //       console.log("Refresh token verified successfully!");
-  //       console.log(response2.data);
-  //     } else {
-  //       console.error("Failed to verify refresh token.", response2.data);
-  //     }
-
-  //     console.log("Access Token:", refreshToken);
-
-  //     // Get the ID token from the authenticated user
-  //     const idToken = await result.user.getIdToken();
-  //     console.log("ID Token:", idToken);
-
-  //     // Send the ID token to the backend for verification using axios
-  //     const response = await axios.post("http://localhost:3010/api/users/verifyToken", {
-  //       idToken: idToken, // Send ID token as part of request body
-  //     });
-
-  //     if (response.status === 200) {
-  //       console.log("Token verified successfully!");
-  //       console.log(response.data);
-  //     } else {
-  //       console.error("Failed to verify token.", response.data);
-  //     }
-  //   } catch (e) {
-  //     console.error("Error signing in with Google:", e);
-  //   }
-  // };
-
-  // const signOutWithGoogle = async () => {
-  //   try {
-  //     await signOut(auth);
-  //     console.log("User signed out successfully");
-  //   } catch (e) {
-  //     console.error("Error signing out:", e);
-  //   }
-  // };
 
   const passPortAuth = async () => {
     try {
