@@ -230,6 +230,55 @@ router.post("/:id", async (req, res) => {
 
 });
 
+// DELETE /api/users/:id/rules/:ruleIndex
+router.delete("/:id/rules/:ruleIndex", async (req, res) => {
+  const { id, ruleIndex } = req.params;
+
+  if (!id) {
+    return res.status(400).send("Missing user ID.");
+  }
+
+  const parsedIndex = Number(ruleIndex);
+  if (isNaN(parsedIndex)) {
+    return res.status(400).json({ error: "Invalid rule index." });
+  }
+
+  try {
+    const userRef = db.collection("Users").doc(id);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    const userData = userDoc.data();
+    const existingRules = userData.Rules || {};
+
+    if (!existingRules.hasOwnProperty(parsedIndex)) {
+      return res.status(404).json({ error: "Rule not found." });
+    }
+
+    await userRef.update({
+      [`Rules.${parsedIndex}`]: admin.firestore.FieldValue.delete(),
+    });
+
+    const updatedUserDoc = await userRef.get();
+    const updatedUserData = updatedUserDoc.data();
+
+    return res.status(200).json({
+      message: "Rule deleted successfully.",
+      user: {
+        id: updatedUserDoc.id,
+        ...updatedUserData,
+      },
+    });
+  } catch (error) {
+    console.error("Error deleting rule:", error);
+    return res.status(500).json({ error: "Internal Server Error." });
+  }
+});
+
+
 router.delete("/", (req, res) => {});
 
 router.get("/:id", (req, res) => {});
