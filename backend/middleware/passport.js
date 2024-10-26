@@ -6,6 +6,7 @@ const db = admin.firestore();
 const nodemailer = require("nodemailer");
 const { google } = require("googleapis");
 const https = require("https");
+const { watchGmailInbox } = require("../utils/gmailService"); // Import watchGmailInbox function
 
 // Create an https agent that ignores self-signed certificate errors (for development only)
 const agent = new https.Agent({
@@ -28,13 +29,17 @@ passport.use(
         console.log("Refresh Token:", refreshToken); // Log the refresh token
 
         // Check if the user exists in Firestore
-        const userDoc = await db.collection("Users").doc(profile.id).get();
+        const userSnapshot = await db.collection("Users").where("email", "==", profile.emails[0].value).limit(1).get();
 
-        if (userDoc.exists) {
-          // If user exists, update with the new refresh token (if any)
-          const userData = userDoc.data();
+        if (!userSnapshot.empty) {
+          // User exists, update with the new refresh token (if any)
+          const userDocRef = userSnapshot.docs[0].ref;
+          const userData = userSnapshot.docs[0].data();
           userData.refreshToken = refreshToken || userData.refreshToken; // Update refreshToken if available
-          await db.collection("Users").doc(profile.id).update(userData); // Update user with new refresh token
+          await userDocRef.update(userData); // Update user with new refresh token
+
+          // Watch Gmail inbox for the authenticated user
+          await watchGmailInbox(accessToken);
           return done(null, userData);
         } else {
           // Create a new user in Firestore
@@ -45,6 +50,9 @@ passport.use(
             createdAt: new Date(),
           };
           await db.collection("Users").doc(profile.id).set(newUser);
+
+          // Watch Gmail inbox for the authenticated user
+          await watchGmailInbox(accessToken);
           return done(null, newUser);
         }
       } catch (err) {
@@ -54,9 +62,8 @@ passport.use(
   )
 );
 
-// Serialize and deserialize user
 passport.serializeUser((user, done) => {
-  done(null, user.id); // Serialize user by Google ID
+  done(null, user.id);
 });
 
 passport.deserializeUser(async (id, done) => {
@@ -67,98 +74,9 @@ passport.deserializeUser(async (id, done) => {
     } else {
       done(new Error("User not found"));
     }
-  } catch (err) {
-    done(err);
+  } catch (error) {
+    done(error);
   }
 });
-
-// Main function to handle access token and Gmail API requests
-async function main() {
-  // hard coded for now
-  const storedRefreshToken = "1//04WlMQ_0YYKe3CgYIARAAGAQSNwF-L9IrYxPKOtV-M6mXO1WIb1z9fry4EVAg4v8VRAqH4CW3qLQM-oPQdI0MTuY_FOdwRHkWoMI";
-
-  async function getAccessTokenFromRefreshToken(storedRefreshToken) {
-    const tokenEndpoint = "https://oauth2.googleapis.com/token";
-
-    // params needed to generate access token from endpoint
-    const params = new URLSearchParams();
-    params.append("client_id", process.env.CLIENT_ID);
-    params.append("client_secret", process.env.CLIENT_SECRET);
-    params.append("refresh_token", storedRefreshToken);
-    params.append("grant_type", "refresh_token");
-
-    try {
-      const response = await axios.post(tokenEndpoint, params.toString(), {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        httpsAgent: agent,
-      });
-
-      const newAccessToken = response.data.access_token;
-      console.log("New access token:", newAccessToken);
-      return newAccessToken;
-      // sort of verifies the refresh token because will produce an error
-      // if access token can't be generated
-    } catch (error) {
-      console.error("Error fetching access token:", error.response.data);
-    }
-  }
-
-  async function accessGmailApi(accessToken) {
-    const gmailEndpoint = "https://gmail.googleapis.com/gmail/v1/users/me/messages";
-
-    try {
-      const response = await axios.get(gmailEndpoint, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`, // use the access token here, tells gmail api we're using oAuth
-          Accept: "application/json", // give response in json
-        },
-        params: { maxResults: 10 }, // only output max 10 messages
-        httpsAgent: agent,
-      });
-
-      // extract all the message.id from response.data.message (array of messages)
-      const messageIds = response.data.messages.map((message) => message.id);
-      console.log("Gmail Messages:", messageIds);
-
-      // Fetch full details for each message
-      for (const messageId of messageIds) {
-        await getMessageDetails(messageId, accessToken);
-      }
-    } catch (error) {
-      console.error("Error accessing Gmail API:", error.response ? error.response.data : error.message);
-    }
-  }
-
-  async function getMessageDetails(messageId, accessToken) {
-    const messageEndpoint = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}`;
-
-    try {
-      const response = await axios.get(messageEndpoint, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`, // use the access token here, tells gmail api we're using oAuth
-          Accept: "application/json", // give response in json
-        },
-        httpsAgent: agent,
-      });
-
-      console.log("Message Details:", response.data); // out the message content
-    } catch (error) {
-      console.error(`Error fetching details for message ID ${messageId}:`, error.response ? error.response.data : error.message);
-    }
-  }
-
-  // get new access token from the hard coded refresh token
-  const accessToken = await getAccessTokenFromRefreshToken(storedRefreshToken);
-  if (accessToken) {
-    await accessGmailApi(accessToken); // access Gmail using the access token
-  }
-}
-
-// Call the main function
-main().catch(console.error);
-
-// --------
 
 module.exports = passport;
