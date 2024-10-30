@@ -4,24 +4,25 @@ import { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { InboxIcon, TagIcon, ArchiveIcon, SendIcon, PlaneLandingIcon } from 'lucide-react'
+import useCurrentUser from '@/hooks/useCurrentUser';
+import { useRouter } from 'next/navigation';
+
+
 
 export default function LandingPage() {
+  const router = useRouter();
   const [isLoginOpen, setIsLoginOpen] = useState(false)
+  const { user, loading, error } = useCurrentUser();
 
-  const handleLogin = () => {
-    const client = google.accounts.oauth2.initTokenClient({
-      client_id: 'YOUR_GOOGLE_CLIENT_ID',
-      scope: 'https://www.googleapis.com/auth/gmail.modify',
-      callback: (response) => {
-        if (response.access_token) {
-          console.log("Access token:", response.access_token);
-          // You would typically send this token to your backend or use it to make API calls
-        }
-      },
-    });
+  const passPortAuth = async () => {
+    try {
+      // Redirect to the Passport.js authentication route
+      window.location.href = "http://localhost:3010/api/users/google/auth"; // Change this URL based on your server configuration
+    } catch (e) {
+      console.error("Error during Passport authentication:", e);
+    }
+  };
 
-    client.requestAccessToken();
-  }
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
@@ -30,14 +31,14 @@ export default function LandingPage() {
           <PlaneLandingIcon className="h-8 w-8 text-gray-900" />
           <h1 className="text-2xl font-bold text-gray-900">Inbox Pilot</h1>
         </div>
-        <Button variant="outline" onClick={() => setIsLoginOpen(true)}>Log In</Button>
+        <Button variant="outline" onClick={!user ? () => setIsLoginOpen(true) : () => router.push("/rules")}>{!user ? "Log In" : "Rules"}</Button>
       </header>
 
       <main className="container mx-auto px-4 py-12">
         <section className="text-center mb-16">
           <h2 className="text-4xl font-bold mb-4">Navigate Your Inbox with AI Precision</h2>
           <p className="text-xl text-gray-600 mb-8">Let Inbox Pilot automate your email management and soar above the clutter</p>
-          <Button size="lg" onClick={() => setIsLoginOpen(true)} className="bg-gray-900 hover:bg-gray-800 text-white">Take Flight</Button>
+          <Button size="lg" onClick={!user ? () => setIsLoginOpen(true) : () => router.push("/rules")} className="bg-gray-900 hover:bg-gray-800 text-white">Take Flight</Button>
         </section>
 
         <section className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -73,7 +74,7 @@ export default function LandingPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-center mt-4">
-            <Button onClick={handleLogin} className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white">
+            <Button onClick={passPortAuth} className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white">
               <svg className="h-5 w-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>

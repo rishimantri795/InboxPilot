@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation';
 import { SetStateAction, useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
@@ -10,6 +11,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { PlusIcon, TagIcon, SendIcon, ArchiveIcon, StarIcon, PencilIcon, TrashIcon, LogOutIcon } from 'lucide-react'
+import useCurrentUser from '@/hooks/useCurrentUser';
+
 
 const prebuiltRules = [
   { 
@@ -55,13 +58,15 @@ const actionTypes = [
 ]
 
 export default function RulesPage() {
+  const router = useRouter();
   const [rules, setRules] = useState([])
   const [isAddRuleOpen, setIsAddRuleOpen] = useState(false)
   const [isConfigureRuleOpen, setIsConfigureRuleOpen] = useState(false)
   const [selectedPrebuiltRule, setSelectedPrebuiltRule] = useState(null)
   const [currentRule, setCurrentRule] = useState(null)
   const [isLoggedIn, setIsLoggedIn] = useState(true) // Assume user is logged in initially
-  const [user, setUser] = useState({ name: "John Doe", email: "john.doe@example.com" }) // Mock user data
+  // const [user, setUser] = useState({ name: "John Doe", email: "john.doe@example.com" }) // Mock user data
+  const { user, loading, error } = useCurrentUser();
 
   const handleAddRule = (prebuiltRule: SetStateAction<null> | { id: number; name: string; description: string; actions: { type: string; config: { labelName: string } }[] } | { id: number; name: string; description: string; actions: { type: string; config: { archiveImmediately: boolean } }[] } | { id: number; name: string; description: string; actions: { type: string; config: { forwardTo: string } }[] } | { id: number; name: string; description: string; actions: { type: string; config: { draftTemplate: string } }[] }) => {
     setSelectedPrebuiltRule(prebuiltRule)
@@ -88,18 +93,33 @@ export default function RulesPage() {
     setRules(rules.filter(rule => rule.id !== ruleId))
   }
 
-  const handleLogout = () => {
-    setIsLoggedIn(false)
-    setUser(null)
-    // Implement actual logout logic here
+  const handleLogout = async () => {
+    try {
+      const response = await axios.post("http://localhost:3010/api/users/logout");
+      if (response.status === 200) {
+        // setUser(null);
+        console.log("Logged out successfully");
+        router.push("landing-page")
+      } else {
+        console.error("Failed to log out", response.data);
+      }
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
   }
+  // const handleLogin = () => {
+  //   // setIsLoggedIn(true)
+  //   // setUser({ name: "John Doe", email: "john.doe@example.com" }) // Mock user data
+  //   // Implement actual login logic here
+  // }
 
-  const handleLogin = () => {
-    setIsLoggedIn(true)
-    setUser({ name: "John Doe", email: "john.doe@example.com" }) // Mock user data
-    // Implement actual login logic here
-  }
-
+  if (loading) {
+    return <div>Loading...</div>;
+  } else if (!user) {
+    router.push("/");
+  } else if (error) {
+    return <div>Error: {error}</div>;
+  } else {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
@@ -107,7 +127,8 @@ export default function RulesPage() {
         <div className="flex items-center space-x-4">
           {isLoggedIn && (
             <div className="text-right">
-              <p className="font-medium">{user.name}</p>
+              <p className="font-medium">PLACEHOLDER</p> 
+              {/* {user.name} */}
               <p className="text-sm text-gray-500">{user.email}</p>
             </div>
           )}
@@ -119,17 +140,17 @@ export default function RulesPage() {
               </Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {isLoggedIn ? (
+              {/* {isLoggedIn ? ( */}
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOutIcon className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem onClick={handleLogin}>
-                  <LogOutIcon className="mr-2 h-4 w-4" />
-                  <span>Log in</span>
-                </DropdownMenuItem>
-              )}
+              {/* // ) : (
+              //   <DropdownMenuItem onClick={handleLogin}>
+              //     <LogOutIcon className="mr-2 h-4 w-4" />
+              //     <span>Log in</span>
+              //   </DropdownMenuItem>
+              // )} */}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -200,6 +221,7 @@ export default function RulesPage() {
       />
     </div>
   )
+}
 }
 
 function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, onSave }) {

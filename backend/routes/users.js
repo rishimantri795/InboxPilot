@@ -19,11 +19,11 @@ router.get("/google/auth", (req, res) => {
 router.get(
   "/google/auth/callback",
   passport.authenticate("google", {
-    failureRedirect: "http://localhost:3000/",
+    failureRedirect: "http://localhost:3000/landing-page",
   }),
   async (req, res) => {
     try {
-      res.redirect("http://localhost:3000/");
+      res.redirect("http://localhost:3000/rules");
     } catch (error) {
       console.error("Callback error:", error);
       res.status(500).send("Internal Server Error");

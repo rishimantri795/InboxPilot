@@ -125,9 +125,16 @@ export default function Home() {
         <button onClick={signOutPassport}>Sign Out (Passport)</button>
       </div>
       <div className="mt-4">
-        <Link href="/main">
+        <Link href="/rules">
           <button>
             Go to add rules page
+          </button>
+        </Link>
+      </div>
+      <div className="mt-4">
+        <Link href="/landing-page">
+          <button>
+            Go to add landing page
           </button>
         </Link>
       </div>
