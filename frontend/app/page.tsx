@@ -28,7 +28,7 @@ export default function Home() {
 
         interface User {
           id: string;
-          Email: string;
+          email: string;
           refreshToken: string;
           createdAt: string;
         }
@@ -38,15 +38,15 @@ export default function Home() {
         }
 
         const response: { data: ResponseData } = await axios.get("http://localhost:3010/api/users/current-user");
-  
         if (response.data.user) {
           const mappedUser = {
             id: response.data.user.id,
-            email: response.data.user.Email,
+            email: response.data.user.email,
             refreshToken: response.data.user.refreshToken,
             createdAt: response.data.user.createdAt,
           };
           setUser(mappedUser || null);
+          console.log(response.data.user);
           console.log("Authenticated user:", mappedUser);
         } else {
           setUser(null);
