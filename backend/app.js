@@ -8,11 +8,12 @@ const db = admin.firestore(); // creates ref for firestore db instance which all
 require("dotenv").config();
 const cors = require("cors"); // req from diff origins
 const passport = require("passport");
+
 require("./middleware/passport.js");
 const session = require("express-session");
 
 const { getAccessTokenFromRefreshToken } = require("./utils/tokenService.js");
-const { accessGmailApi, fetchEmailHistory } = require("./utils/gmailService.js");
+const { fetchEmailHistory } = require("./utils/gmailService.js");
 
 app.use(express.json());
 
