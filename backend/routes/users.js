@@ -60,8 +60,8 @@ router.post("/verifyToken", async (req, res) => {
 
     // Create a new user document with the provided data
     await newUserRef.set({
-      Email: decodedToken.email,
-      Rules: {
+      email: decodedToken.email,
+      rules: {
         // Assuming you want to store the first rule as provided
         0: {
           action: "default",
@@ -197,7 +197,7 @@ router.post("/:id", async (req, res) => {
     }
 
     const userData = userDoc.data();
-    const existingRules = userData.Rules || {};
+    const existingRules = userData.rules || {};
 
     const existingIndices = Object.keys(existingRules)
       .map(Number)
@@ -205,7 +205,7 @@ router.post("/:id", async (req, res) => {
     const nextIndex = existingIndices.length > 0 ? Math.max(...existingIndices) + 1 : 0;
 
     await userRef.update({
-      [`Rules.${nextIndex}`]: {
+      [`rules.${nextIndex}`]: {
         action,
         prompt,
         type,
@@ -252,14 +252,14 @@ router.delete("/:id/rules/:ruleIndex", async (req, res) => {
     }
 
     const userData = userDoc.data();
-    const existingRules = userData.Rules || {};
+    const existingRules = userData.rules || {};
 
     if (!existingRules.hasOwnProperty(parsedIndex)) {
       return res.status(404).json({ error: "Rule not found." });
     }
 
     await userRef.update({
-      [`Rules.${parsedIndex}`]: admin.firestore.FieldValue.delete(),
+      [`rules.${parsedIndex}`]: admin.firestore.FieldValue.delete(),
     });
 
     const updatedUserDoc = await userRef.get();
@@ -277,6 +277,62 @@ router.delete("/:id/rules/:ruleIndex", async (req, res) => {
     return res.status(500).json({ error: "Internal Server Error." });
   }
 });
+
+router.put("/:id/rules/:ruleIndex", async (req, res) => {
+  const { id, ruleIndex } = req.params;
+  const { action, prompt, type } = req.body;
+
+  if (!id) {
+    return res.status(400).send("Missing user ID.");
+  }
+
+  if (!action || !prompt || !type) {
+    return res.status(400).json({ error: "Missing rule data." });
+  }
+
+  const parsedIndex = Number(ruleIndex);
+  if (isNaN(parsedIndex)) {
+    return res.status(400).json({ error: "Invalid rule index." });
+  }
+
+  try {
+    const userRef = db.collection("Users").doc(id);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    const userData = userDoc.data();
+    const existingRules = userData.rules || {};
+
+    if (!existingRules.hasOwnProperty(parsedIndex)) {
+      return res.status(404).json({ error: "Rule not found." });
+    }
+
+    await userRef.update({
+      [`rules.${parsedIndex}.action`]: action,
+      [`rules.${parsedIndex}.prompt`]: prompt,
+      [`rules.${parsedIndex}.type`]: type,
+    });
+
+    const updatedUserDoc = await userRef.get();
+    const updatedUserData = updatedUserDoc.data();
+
+    return res.status(200).json({
+      message: "Rule updated successfully.",
+      user: {
+        id: updatedUserDoc.id,
+        ...updatedUserData,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating rule:", error);
+    return res.status(500).json({ error: "Internal Server Error." });
+  }
+});
+
+
 
 
 router.delete("/", (req, res) => {});

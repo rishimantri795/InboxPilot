@@ -1,7 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation';
-import { SetStateAction, useState } from 'react'
+import { SetStateAction, useState, useEffect } from 'react'
+import axios from 'axios';
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -12,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { PlusIcon, TagIcon, SendIcon, ArchiveIcon, StarIcon, PencilIcon, TrashIcon, LogOutIcon } from 'lucide-react'
 import useCurrentUser from '@/hooks/useCurrentUser';
+import { addRule, deleteRule } from '@/lib/api';
 
 
 const prebuiltRules = [
@@ -57,16 +59,34 @@ const actionTypes = [
   { value: "favorite", label: "Favorite", icon: StarIcon },
 ]
 
+interface Rule {
+  id: string;
+  name: string;
+  description: string;
+  action: string;
+}
+
 export default function RulesPage() {
   const router = useRouter();
-  const [rules, setRules] = useState([])
-  const [isAddRuleOpen, setIsAddRuleOpen] = useState(false)
-  const [isConfigureRuleOpen, setIsConfigureRuleOpen] = useState(false)
-  const [selectedPrebuiltRule, setSelectedPrebuiltRule] = useState(null)
-  const [currentRule, setCurrentRule] = useState(null)
-  const [isLoggedIn, setIsLoggedIn] = useState(true) // Assume user is logged in initially
-  // const [user, setUser] = useState({ name: "John Doe", email: "john.doe@example.com" }) // Mock user data
+  const [rules, setRules] = useState<Rule[]>([]);
+  const [isAddRuleOpen, setIsAddRuleOpen] = useState(false);
+  const [isConfigureRuleOpen, setIsConfigureRuleOpen] = useState(false);
+  const [selectedPrebuiltRule, setSelectedPrebuiltRule] = useState<Rule | null>(null);
+  const [currentRule, setCurrentRule] = useState<Rule | null>(null);
   const { user, loading, error } = useCurrentUser();
+
+  useEffect(() => {
+    if (user && user.rules) {
+      const transformedRules: Rule[] = Object.entries(user.rules).map(([key, ruleData]) => ({
+        id: key,
+        name: ruleData.action,
+        description: ruleData.prompt,
+        action: ruleData.type,
+      }));
+      setRules(transformedRules);
+    }
+  }, [user]);
+
 
   const handleAddRule = (prebuiltRule: SetStateAction<null> | { id: number; name: string; description: string; actions: { type: string; config: { labelName: string } }[] } | { id: number; name: string; description: string; actions: { type: string; config: { archiveImmediately: boolean } }[] } | { id: number; name: string; description: string; actions: { type: string; config: { forwardTo: string } }[] } | { id: number; name: string; description: string; actions: { type: string; config: { draftTemplate: string } }[] }) => {
     setSelectedPrebuiltRule(prebuiltRule)
@@ -74,24 +94,48 @@ export default function RulesPage() {
     setIsConfigureRuleOpen(true)
   }
 
-  const handleSaveRule = (configuredRule: any) => {
+  const handleSaveRule = async (configuredRule) => {
+    const serializedRule = {
+      action: configuredRule.name,
+      prompt: configuredRule.description,
+      type: JSON.stringify(configuredRule.actions),
+    };
     if (currentRule) {
-      setRules(rules.map(rule => rule.id === currentRule.id ? configuredRule : rule))
+      console.log(currentRule);
+      setRules(rules.map(rule => rule.id === currentRule.id ? { ...serializedRule, id: currentRule.id, name: configuredRule.name, description: configuredRule.description, action: JSON.stringify(configuredRule.actions) } : rule));
+      try {
+        await axios.put(`http://localhost:3010/api/users/${user.id}/rules/${currentRule.id}`, serializedRule, { withCredentials: true });
+      } catch (error) {
+        console.error("Failed to update rule:", error);
+      }
     } else {
-      setRules([...rules, { ...configuredRule, id: Date.now() }])
+      const newRule = { ...serializedRule, id: Date.now().toString() };
+      setRules([...rules, { ...newRule, name: configuredRule.name, description: configuredRule.description, action: JSON.stringify(configuredRule.actions)}]);
+      console.log(newRule);
+      try {
+        await axios.post(`http://localhost:3010/api/users/${user.id}`, newRule, { withCredentials: true });
+      } catch (error) {
+        console.error("Failed to add rule:", error);
+      }
     }
-    setIsConfigureRuleOpen(false)
-    setCurrentRule(null)
-  }
+    setIsConfigureRuleOpen(false);
+    setCurrentRule(null);
+  };
+  
 
   const handleEditRule = (rule) => {
     setCurrentRule(rule)
     setIsConfigureRuleOpen(true)
   }
 
-  const handleDeleteRule = (ruleId) => {
-    setRules(rules.filter(rule => rule.id !== ruleId))
+  const handleDeleteRule = async (ruleId: string) => {
+  try {
+    await deleteRule(user.id, ruleId);
+    setRules(rules.filter(rule => rule.id !== ruleId));
+  } catch (error) {
+    console.error("Failed to delete rule:", error);
   }
+};
 
   const handleLogout = async () => {
     try {
@@ -107,11 +151,6 @@ export default function RulesPage() {
       console.error("Error logging out:", error);
     }
   }
-  // const handleLogin = () => {
-  //   // setIsLoggedIn(true)
-  //   // setUser({ name: "John Doe", email: "john.doe@example.com" }) // Mock user data
-  //   // Implement actual login logic here
-  // }
 
   if (loading) {
     return <div>Loading...</div>;
@@ -125,13 +164,11 @@ export default function RulesPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Email Rules</h1>
         <div className="flex items-center space-x-4">
-          {isLoggedIn && (
-            <div className="text-right">
-              <p className="font-medium">PLACEHOLDER</p> 
-              {/* {user.name} */}
-              <p className="text-sm text-gray-500">{user.email}</p>
-            </div>
-          )}
+          <div className="text-right">
+            <p className="font-medium">PLACEHOLDER</p> 
+            {/* {user.name} */}
+            <p className="text-sm text-gray-500">{user.email}</p>
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Avatar className="cursor-pointer">
@@ -145,12 +182,6 @@ export default function RulesPage() {
                   <LogOutIcon className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>
-              {/* // ) : (
-              //   <DropdownMenuItem onClick={handleLogin}>
-              //     <LogOutIcon className="mr-2 h-4 w-4" />
-              //     <span>Log in</span>
-              //   </DropdownMenuItem>
-              // )} */}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -173,7 +204,7 @@ export default function RulesPage() {
             <TableRow key={rule.id}>
               <TableCell>{rule.name}</TableCell>
               <TableCell>{rule.description}</TableCell>
-              <TableCell>{rule.actions.map(action => action.type).join(', ')}</TableCell>
+              <TableCell>{rule.action}</TableCell>
               <TableCell>
                 <Button variant="ghost" onClick={() => handleEditRule(rule)}>
                   <PencilIcon className="h-4 w-4" />

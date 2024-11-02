@@ -29,7 +29,7 @@ const useCurrentUser = () => {
           const mappedUser: User = {
             id: response.data.user.id,
             email: response.data.user.email,
-            rules: response.data.user.Rules,
+            rules: response.data.user.rules,
             refreshToken: response.data.user.refreshToken,
             createdAt: response.data.user.createdAt,
           };

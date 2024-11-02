@@ -95,7 +95,6 @@ export default function Home() {
     try {
       const response = await axios.post("http://localhost:3010/api/users/logout");
       if (response.status === 200) {
-        setUser(null);
         console.log("Logged out successfully");
       } else {
         console.error("Failed to log out", response.data);
