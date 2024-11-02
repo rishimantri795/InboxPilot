@@ -17,9 +17,9 @@ const users = require("./routes/users");
 // Bull queue configuration
 const taskQueue = new Bull("task-queue", {
   redis: {
-    host: "redis-18153.c253.us-central1-1.gce.redns.redis-cloud.com", // Replace with your Redis host
+    host: process.env.HOST, // Replace with your Redis host
     port: 18153, // Replace with your Redis port
-    password: "ZU5w3CNLaWm6mOzVNaG118gZf3jiVObQ", // Replace with your Redis password
+    password: process.env.REDISPASS, // Replace with your Redis password
   },
 });
 
