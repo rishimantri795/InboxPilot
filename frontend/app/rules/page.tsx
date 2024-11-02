@@ -81,11 +81,12 @@ export default function RulesPage() {
         id: key,
         name: ruleData.action,
         description: ruleData.prompt,
-        action: ruleData.type,
+        action: typeof ruleData.type === 'string' ? ruleData.type : JSON.stringify(ruleData.type),
       }));
       setRules(transformedRules);
     }
   }, [user]);
+  
 
 
   const handleAddRule = (prebuiltRule) => {
