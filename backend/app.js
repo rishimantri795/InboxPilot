@@ -20,10 +20,14 @@ app.use(cors(corsOptions));
 
 app.use(
   session({
-    secret: "happy",
+    secret: "your-secure-secret", // Use a strong, secure secret in production
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false }
+    cookie: { 
+      secure: false, // Set to true if using HTTPS
+      sameSite: 'lax' // Adjust based on your needs
+    },
+    name: "connect.sid" // Optional: customize the cookie name
   })
 );
 

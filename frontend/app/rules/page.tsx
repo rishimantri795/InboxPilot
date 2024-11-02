@@ -81,7 +81,8 @@ export default function RulesPage() {
   const [isConfigureRuleOpen, setIsConfigureRuleOpen] = useState(false);
   const [selectedPrebuiltRule, setSelectedPrebuiltRule] = useState<Rule | null>(null);
   const [currentRule, setCurrentRule] = useState<Rule | null>(null);
-  const { user, loading, error } = useCurrentUser();
+  const { user, loading, error, clearUser } = useCurrentUser();
+  const [logoutSuccess, setLogoutSuccess] = useState(false);
 
 
   // Fetch and parse rules from the backend
@@ -89,7 +90,7 @@ export default function RulesPage() {
     if (user && user.rules) {
       const transformedRules: Rule[] = Object.entries(user.rules).map(([key, ruleData]) => ({
         id: key,
-        name: ruleData.action, // Adjust if 'name' is available
+        name: ruleData.action,
         description: ruleData.prompt,
         actions: typeof ruleData.type === 'string' ? JSON.parse(ruleData.type) : ruleData.type,
       }));
@@ -136,15 +137,16 @@ export default function RulesPage() {
       }
     } else {
       // Add new rule
-      const newRule = { 
-        id: Date.now().toString(), // Generate a unique ID
-        name: configuredRule.name, 
-        description: configuredRule.description, 
-        actions: configuredRule.actions 
-      };
-      setRules([...rules, newRule]);
+      
       try {
-        await axios.post(`http://localhost:3010/api/users/${user.id}`, serializedRule, { withCredentials: true });
+        const response = await axios.post(`http://localhost:3010/api/users/${user.id}`, serializedRule, { withCredentials: true });
+        const newRule = { 
+          id: response.data.id, // Generate a unique ID
+          name: configuredRule.name, 
+          description: configuredRule.description, 
+          actions: configuredRule.actions 
+        };
+        setRules([...rules, newRule]);
       } catch (error) {
         console.error("Failed to add rule:", error);
       }
@@ -173,10 +175,16 @@ export default function RulesPage() {
   // Handle user logout
   const handleLogout = async () => {
     try {
-      const response = await axios.post("http://localhost:3010/api/users/logout");
+      const response = await axios.post("http://localhost:3010/api/users/logout", {
+        withCredentials: true,
+      });
       if (response.status === 200) {
         console.log("Logged out successfully");
-        router.push("landing-page");
+        // clearUser();
+        setTimeout(() => clearUser(), 0);
+        // setLogoutSuccess(true);
+        setTimeout(() => setLogoutSuccess(true), 0);
+        // router.push("landing-page");
       } else {
         console.error("Failed to log out", response.data);
       }
@@ -185,11 +193,18 @@ export default function RulesPage() {
     }
   };
 
+  useEffect(() => {
+    if (logoutSuccess) {
+      router.push("/");
+      setLogoutSuccess(false);
+    }
+  }, [logoutSuccess, router]);
+
   // Handle loading and error states
   if (loading) {
     return <div>Loading...</div>;
   } else if (!user) {
-    router.push("/");
+    router.push("landing-page");
     return null; // Prevent rendering below
   } else if (error) {
     return <div>Error: {error}</div>;
@@ -206,13 +221,18 @@ export default function RulesPage() {
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Avatar className="cursor-pointer">
+                <Avatar className="cursor-pointer bg-black text-white">
                   <AvatarImage src="" alt="User avatar" />
-                  <AvatarFallback>{user.email ? user.email.charAt(0).toUpperCase() : "U"}</AvatarFallback>
+                  <AvatarFallback className="bg-black text-white">
+                    {user.email ? user.email.charAt(0).toUpperCase() : "U"}
+                  </AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleLogout}>
+                <DropdownMenuItem 
+                  onClick={handleLogout} 
+                  className="cursor-pointer"
+                >
                   <LogOutIcon className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>

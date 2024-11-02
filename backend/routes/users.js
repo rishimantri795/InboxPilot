@@ -8,6 +8,9 @@ require("dotenv").config();
 const db = admin.firestore();
 const axios = require("axios");
 
+const cookieParser = require("cookie-parser");
+router.use(cookieParser());
+
 router.get("/google/auth", (req, res) => {
   passport.authenticate("google", {
     scope: ["profile", "email", "https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.modify"],
@@ -135,8 +138,13 @@ router.post("/logout", (req, res) => {
         console.error("Error destroying session:", err);
         return res.status(500).send("Error destroying session");
       }
-      res.clearCookie("connect.sid", { path: '/' });
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      // res.clearCookie("connect.sid");
+      res.clearCookie("connect.sid", {
+        path: '/', // Ensure the path matches
+        secure: false, // Set to true if using HTTPS
+        sameSite: 'lax' // Match your configuration
+      });
+      console.log("Cookies after clearing:", req.cookies);
       res.status(200).send("Logged out successfully");
     });
   });
@@ -223,6 +231,7 @@ router.post("/:id", async (req, res) => {
         id: updatedUserDoc.id,
         ...updatedUserData,
       },
+      id: nextIndex,
     });
   } catch (error) {
     console.error("Error updating user:", error);
