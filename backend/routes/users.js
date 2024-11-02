@@ -136,6 +136,7 @@ router.post("/logout", (req, res) => {
         return res.status(500).send("Error destroying session");
       }
       res.clearCookie("connect.sid", { path: '/' });
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       res.status(200).send("Logged out successfully");
     });
   });
