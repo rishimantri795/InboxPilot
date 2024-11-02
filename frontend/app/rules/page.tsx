@@ -1,21 +1,21 @@
 'use client'
 
 import { useRouter } from 'next/navigation';
-import { SetStateAction, useState, useEffect } from 'react'
+import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { PlusIcon, TagIcon, SendIcon, ArchiveIcon, StarIcon, PencilIcon, TrashIcon, LogOutIcon } from 'lucide-react'
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { PlusIcon, TagIcon, SendIcon, ArchiveIcon, StarIcon, PencilIcon, TrashIcon, LogOutIcon } from 'lucide-react';
 import useCurrentUser from '@/hooks/useCurrentUser';
 import { addRule, deleteRule } from '@/lib/api';
 
-
+// Prebuilt rules with actions as arrays
 const prebuiltRules = [
   { 
     id: 1, 
@@ -49,264 +49,311 @@ const prebuiltRules = [
       { type: "draft", config: { draftTemplate: "I'm currently out of office and will reply upon my return." } }
     ]
   },
-]
+];
 
+// Action types for adding actions
 const actionTypes = [
   { value: "label", label: "Label", icon: TagIcon },
   { value: "forward", label: "Forward", icon: SendIcon },
   { value: "draft", label: "Automatic Draft", icon: PencilIcon },
   { value: "archive", label: "Archive", icon: ArchiveIcon },
   { value: "favorite", label: "Favorite", icon: StarIcon },
-]
+];
 
+// Define the Action interface
+interface Action {
+  type: string;
+  config: Record<string, any>;
+}
+
+// Updated Rule interface with actions as an array
 interface Rule {
   id: string;
   name: string;
   description: string;
-  action: string;
+  actions: Action[];
 }
 
 export default function RulesPage() {
   const router = useRouter();
   const [rules, setRules] = useState<Rule[]>([]);
-  const [isAddRuleOpen, setIsAddRuleOpen] = useState(false)
-  const [isConfigureRuleOpen, setIsConfigureRuleOpen] = useState(false)
+  const [isAddRuleOpen, setIsAddRuleOpen] = useState(false);
+  const [isConfigureRuleOpen, setIsConfigureRuleOpen] = useState(false);
   const [selectedPrebuiltRule, setSelectedPrebuiltRule] = useState<Rule | null>(null);
   const [currentRule, setCurrentRule] = useState<Rule | null>(null);
   const { user, loading, error } = useCurrentUser();
 
+
+  // Fetch and parse rules from the backend
   useEffect(() => {
     if (user && user.rules) {
       const transformedRules: Rule[] = Object.entries(user.rules).map(([key, ruleData]) => ({
         id: key,
-        name: ruleData.action,
+        name: ruleData.action, // Adjust if 'name' is available
         description: ruleData.prompt,
-        action: typeof ruleData.type === 'string' ? ruleData.type : JSON.stringify(ruleData.type),
+        actions: typeof ruleData.type === 'string' ? JSON.parse(ruleData.type) : ruleData.type,
       }));
       setRules(transformedRules);
     }
   }, [user]);
-  
 
-
-  const handleAddRule = (prebuiltRule) => {
+  // Handle adding a new rule
+  const handleAddRule = (prebuiltRule: Rule) => {
     if (prebuiltRule.name === "Custom Rule") {
-      // For custom rules, initialize with empty actions array
+      // Initialize a custom rule with empty actions
       setSelectedPrebuiltRule({
+        id: '', // Assign a unique ID if necessary
         name: "Custom Rule",
         description: "Create a custom rule",
-        actions: [] // Initialize empty actions array
-      })
+        actions: []
+      });
     } else {
-      // For prebuilt rules, use as is
-      setSelectedPrebuiltRule(prebuiltRule)
+      // Use the selected prebuilt rule
+      setSelectedPrebuiltRule(prebuiltRule);
     }
-    setCurrentRule(null) // Clear any previously selected custom rule
-    setIsAddRuleOpen(false)
-    setIsConfigureRuleOpen(true)  
-  }
+    setCurrentRule(null); // Clear any existing selection
+    setIsAddRuleOpen(false);
+    setIsConfigureRuleOpen(true);  
+  };
 
-  const handleSaveRule = async (configuredRule) => {
+  // Handle saving a rule (both add and update)
+  const handleSaveRule = async (configuredRule: Rule) => {
     const serializedRule = {
       action: configuredRule.name,
       prompt: configuredRule.description,
-      type: JSON.stringify(configuredRule.actions),
+      type: JSON.stringify(configuredRule.actions), // Stringify actions for backend
     };
+    
     if (currentRule) {
-      setRules(rules.map(rule => rule.id === currentRule.id ? { ...serializedRule, id: currentRule.id, name: configuredRule.name, description: configuredRule.description, action: JSON.stringify(configuredRule.actions) } : rule));
+      // Update existing rule
+      setRules(rules.map(rule => 
+        rule.id === currentRule.id ? { ...rule, name: configuredRule.name, description: configuredRule.description, actions: configuredRule.actions } : rule
+      ));
       try {
         await axios.put(`http://localhost:3010/api/users/${user.id}/rules/${currentRule.id}`, serializedRule, { withCredentials: true });
       } catch (error) {
         console.error("Failed to update rule:", error);
       }
     } else {
-      const newRule = { ...serializedRule, id: Date.now().toString() };
-      setRules([...rules, { ...newRule, name: configuredRule.name, description: configuredRule.description, action: JSON.stringify(configuredRule.actions)}]);
-      console.log(newRule);
+      // Add new rule
+      const newRule = { 
+        id: Date.now().toString(), // Generate a unique ID
+        name: configuredRule.name, 
+        description: configuredRule.description, 
+        actions: configuredRule.actions 
+      };
+      setRules([...rules, newRule]);
       try {
-        await axios.post(`http://localhost:3010/api/users/${user.id}`, newRule, { withCredentials: true });
+        await axios.post(`http://localhost:3010/api/users/${user.id}`, serializedRule, { withCredentials: true });
       } catch (error) {
         console.error("Failed to add rule:", error);
       }
     }
+    
     setIsConfigureRuleOpen(false);
     setCurrentRule(null);
   };
   
+  // Handle editing a rule
+  const handleEditRule = (rule: Rule) => {
+    setCurrentRule(rule);
+    setIsConfigureRuleOpen(true);
+  };
 
-  const handleEditRule = (rule) => {
-    setCurrentRule(rule)
-    setIsConfigureRuleOpen(true)
-  }
-
+  // Handle deleting a rule
   const handleDeleteRule = async (ruleId: string) => {
-  try {
-    await deleteRule(user.id, ruleId);
-    setRules(rules.filter(rule => rule.id !== ruleId));
-  } catch (error) {
-    console.error("Failed to delete rule:", error);
-  }
-};
-
-const handleLogout = async () => {
-  try {
-    const response = await axios.post("http://localhost:3010/api/users/logout");
-    if (response.status === 200) {
-      console.log("Logged out successfully");
-      router.push("landing-page")
-    } else {
-      console.error("Failed to log out", response.data);
+    try {
+      await deleteRule(user.id, ruleId);
+      setRules(rules.filter(rule => rule.id !== ruleId));
+    } catch (error) {
+      console.error("Failed to delete rule:", error);
     }
-  } catch (error) {
-    console.error("Error logging out:", error);
-  }
-}
+  };
 
+  // Handle user logout
+  const handleLogout = async () => {
+    try {
+      const response = await axios.post("http://localhost:3010/api/users/logout");
+      if (response.status === 200) {
+        console.log("Logged out successfully");
+        router.push("landing-page");
+      } else {
+        console.error("Failed to log out", response.data);
+      }
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
+
+  // Handle loading and error states
   if (loading) {
     return <div>Loading...</div>;
   } else if (!user) {
     router.push("/");
+    return null; // Prevent rendering below
   } else if (error) {
     return <div>Error: {error}</div>;
   } else {
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Email Rules</h1>
-        <div className="flex items-center space-x-4">
-          <div className="text-right">
-            <p className="font-medium">PLACEHOLDER</p>
-            <p className="text-sm text-gray-500">{user.email}</p>
+    return (
+      <div className="container mx-auto px-4 py-8">
+        {/* Header Section */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Email Rules</h1>
+          <div className="flex items-center space-x-4">
+            <div className="text-right">
+              <p className="font-medium">PLACEHOLDER</p>
+              <p className="text-sm text-gray-500">{user.email}</p>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Avatar className="cursor-pointer">
+                  <AvatarImage src="" alt="User avatar" />
+                  <AvatarFallback>{user.email ? user.email.charAt(0).toUpperCase() : "U"}</AvatarFallback>
+                </Avatar>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOutIcon className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Avatar className="cursor-pointer">
-                <AvatarImage src="" alt="User avatar" />
-                <AvatarFallback>{user.email ? user.email.charAt(0).toUpperCase() : "U"}</AvatarFallback>
-              </Avatar>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleLogout}>
-                <LogOutIcon className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
-      </div>
-      <Button onClick={() => setIsAddRuleOpen(true)} className="mb-4">
-        <PlusIcon className="mr-2 h-4 w-4" /> Add Rule
-      </Button>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Rule Name</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>Actions</TableHead>
-            <TableHead>Edit</TableHead>
-            <TableHead>Delete</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rules.map((rule) => (
-            <TableRow key={rule.id}>
-              <TableCell>{rule.name}</TableCell>
-              <TableCell>{rule.description}</TableCell>
-              <TableCell>{rule.action}</TableCell>
-              <TableCell>
-                <Button variant="ghost" onClick={() => handleEditRule(rule)}>
-                  <PencilIcon className="h-4 w-4" />
-                </Button>
-              </TableCell>
-              <TableCell>
-                <Button variant="ghost" onClick={() => handleDeleteRule(rule.id)}>
-                  <TrashIcon className="h-4 w-4" />
-                </Button>
-              </TableCell>
+        
+        {/* Add Rule Button */}
+        <Button onClick={() => setIsAddRuleOpen(true)} className="mb-4">
+          <PlusIcon className="mr-2 h-4 w-4" /> Add Rule
+        </Button>
+        
+        {/* Rules Table */}
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Rule Name</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Actions</TableHead>
+              <TableHead>Edit</TableHead>
+              <TableHead>Delete</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-
-      <Dialog open={isAddRuleOpen} onOpenChange={setIsAddRuleOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add a New Rule</DialogTitle>
-            <DialogDescription>
-              Choose a prebuilt rule or create a custom one.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4">
-            {prebuiltRules.map((rule) => (
-              <Button key={rule.id} variant="outline" onClick={() => handleAddRule(rule)}>
-                {rule.name}
-              </Button>
+          </TableHeader>
+          <TableBody>
+            {rules.map((rule) => (
+              <TableRow key={rule.id}>
+                <TableCell>{rule.name}</TableCell>
+                <TableCell>{rule.description}</TableCell>
+                <TableCell>
+                  {rule.actions.map((action, idx) => (
+                    <span key={idx} className="block">
+                      {action.type.charAt(0).toUpperCase() + action.type.slice(1)}
+                    </span>
+                  ))}
+                </TableCell>
+                <TableCell>
+                  <Button variant="ghost" onClick={() => handleEditRule(rule)}>
+                    <PencilIcon className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+                <TableCell>
+                  <Button variant="ghost" onClick={() => handleDeleteRule(rule.id)}>
+                    <TrashIcon className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
             ))}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => handleAddRule({ name: "Custom Rule", description: "Create a custom rule" , actions: []})}>
-              Create Custom Rule
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </TableBody>
+        </Table>
 
-      <ConfigureRuleDialog
-        isOpen={isConfigureRuleOpen}
-        onOpenChange={setIsConfigureRuleOpen}
-        prebuiltRule={selectedPrebuiltRule}
-        currentRule={currentRule}
-        onSave={handleSaveRule}
-      />
-    </div>
-  )
+        {/* Add Rule Dialog */}
+        <Dialog open={isAddRuleOpen} onOpenChange={setIsAddRuleOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add a New Rule</DialogTitle>
+              <DialogDescription>
+                Choose a prebuilt rule or create a custom one.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4">
+              {prebuiltRules.map((rule) => (
+                <Button key={rule.id} variant="outline" onClick={() => handleAddRule(rule)}>
+                  {rule.name}
+                </Button>
+              ))}
+            </div>
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => handleAddRule({ id: '', name: "Custom Rule", description: "Create a custom rule", actions: [] })}
+              >
+                Create Custom Rule
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Configure Rule Dialog */}
+        <ConfigureRuleDialog
+          isOpen={isConfigureRuleOpen}
+          onOpenChange={setIsConfigureRuleOpen}
+          prebuiltRule={selectedPrebuiltRule}
+          currentRule={currentRule}
+          onSave={handleSaveRule}
+        />
+      </div>
+    );
+  }
 }
 
+// Dialog component for configuring rules
 function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, onSave }) {
-  const [ruleName, setRuleName] = useState(currentRule?.name || prebuiltRule?.name || '')
-  const [ruleDescription, setRuleDescription] = useState(currentRule?.description || prebuiltRule?.description || '')
-  const [actions, setActions] = useState<any[]>([]);
-  // const [actions, setActions] = useState(currentRule?.actions || prebuiltRule?.actions || [])
+  const [ruleName, setRuleName] = useState(currentRule?.name || prebuiltRule?.name || '');
+  const [ruleDescription, setRuleDescription] = useState(currentRule?.description || prebuiltRule?.description || '');
+  const [actions, setActions] = useState<Action[]>([]);
 
+  // Initialize form fields when dialog opens
   useEffect(() => {
     if (isOpen) {
       if(currentRule) {
-        setRuleName(currentRule.name)
-        setRuleDescription(currentRule.description)
-        setActions(currentRule.actions)
+        setRuleName(currentRule.name);
+        setRuleDescription(currentRule.description);
+        setActions(currentRule.actions);
       } else if (prebuiltRule) {
-        setRuleName(prebuiltRule.name)
-        setRuleDescription(prebuiltRule.description)
-        setActions(prebuiltRule.actions)
+        setRuleName(prebuiltRule.name);
+        setRuleDescription(prebuiltRule.description);
+        setActions(prebuiltRule.actions);
       } else{
-        setRuleName(' ')
-        setRuleDescription(' ')
-        setActions([])
+        setRuleName('');
+        setRuleDescription('');
+        setActions([]);
       }
     }
-  },  [isOpen, currentRule, prebuiltRule])
+  },  [isOpen, currentRule, prebuiltRule]);
 
-  const handleAddAction = (type) => {
-    const newAction = { type, config: {} }
-    setActions([...actions, newAction])
-  }
+  // Add a new action to the rule
+  const handleAddAction = (type: string) => {
+    const newAction: Action = { type, config: {} };
+    setActions([...actions, newAction]);
+  };
 
-  const handleActionConfigChange = (index, config) => {
-    const newActions = [...actions]
-    newActions[index].config = config
-    setActions(newActions)
-  }
+  // Update action configuration
+  const handleActionConfigChange = (index: number, config: Record<string, any>) => {
+    const newActions = [...actions];
+    newActions[index].config = config;
+    setActions(newActions);
+  };
 
-  const handleRemoveAction = (index) => {
-    const newActions = [...actions]
-    newActions.splice(index, 1)
-    setActions(newActions)
-  }
+  // Remove an action from the rule
+  const handleRemoveAction = (index: number) => {
+    const newActions = [...actions];
+    newActions.splice(index, 1);
+    setActions(newActions);
+  };
 
+  // Save the configured rule
   const handleSave = () => {
-    onSave({ name: ruleName, description: ruleDescription, actions })
-    onOpenChange(false)
-  }
+    onSave({ name: ruleName, description: ruleDescription, actions });
+    onOpenChange(false);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -318,6 +365,7 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
+          {/* Rule Name */}
           <div>
             <Label htmlFor="ruleName">Rule Name</Label>
             <Input 
@@ -327,6 +375,8 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
               placeholder="Enter rule name"
             />
           </div>
+          
+          {/* Rule Description */}
           <div>
             <Label htmlFor="ruleDescription">Description</Label>
             <Input 
@@ -336,6 +386,8 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
               placeholder="Enter rule description"
             />
           </div>
+          
+          {/* Action Types */}
           <div>
             <Label>Actions</Label>
             <div className="flex flex-wrap gap-2 mt-2">
@@ -351,6 +403,8 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
               ))}
             </div>
           </div>
+          
+          {/* List of Actions */}
           {actions.map((action, index) => (
             <div key={index} className="border rounded-lg p-4 relative">
               <Button
@@ -376,10 +430,11 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
-function ActionConfig({ action, onConfigChange }) {
+// Component to configure individual actions
+function ActionConfig({ action, onConfigChange }: { action: Action, onConfigChange: (config: Record<string, any>) => void }) {
   switch (action.type) {
     case 'label':
       return (
@@ -389,9 +444,10 @@ function ActionConfig({ action, onConfigChange }) {
             id="labelName"
             value={action.config.labelName || ''}
             onChange={(e) => onConfigChange({ ...action.config, labelName: e.target.value })}
+            placeholder="Enter label name"
           />
         </div>
-      )
+      );
     case 'forward':
       return (
         <div>
@@ -400,9 +456,10 @@ function ActionConfig({ action, onConfigChange }) {
             id="forwardTo"
             value={action.config.forwardTo || ''}
             onChange={(e) => onConfigChange({ ...action.config, forwardTo: e.target.value })}
+            placeholder="Enter email to forward to"
           />
         </div>
-      )
+      );
     case 'draft':
       return (
         <div>
@@ -411,9 +468,10 @@ function ActionConfig({ action, onConfigChange }) {
             id="draftTemplate"
             value={action.config.draftTemplate || ''}
             onChange={(e) => onConfigChange({ ...action.config, draftTemplate: e.target.value })}
+            placeholder="Enter draft message"
           />
         </div>
-      )
+      );
     case 'archive':
       return (
         <div className="flex items-center space-x-2">
@@ -424,7 +482,7 @@ function ActionConfig({ action, onConfigChange }) {
           />
           <Label htmlFor="archiveImmediately">Archive Immediately</Label>
         </div>
-      )
+      );
     case 'favorite':
       return (
         <div className="flex items-center space-x-2">
@@ -435,9 +493,8 @@ function ActionConfig({ action, onConfigChange }) {
           />
           <Label htmlFor="favoriteImmediately">Favorite Immediately</Label>
         </div>
-      )
+      );
     default:
-      return null
+      return null;
   }
-}
 }
