@@ -182,7 +182,7 @@ const handleLogout = async () => {
             <DropdownMenuTrigger asChild>
               <Avatar className="cursor-pointer">
                 <AvatarImage src="" alt="User avatar" />
-                <AvatarFallback>JD</AvatarFallback>
+                <AvatarFallback>{user.email ? user.email.charAt(0).toUpperCase() : "U"}</AvatarFallback>
               </Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
