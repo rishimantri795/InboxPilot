@@ -1,6 +1,8 @@
 'use client'
 
-import { SetStateAction, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation';
+import { SetStateAction, useState, useEffect } from 'react'
+import axios from 'axios';
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -10,7 +12,10 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { PlusIcon, TagIcon, SendIcon, ArchiveIcon, StarIcon, PencilIcon, TrashIcon, LogOutIcon } from 'lucide-react'
+import useCurrentUser from '@/hooks/useCurrentUser';
+import { addRule, deleteRule } from '@/lib/api';
 
+// Prebuilt rules with actions as arrays
 const prebuiltRules = [
   { 
     id: 1, 
@@ -54,202 +59,271 @@ const actionTypes = [
   { value: "favorite", label: "Favorite", icon: StarIcon },
 ]
 
+interface Rule {
+  id: string;
+  name: string;
+  description: string;
+  action: string; // JSON string of actions array
+}
+
 export default function RulesPage() {
-  const [rules, setRules] = useState([])
-  const [isAddRuleOpen, setIsAddRuleOpen] = useState(false)
-  const [isConfigureRuleOpen, setIsConfigureRuleOpen] = useState(false)
-  const [selectedPrebuiltRule, setSelectedPrebuiltRule] = useState(null)
-  const [currentRule, setCurrentRule] = useState(null)
-  const [isLoggedIn, setIsLoggedIn] = useState(true) // Assume user is logged in initially
-  const [user, setUser] = useState({ name: "John Doe", email: "john.doe@example.com" }) // Mock user data
+  const router = useRouter();
+  const [rules, setRules] = useState<Rule[]>([]);
+  const [isAddRuleOpen, setIsAddRuleOpen] = useState(false);
+  const [isConfigureRuleOpen, setIsConfigureRuleOpen] = useState(false);
+  const [selectedPrebuiltRule, setSelectedPrebuiltRule] = useState<Rule | null>(null);
+  const [currentRule, setCurrentRule] = useState<Rule | null>(null);
+  const { user, loading, error } = useCurrentUser();
 
+  useEffect(() => {
+    if (user && user.rules) {
+      const transformedRules: Rule[] = Object.entries(user.rules).map(([key, ruleData]) => ({
+        id: key,
+        name: ruleData.action, // Assuming 'action' holds the rule name
+        description: ruleData.prompt,
+        action: ruleData.type, // Assuming 'type' holds the JSON string of actions
+      }));
+      setRules(transformedRules);
+    }
+  }, [user]);
 
-  const handleAddRule = (prebuiltRule) => {
+  const handleAddRule = (
+    prebuiltRule: 
+      | { id: number; name: string; description: string; actions: { type: string; config: any }[] }
+      | { name: string; description: string }
+  ) => {
     if (prebuiltRule.name === "Custom Rule") {
       // For custom rules, initialize with empty actions array
       setSelectedPrebuiltRule({
         name: "Custom Rule",
         description: "Create a custom rule",
-        actions: [] // Initialize empty actions array
-      })
+        action: JSON.stringify([]) // Initialize empty actions array as JSON string
+      } as Rule)
     } else {
-      // For prebuilt rules, use as is
-      setSelectedPrebuiltRule(prebuiltRule)
+      // For prebuilt rules, serialize actions to JSON string
+      setSelectedPrebuiltRule({
+        id: prebuiltRule.id.toString(),
+        name: prebuiltRule.name,
+        description: prebuiltRule.description,
+        action: JSON.stringify(prebuiltRule.actions)
+      } as Rule)
     }
     setCurrentRule(null) // Clear any previously selected custom rule
     setIsAddRuleOpen(false)
     setIsConfigureRuleOpen(true)  
   }
 
-  const handleSaveRule = (configuredRule: any) => {
+  const handleSaveRule = async (configuredRule: any) => {
+    const serializedRule = {
+      action: configuredRule.name,
+      prompt: configuredRule.description,
+      type: JSON.stringify(configuredRule.actions),
+    };
     if (currentRule) {
-      setRules(rules.map(rule => rule.id === currentRule.id ? configuredRule : rule))
+      setRules(rules.map(rule => rule.id === currentRule.id ? { 
+        ...rule, 
+        name: configuredRule.name, 
+        description: configuredRule.description, 
+        action: serializedRule.type 
+      } : rule));
+      try {
+        await axios.put(`http://localhost:3010/api/users/${user.id}/rules/${currentRule.id}`, serializedRule, { withCredentials: true });
+      } catch (error) {
+        console.error("Failed to update rule:", error);
+      }
     } else {
-      setRules([...rules, { ...configuredRule, id: Date.now() }])
+      const newRule = { 
+        id: Date.now().toString(), 
+        name: configuredRule.name, 
+        description: configuredRule.description, 
+        action: serializedRule.type 
+      };
+      setRules([...rules, newRule]);
+      try {
+        await axios.post(`http://localhost:3010/api/users/${user.id}/rules`, newRule, { withCredentials: true });
+      } catch (error) {
+        console.error("Failed to add rule:", error);
+      }
     }
-    setIsConfigureRuleOpen(false)
-    setCurrentRule(null)
-  }
+    setIsConfigureRuleOpen(false);
+    setCurrentRule(null);
+  };
 
-  const handleEditRule = (rule) => {
+  const handleEditRule = (rule: Rule) => {
     setCurrentRule(rule)
     setIsConfigureRuleOpen(true)
   }
 
-  const handleDeleteRule = (ruleId) => {
-    setRules(rules.filter(rule => rule.id !== ruleId))
+  const handleDeleteRule = async (ruleId: string) => {
+    try {
+      await deleteRule(user.id, ruleId);
+      setRules(rules.filter(rule => rule.id !== ruleId));
+    } catch (error) {
+      console.error("Failed to delete rule:", error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const response = await axios.post("http://localhost:3010/api/users/logout");
+      if (response.status === 200) {
+        console.log("Logged out successfully");
+        router.push("landing-page")
+      } else {
+        console.error("Failed to log out", response.data);
+      }
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
   }
 
-  const handleLogout = () => {
-    setIsLoggedIn(false)
-    setUser(null)
-    // Implement actual logout logic here
-  }
-
-  const handleLogin = () => {
-    setIsLoggedIn(true)
-    setUser({ name: "John Doe", email: "john.doe@example.com" }) // Mock user data
-    // Implement actual login logic here
-  }
-
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Email Rules</h1>
-        <div className="flex items-center space-x-4">
-          {isLoggedIn && (
+  if (loading) {
+    return <div>Loading...</div>;
+  } else if (!user) {
+    router.push("/");
+    return null; // Prevent rendering below code when redirecting
+  } else if (error) {
+    return <div>Error: {error}</div>;
+  } else {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Email Rules</h1>
+          <div className="flex items-center space-x-4">
             <div className="text-right">
-              <p className="font-medium">{user.name}</p>
+              <p className="font-medium">{user.name}</p> 
               <p className="text-sm text-gray-500">{user.email}</p>
             </div>
-          )}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Avatar className="cursor-pointer">
-                <AvatarImage src="" alt="User avatar" />
-                <AvatarFallback>JD</AvatarFallback>
-              </Avatar>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {isLoggedIn ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Avatar className="cursor-pointer">
+                  <AvatarImage src="" alt="User avatar" />
+                  <AvatarFallback>{user.email ? user.email.charAt(0).toUpperCase() : "U"}</AvatarFallback>
+                </Avatar>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOutIcon className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem onClick={handleLogin}>
-                  <LogOutIcon className="mr-2 h-4 w-4" />
-                  <span>Log in</span>
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-      <Button onClick={() => setIsAddRuleOpen(true)} className="mb-4">
-        <PlusIcon className="mr-2 h-4 w-4" /> Add Rule
-      </Button>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Rule Name</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>Actions</TableHead>
-            <TableHead>Edit</TableHead>
-            <TableHead>Delete</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rules.map((rule) => (
-            <TableRow key={rule.id}>
-              <TableCell>{rule.name}</TableCell>
-              <TableCell>{rule.description}</TableCell>
-              <TableCell>{rule.actions.map(action => action.type).join(', ')}</TableCell>
-              <TableCell>
-                <Button variant="ghost" onClick={() => handleEditRule(rule)}>
-                  <PencilIcon className="h-4 w-4" />
-                </Button>
-              </TableCell>
-              <TableCell>
-                <Button variant="ghost" onClick={() => handleDeleteRule(rule.id)}>
-                  <TrashIcon className="h-4 w-4" />
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-
-      <Dialog open={isAddRuleOpen} onOpenChange={setIsAddRuleOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add a New Rule</DialogTitle>
-            <DialogDescription>
-              Choose a prebuilt rule or create a custom one.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4">
-            {prebuiltRules.map((rule) => (
-              <Button key={rule.id} variant="outline" onClick={() => handleAddRule(rule)}>
-                {rule.name}
-              </Button>
-            ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => handleAddRule({ name: "Custom Rule", description: "Create a custom rule" , actions: []})}>
-              Create Custom Rule
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+        <Button onClick={() => setIsAddRuleOpen(true)} className="mb-4">
+          <PlusIcon className="mr-2 h-4 w-4" /> Add Rule
+        </Button>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Rule Name</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Actions</TableHead>
+              <TableHead>Edit</TableHead>
+              <TableHead>Delete</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rules.map((rule) => (
+              <TableRow key={rule.id}>
+                <TableCell>{rule.name}</TableCell>
+                <TableCell>{rule.description}</TableCell>
+                <TableCell>{rule.action}</TableCell> {/* Displaying action as JSON string */}
+                <TableCell>
+                  <Button variant="ghost" onClick={() => handleEditRule(rule)}>
+                    <PencilIcon className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+                <TableCell>
+                  <Button variant="ghost" onClick={() => handleDeleteRule(rule.id)}>
+                    <TrashIcon className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
 
-      <ConfigureRuleDialog
-        isOpen={isConfigureRuleOpen}
-        onOpenChange={setIsConfigureRuleOpen}
-        prebuiltRule={selectedPrebuiltRule}
-        currentRule={currentRule}
-        onSave={handleSaveRule}
-      />
-    </div>
-  )
+        <Dialog open={isAddRuleOpen} onOpenChange={setIsAddRuleOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add a New Rule</DialogTitle>
+              <DialogDescription>
+                Choose a prebuilt rule or create a custom one.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4">
+              {prebuiltRules.map((rule) => (
+                <Button key={rule.id} variant="outline" onClick={() => handleAddRule(rule)}>
+                  {rule.name}
+                </Button>
+              ))}
+            </div>
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => handleAddRule({ name: "Custom Rule", description: "Create a custom rule" })}
+              >
+                Create Custom Rule
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <ConfigureRuleDialog
+          isOpen={isConfigureRuleOpen}
+          onOpenChange={setIsConfigureRuleOpen}
+          prebuiltRule={selectedPrebuiltRule}
+          currentRule={currentRule}
+          onSave={handleSaveRule}
+        />
+      </div>
+    )
+  }
 }
 
 function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, onSave }) {
   const [ruleName, setRuleName] = useState(currentRule?.name || prebuiltRule?.name || '')
   const [ruleDescription, setRuleDescription] = useState(currentRule?.description || prebuiltRule?.description || '')
-  const [actions, setActions] = useState<any[]>([]);
-  // const [actions, setActions] = useState(currentRule?.actions || prebuiltRule?.actions || [])
+  const [actions, setActions] = useState<any[]>([])
 
   useEffect(() => {
     if (isOpen) {
       if(currentRule) {
         setRuleName(currentRule.name)
         setRuleDescription(currentRule.description)
-        setActions(currentRule.actions)
+        try {
+          setActions(JSON.parse(currentRule.action))
+        } catch (e) {
+          setActions([])
+        }
       } else if (prebuiltRule) {
         setRuleName(prebuiltRule.name)
         setRuleDescription(prebuiltRule.description)
-        setActions(prebuiltRule.actions)
+        try {
+          setActions(JSON.parse(prebuiltRule.action))
+        } catch (e) {
+          setActions([])
+        }
       } else{
-        setRuleName(' ')
-        setRuleDescription(' ')
+        setRuleName('')
+        setRuleDescription('')
         setActions([])
       }
     }
   },  [isOpen, currentRule, prebuiltRule])
 
-  const handleAddAction = (type) => {
-    const newAction = { type, config: {} }
-    setActions([...actions, newAction])
+  const handleAddAction = (type: string) => {
+    setActions([...actions, { type, config: {} }])
   }
 
-  const handleActionConfigChange = (index, config) => {
+  const handleActionConfigChange = (index: number, config: any) => {
     const newActions = [...actions]
     newActions[index].config = config
     setActions(newActions)
   }
 
-  const handleRemoveAction = (index) => {
+  const handleRemoveAction = (index: number) => {
     const newActions = [...actions]
     newActions.splice(index, 1)
     setActions(newActions)
