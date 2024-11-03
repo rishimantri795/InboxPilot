@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
 interface User {
@@ -22,14 +22,14 @@ const useCurrentUser = () => {
     const fetchCurrentUser = async () => {
       try {
         const response: { data: ResponseData } = await axios.get("http://localhost:3010/api/users/current-user", {
-          withCredentials: true, // Ensure cookies are sent with the request
+          withCredentials: true,
         });
 
         if (response.data.user) {
           const mappedUser: User = {
             id: response.data.user.id,
             email: response.data.user.email,
-            rules: response.data.user.Rules,
+            rules: response.data.user.rules,
             refreshToken: response.data.user.refreshToken,
             createdAt: response.data.user.createdAt,
           };
@@ -51,7 +51,11 @@ const useCurrentUser = () => {
     fetchCurrentUser();
   }, []);
 
-  return { user, loading, error };
+  const clearUser = useCallback(() => {
+    setUser(null);
+  }, []);
+
+  return { user, loading, error, clearUser };
 };
 
 export default useCurrentUser;
