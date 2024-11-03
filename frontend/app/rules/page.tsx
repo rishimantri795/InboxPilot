@@ -181,10 +181,7 @@ export default function RulesPage() {
       if (response.status === 200) {
         console.log("Logged out successfully");
         // clearUser();
-        setTimeout(() => clearUser(), 0);
-        // setLogoutSuccess(true);
-        setTimeout(() => setLogoutSuccess(true), 0);
-        // router.push("landing-page");
+        // setTimeout(() => clearUser(), 0);
       } else {
         console.error("Failed to log out", response.data);
       }
@@ -193,18 +190,11 @@ export default function RulesPage() {
     }
   };
 
-  useEffect(() => {
-    if (logoutSuccess) {
-      router.push("/");
-      setLogoutSuccess(false);
-    }
-  }, [logoutSuccess, router]);
-
   // Handle loading and error states
   if (loading) {
     return <div>Loading...</div>;
   } else if (!user) {
-    router.push("landing-page");
+    router.push("/");
     return null; // Prevent rendering below
   } else if (error) {
     return <div>Error: {error}</div>;

@@ -131,9 +131,9 @@ export default function Home() {
         </Link>
       </div>
       <div className="mt-4">
-        <Link href="/landing-page">
+        <Link href="/">
           <button>
-            Go to add landing page
+            Go to landing page
           </button>
         </Link>
       </div>

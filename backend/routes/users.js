@@ -22,7 +22,7 @@ router.get("/google/auth", (req, res) => {
 router.get(
   "/google/auth/callback",
   passport.authenticate("google", {
-    failureRedirect: "http://localhost:3000/landing-page",
+    failureRedirect: "http://localhost:3000/",
   }),
   async (req, res) => {
     try {
@@ -120,6 +120,7 @@ router.post("/verifyRefreshToken", async (req, res) => {
 });
 
 router.get("/current-user", (req, res) => {
+  console.log("Is authenticated cookies:", req.cookies);
   if (req.isAuthenticated()) {
     res.json({ user: req.user });
   } else {
@@ -128,6 +129,7 @@ router.get("/current-user", (req, res) => {
 });
 
 router.post("/logout", (req, res) => {
+  console.log("Cookies before clearing:", req.cookies);
   req.logout(function(err) {
     if (err) { 
       console.error("Error during logout:", err);
