@@ -70,13 +70,12 @@ export default function Component() {
                 </div>
               </div>
               <div className="flex justify-center lg:justify-end">
-                <Image
-                  src="/placeholder.svg?height=400&width=400"
-                  alt="InboxPilot Dashboard"
-                  width={400}
-                  height={400}
-                  className="rounded-lg object-cover"
-                />
+                <div className="relative w-[300px] h-[300px] lg:w-[400px] lg:h-[400px]">
+                  <div className="absolute inset-0 bg-black transform -skew-y-6 rounded-3xl"></div>
+                  <div className="absolute inset-4 bg-white dark:bg-gray-800 transform -skew-y-6 rounded-2xl flex items-center justify-center">
+                    <Mail className="w-24 h-24 text-black-500" />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -86,32 +85,32 @@ export default function Component() {
             <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-center mb-12">Key Features</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
               <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
-                <Mail className="h-12 w-12 mb-4 text-blue-500" />
+                <Mail className="h-12 w-12 mb-4 text-black-500" />
                 <h3 className="text-xl font-bold mb-2">Smart Email Grouping</h3>
                 <p className="text-gray-500 dark:text-gray-400">Automatically organize your emails into logical groups.</p>
               </div>
               <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
-                <Tag className="h-12 w-12 mb-4 text-blue-500" />
+                <Tag className="h-12 w-12 mb-4 text-black-500" />
                 <h3 className="text-xl font-bold mb-2">Intelligent Labeling</h3>
                 <p className="text-gray-500 dark:text-gray-400">Apply labels to your emails based on content and context.</p>
               </div>
               <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
-                <MessageSquare className="h-12 w-12 mb-4 text-blue-500" />
+                <MessageSquare className="h-12 w-12 mb-4 text-black-500" />
                 <h3 className="text-xl font-bold mb-2">Auto-Draft Responses</h3>
                 <p className="text-gray-500 dark:text-gray-400">Generate draft responses for common email types.</p>
               </div>
               <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
-                <Archive className="h-12 w-12 mb-4 text-blue-500" />
+                <Archive className="h-12 w-12 mb-4 text-black-500" />
                 <h3 className="text-xl font-bold mb-2">Smart Archiving</h3>
                 <p className="text-gray-500 dark:text-gray-400">Automatically archive emails based on your rules.</p>
               </div>
               <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
-                <Zap className="h-12 w-12 mb-4 text-blue-500" />
+                <Zap className="h-12 w-12 mb-4 text-black-500" />
                 <h3 className="text-xl font-bold mb-2">Natural Language Rules</h3>
                 <p className="text-gray-500 dark:text-gray-400">Create automation rules using simple, natural language.</p>
               </div>
               <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
-                <Inbox className="h-12 w-12 mb-4 text-blue-500" />
+                <Inbox className="h-12 w-12 mb-4 text-black-500" />
                 <h3 className="text-xl font-bold mb-2">Gmail Integration</h3>
                 <p className="text-gray-500 dark:text-gray-400">Seamlessly integrates with your Gmail account.</p>
               </div>
@@ -123,17 +122,17 @@ export default function Component() {
             <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-center mb-12">How It Works</h2>
             <ol className="grid grid-cols-1 md:grid-cols-3 gap-6 justify-items-center">
               <li className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
-                <div className="w-12 h-12 rounded-full bg-blue-500 text-white flex items-center justify-center mb-4 text-xl font-bold">1</div>
+                <div className="w-12 h-12 rounded-full bg-gray-800 text-white flex items-center justify-center mb-4 text-xl font-bold">1</div>
                 <h3 className="text-xl font-bold mb-2">Create Rules</h3>
                 <p className="text-gray-500 dark:text-gray-400">Set up natural language rules for email management.</p>
               </li>
               <li className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
-                <div className="w-12 h-12 rounded-full bg-blue-500 text-white flex items-center justify-center mb-4 text-xl font-bold">2</div>
+                <div className="w-12 h-12 rounded-full bg-gray-800 text-white flex items-center justify-center mb-4 text-xl font-bold">2</div>
                 <h3 className="text-xl font-bold mb-2">AI Processing</h3>
                 <p className="text-gray-500 dark:text-gray-400">Our AI analyzes your emails based on your rules.</p>
               </li>
               <li className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
-                <div className="w-12 h-12 rounded-full bg-blue-500 text-white flex items-center justify-center mb-4 text-xl font-bold">3</div>
+                <div className="w-12 h-12 rounded-full bg-gray-800 text-white flex items-center justify-center mb-4 text-xl font-bold">3</div>
                 <h3 className="text-xl font-bold mb-2">Automated Actions</h3>
                 <p className="text-gray-500 dark:text-gray-400">InboxPilot performs actions to organize your inbox.</p>
               </li>
