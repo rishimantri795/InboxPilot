@@ -174,21 +174,26 @@ export default function RulesPage() {
 
   // Handle user logout
   const handleLogout = async () => {
-    try {
-      const response = await axios.post("http://localhost:3010/api/users/logout", {
-        withCredentials: true,
-      });
-      if (response.status === 200) {
-        console.log("Logged out successfully");
-        // clearUser();
-        // setTimeout(() => clearUser(), 0);
-      } else {
-        console.error("Failed to log out", response.data);
-      }
-    } catch (error) {
-      console.error("Error logging out:", error);
+  try {
+    const response = await fetch("http://localhost:3010/api/users/logout", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    if (response.ok) {
+      console.log("Logged out");
+      router.push("/");
+    } else {
+      const errorData = await response.json();
+      console.error("Failed to log out", errorData);
     }
-  };
+  } catch (error) {
+    console.error("Error logging out:", error);
+  }
+};
+
 
   // Handle loading and error states
   if (loading) {
