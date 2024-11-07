@@ -69,7 +69,7 @@ export default function Component() {
                   <Button variant="outline">Learn More</Button>
                 </div>
               </div>
-              <div className="flex justify-center lg:justify-end">
+              <div className="flex justify-center lg:justify-end[50px]">
                 <div className="relative w-[300px] h-[300px] lg:w-[400px] lg:h-[400px]">
                   <div className="absolute inset-0 bg-black transform -skew-y-6 rounded-3xl"></div>
                   <div className="absolute inset-4 bg-white dark:bg-gray-800 transform -skew-y-6 rounded-2xl flex items-center justify-center">
@@ -174,7 +174,7 @@ export default function Component() {
           <div className="container px-4 md:px-6 mx-auto">
             <div className="flex flex-col items-center space-y-4 text-center">
               <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Ready to Pilot Your Inbox?</h2>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Ready to take Flight?</h2>
                 <p className="mx-auto max-w-[600px] text-gray-500 md:text-xl dark:text-gray-400">
                   Join InboxPilot today and experience the future of email management.
                 </p>
@@ -182,7 +182,7 @@ export default function Component() {
               <div className="w-full max-w-sm space-y-2">
                 <form className="flex space-x-2">
                   <Input className="max-w-lg flex-1" placeholder="Enter your email" type="email" />
-                  <Button type="submit">Get Started</Button>
+                  <Button type="submit">Join the Waitlist</Button>
                 </form>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   By signing up, you agree to our{" "}
