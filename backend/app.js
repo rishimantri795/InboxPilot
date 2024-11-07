@@ -13,6 +13,7 @@ require("./middleware/passport.js");
 
 const app = express();
 const users = require("./routes/users");
+const { access } = require("fs");
 
 // Bull queue configuration
 const taskQueue = new Bull("task-queue", {
@@ -79,12 +80,21 @@ app.post("/notifications", async (req, res) => {
           );
           return res.status(204).send();
         }
+        console.log(user.refreshToken);
+
+        const accessToken = await getAccessTokenFromRefreshToken(
+          user.refreshToken
+        );
 
         // Add job to the Bull queue
-        await taskQueue.add({ email: emailAddress, historyId: newHistoryId });
+        await taskQueue.add({
+          email: emailAddress,
+          historyId: user.historyId,
+          accessToken: accessToken,
+        });
 
         console.log(
-          `Queued task for email: ${emailAddress}, historyId: ${newHistoryId}`
+          `Queued task for email: ${emailAddress}, historyId: ${user.historyId}`
         );
 
         // Update the user's historyId in Firestore
@@ -105,39 +115,6 @@ app.post("/notifications", async (req, res) => {
 });
 
 // Process the Bull queue
-taskQueue.process(async (job) => {
-  const { email, historyId } = job.data;
-
-  try {
-    // Fetch the user's access token using the refresh token
-    const userSnapshot = await db
-      .collection("Users")
-      .where("email", "==", email)
-      .limit(1)
-      .get();
-
-    if (!userSnapshot.empty) {
-      const userDoc = userSnapshot.docs[0];
-      const user = userDoc.data();
-
-      const accessToken = await getAccessTokenFromRefreshToken(
-        user.refreshToken
-      );
-
-      // Fetch the latest email history from Gmail
-      await fetchEmailHistory(accessToken, historyId);
-
-      console.log(
-        `Processed task for email: ${email}, historyId: ${historyId}`
-      );
-    } else {
-      console.log(`User with email ${email} not found in Firestore.`);
-    }
-  } catch (error) {
-    console.error("Error processing job:", error);
-    throw error; // Rethrow error to allow Bull to handle retries
-  }
-});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
