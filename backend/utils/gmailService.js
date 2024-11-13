@@ -327,6 +327,85 @@ async function getOrCreatePriorityLabel(accessToken) {
   }
 }
 
+async function archiveEmail(accessToken, messageId) {
+  const archiveEndpoint = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}/modify`;
+
+  try {
+    await axios.post(
+      archiveEndpoint,
+      {
+        removeLabelIds: ["INBOX"],
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    console.log(`Email ${messageId} archived successfully.`);
+  } catch (error) {
+    console.error(
+      `Error archiving email ID ${messageId}:`,
+      error.response ? error.response.data : error.message
+    );
+  }
+}
+
+async function forwardEmail(accessToken, messageId, forwardToEmail) {
+  const emailContentEndpoint = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}`;
+  const sendEmailEndpoint = `https://gmail.googleapis.com/gmail/v1/users/me/messages/send`;
+
+  try {
+    const response = await axios.get(emailContentEndpoint, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/json",
+      },
+      params: { format: "full" },
+    });
+
+    const originalMessageId = response.data.payload.headers.find(
+      (header) => header.name === "Message-ID"
+    )?.value;
+
+    const subject = response.data.payload.headers.find(
+      (header) => header.name === "Subject"
+    )?.value;
+
+    const emailContent = [
+      `To: ${forwardToEmail}`,
+      `Subject: Fwd: ${subject}`,
+      `In-Reply-To: ${originalMessageId}`,
+      `References: ${originalMessageId}`,
+      "",
+      Buffer.from(response.data.raw, "base64").toString("utf-8"),
+    ].join("\n");
+
+    const encodedMessage = Buffer.from(emailContent).toString("base64");
+
+    await axios.post(
+      sendEmailEndpoint,
+      {
+        raw: encodedMessage,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log(`Email ${messageId} forwarded to ${forwardToEmail} successfully.`);
+  } catch (error) {
+    console.error(
+      `Error forwarding email ID ${messageId}:`,
+      error.response ? error.response.data : error.message
+    );
+  }
+}
+
 module.exports = {
   accessGmailApi,
   getMessageDetails,
@@ -336,4 +415,6 @@ module.exports = {
   fetchEmailHistoryAndApplyLabel,
   getOrCreatePriorityLabel,
   fetchEmailHistoryWithRetry,
+  archiveEmail,
+  forwardEmail,
 };
