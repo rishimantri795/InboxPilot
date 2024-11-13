@@ -46,7 +46,7 @@ const prebuiltRules = [
     name: "Auto-Reply to Out of Office", 
     description: "Send automatic replies when out of office",
     actions: [
-      { type: "draft", config: { draftTemplate: "I'm currently out of office and will reply upon my return." } }
+      { type: "draft", config: { /*draftTo: "forward@example.com",*/ draftTemplate: "I'm currently out of office and will reply upon my return." } }
     ]
   },
 ];
@@ -479,6 +479,13 @@ function ActionConfig({ action, onConfigChange }: { action: Action, onConfigChan
       return (
         <div>
           <Label htmlFor="draftTemplate">Draft Template</Label>
+          {/* <Input
+            id="draftTo"
+            value={action.config.draftTo || ''}
+            onChange={(e) => onConfigChange({ ...action.config, draftTo: e.target.value })}
+            placeholder="Enter email to draft to"
+          /> */}
+
           <Input
             id="draftTemplate"
             value={action.config.draftTemplate || ''}
