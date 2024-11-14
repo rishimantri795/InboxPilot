@@ -406,6 +406,75 @@ async function forwardEmail(accessToken, messageId, forwardToEmail) {
   }
 }
 
+const axios = require('axios');
+
+async function createForwardingAddress(accessToken, forwardingEmail) {
+  const forwardingAddressEndpoint = `https://gmail.googleapis.com/gmail/v1/users/me/settings/forwardingAddresses`;
+  
+  try {
+    const response = await axios.post(
+      forwardingAddressEndpoint,
+      { forwardingEmail },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    console.log(`Forwarding address ${forwardingEmail} created. Check your inbox to verify it if necessary.`);
+  } catch (error) {
+    console.error(
+      `Error creating forwarding address:`,
+      error.response ? error.response.data : error.message
+    );
+    return;
+  }
+}
+
+async function checkForwardingVerification(accessToken, forwardingEmail) {
+  const listEndpoint = `https://gmail.googleapis.com/gmail/v1/users/me/settings/forwardingAddresses`;
+  
+  const response = await axios.get(listEndpoint, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  const forwardingAddresses = response.data.forwardingAddresses || [];
+  return forwardingAddresses.some(
+    (address) => address.forwardingEmail === forwardingEmail && address.verificationStatus === 'accepted'
+  );
+}
+
+async function createFilter(accessToken, forwardingEmail, criteria) {
+  const filterEndpoint = `https://gmail.googleapis.com/gmail/v1/users/me/settings/filters`;
+
+  try {
+    const response = await axios.post(
+      filterEndpoint,
+      {
+        criteria,
+        action: { forward: forwardingEmail },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    console.log(`Filter created successfully for forwarding to ${forwardingEmail}.`);
+  } catch (error) {
+    console.error(
+      `Error creating filter for forwarding:`,
+      error.response ? error.response.data : error.message
+    );
+  }
+}
+
 module.exports = {
   accessGmailApi,
   getMessageDetails,
