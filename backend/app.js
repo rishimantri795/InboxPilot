@@ -38,11 +38,11 @@ app.use(
     secret: "your-secure-secret", // Use a strong, secure secret in production
     resave: false,
     saveUninitialized: false,
-    cookie: { 
+    cookie: {
       secure: false, // Set to true if using HTTPS
-      sameSite: 'lax' // Adjust based on your needs
+      sameSite: "lax", // Adjust based on your needs
     },
-    name: "connect.sid" // Optional: customize the cookie name
+    name: "connect.sid", // Optional: customize the cookie name
   })
 );
 
@@ -76,7 +76,9 @@ app.post("/notifications", async (req, res) => {
 
       if (!userSnapshot.empty) {
         const userDoc = userSnapshot.docs[0];
+
         const user = userDoc.data();
+        console.log(user.id);
 
         if (user.historyId && user.historyId === newHistoryId) {
           console.log(
@@ -95,10 +97,12 @@ app.post("/notifications", async (req, res) => {
           email: emailAddress,
           historyId: user.historyId,
           accessToken: accessToken,
+          rules: user.rules,
         });
 
         console.log(
-          `Queued task for email: ${emailAddress}, historyId: ${user.historyId}`
+          `Queued task for email: ${emailAddress}, historyId: ${user.historyId}`,
+          user.rules
         );
 
         // Update the user's historyId in Firestore
