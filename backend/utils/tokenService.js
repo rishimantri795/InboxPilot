@@ -31,4 +31,31 @@ async function getAccessTokenFromRefreshToken(storedRefreshToken) {
   }
 }
 
+async function validRefreshToken(refreshToken) {
+  const tokenEndpoint = "https://oauth2.googleapis.com/token";
+
+  const params = new URLSearchParams();
+  params.append("client_id", process.env.CLIENT_ID);
+  params.append("client_secret", process.env.CLIENT_SECRET);
+  params.append("refresh_token", refreshToken);
+  params.append("grant_type", "refresh_token");
+
+  try {
+    const response = await axios.post(tokenEndpoint, params.toString(), {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      httpsAgent: agent,
+    });
+
+    if (response.data.access_token) {
+      return true;
+    } else {
+      return false;
+    }
+  } catch (error) {
+    console.error("Error fetching access token:", error.response.data);
+  }
+}
+
 module.exports = { getAccessTokenFromRefreshToken };
