@@ -346,6 +346,14 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
 
   // Add a new action to the rule
   const handleAddAction = (type: string) => {
+    const restrictedTypes = ['draft', 'archive', 'favorite'];
+    if (restrictedTypes.includes(type)) {
+      const hasExisting = actions.some((action) => action.type === type);
+      if (hasExisting) {
+        console.log("Illegal action");
+        return;
+      }
+    }
     const newAction: Action = { type, config: {} };
     setActions([...actions, newAction]);
   };
@@ -362,6 +370,23 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
     const newActions = [...actions];
     newActions.splice(index, 1);
     setActions(newActions);
+  };
+
+  const canSaveRule = () => {
+    if (!ruleName.trim() || !ruleDescription.trim()) return false;
+
+    const hasFavoriteOrArchive = actions.some(
+      (action) => action.type === 'favorite' || action.type === 'archive'
+    );
+
+    const hasNonEmptyTextInput = actions.some((action) => {
+      if (action.type === 'label') return !!action.config.labelName?.trim();
+      if (action.type === 'forward') return !!action.config.forwardTo?.trim();
+      if (action.type === 'draft') return !!action.config.draftTemplate?.trim();
+      return false;
+    });
+
+    return hasFavoriteOrArchive || hasNonEmptyTextInput;
   };
 
   // Save the configured rule
@@ -439,7 +464,7 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSave} disabled={!ruleName || actions.length === 0}>
+          <Button onClick={handleSave} disabled={!canSaveRule()}>
             {currentRule ? 'Update Rule' : 'Save Rule'}
           </Button>
         </DialogFooter>
