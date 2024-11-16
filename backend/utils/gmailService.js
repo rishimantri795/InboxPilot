@@ -406,8 +406,6 @@ async function forwardEmail(accessToken, messageId, forwardToEmail) {
   }
 }
 
-const axios = require('axios');
-
 async function createForwardingAddress(accessToken, forwardingEmail) {
   const forwardingAddressEndpoint = `https://gmail.googleapis.com/gmail/v1/users/me/settings/forwardingAddresses`;
   

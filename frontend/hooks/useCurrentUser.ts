@@ -26,6 +26,7 @@ const useCurrentUser = () => {
         });
 
         if (response.data.user) {
+          console.log(response.data.user);
           const mappedUser: User = {
             id: response.data.user.id,
             email: response.data.user.email,
