@@ -14,6 +14,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { PlusIcon, TagIcon, SendIcon, ArchiveIcon, StarIcon, PencilIcon, TrashIcon, LogOutIcon } from 'lucide-react';
 import useCurrentUser from '@/hooks/useCurrentUser';
 import { addRule, deleteRule } from '@/lib/api';
+import { toast, ToastContainer, Zoom } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Prebuilt rules with actions as arrays
 const prebuiltRules = [
@@ -205,6 +207,10 @@ export default function RulesPage() {
     return <div>Error: {error}</div>;
   } else {
     return (
+      <>
+      <ToastContainer
+        transition={Zoom} // Apply fade transition
+      />
       <div className="container mx-auto px-4 py-8">
         {/* Header Section */}
         <div className="flex justify-between items-center mb-6">
@@ -315,6 +321,7 @@ export default function RulesPage() {
           onSave={handleSaveRule}
         />
       </div>
+    </>
     );
   }
 }
@@ -356,7 +363,13 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
     if (restrictedTypes.includes(type)) {
       const hasExisting = actions.some((action) => action.type === type);
       if (hasExisting) {
-        console.log("Illegal action");
+        toast.dismiss();
+        toast.error(`You can only have one ${type} action.`, {
+          position: "bottom-right",
+          autoClose: 1000,
+          hideProgressBar: true,
+          closeOnClick: true,
+        });
         return;
       }
     }
