@@ -375,18 +375,13 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
   const canSaveRule = () => {
     if (!ruleName.trim() || !ruleDescription.trim()) return false;
 
-    const hasFavoriteOrArchive = actions.some(
-      (action) => action.type === 'favorite' || action.type === 'archive'
-    );
+    for (const action of actions) {
+      if (action.type === 'label' && !action.config.labelName?.trim()) return false;
+      if (action.type === 'forward' && !action.config.forwardTo?.trim()) return false;
+      if (action.type === 'draft' && !action.config.draftTemplate?.trim()) return false;
+    }
 
-    const hasNonEmptyTextInput = actions.some((action) => {
-      if (action.type === 'label') return !!action.config.labelName?.trim();
-      if (action.type === 'forward') return !!action.config.forwardTo?.trim();
-      if (action.type === 'draft') return !!action.config.draftTemplate?.trim();
-      return false;
-    });
-
-    return hasFavoriteOrArchive || hasNonEmptyTextInput;
+    return actions.length > 0;
   };
 
   // Save the configured rule
