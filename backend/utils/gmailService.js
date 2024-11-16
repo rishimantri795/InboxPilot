@@ -151,6 +151,73 @@ async function applyLabelToEmail(accessToken, messageId, labelId) {
   }
 }
 
+async function favouriteEmail(accessToken, messageId, labelId) {
+  const messageEndpoint = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}/modify`;
+
+  // Not sure if it would work, but after some research, The only way to favourite an email is by labeing it as STARRED  
+  // labeling an email as STARRED is how gmail knows that it is a favourited email
+  try {
+    await axios.post(
+      messageEndpoint,
+      {
+        addLabelIds: ["STARRED"], // Adds the "STARRED" label
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    console.log(`Label ${labelId} applied to email ${messageId}`);
+  } catch (error) {
+    console.error(
+      `Error applying label to message ID ${messageId}:`,
+      error.response ? error.response.data : error.message
+    );
+  }
+}
+
+async function createDraftEmail(accessToken, to, subject, messageDescription) {
+  const draftEndpoint = 'https://gmail.googleapis.com/gmail/v1/users/me/drafts';
+
+  // Construct the raw email content
+  const emailContent = [
+    `To: ${to}`,
+    `Subject: ${subject}`,
+    '',
+    messageDescription,
+  ].join('\n');
+
+  // Encode the email content in base64
+  const encodedMessage = Buffer.from(emailContent);
+
+  try {
+    // Send the request to create a draft
+    const response = await axios.post(
+      draftEndpoint,
+      {
+        message: {
+          raw: encodedMessage,
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    console.log(`Draft created with ID: ${response.data.id}`);
+  } catch (error) {
+    console.error(
+      `Error creating draft email:`,
+      error.response ? error.response.data : error.message
+    );
+  }
+}
+
+
 // Fetch email history and apply labels to new messages
 async function fetchEmailHistoryAndApplyLabel(accessToken, historyId) {
   const gmailEndpoint = `https://gmail.googleapis.com/gmail/v1/users/me/history`;
@@ -260,6 +327,154 @@ async function getOrCreatePriorityLabel(accessToken) {
   }
 }
 
+async function archiveEmail(accessToken, messageId) {
+  const archiveEndpoint = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}/modify`;
+
+  try {
+    await axios.post(
+      archiveEndpoint,
+      {
+        removeLabelIds: ["INBOX"],
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    console.log(`Email ${messageId} archived successfully.`);
+  } catch (error) {
+    console.error(
+      `Error archiving email ID ${messageId}:`,
+      error.response ? error.response.data : error.message
+    );
+  }
+}
+
+async function forwardEmail(accessToken, messageId, forwardToEmail) {
+  const emailContentEndpoint = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}`;
+  const sendEmailEndpoint = `https://gmail.googleapis.com/gmail/v1/users/me/messages/send`;
+
+  try {
+    const response = await axios.get(emailContentEndpoint, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/json",
+      },
+      params: { format: "full" },
+    });
+
+    const originalMessageId = response.data.payload.headers.find(
+      (header) => header.name === "Message-ID"
+    )?.value;
+
+    const subject = response.data.payload.headers.find(
+      (header) => header.name === "Subject"
+    )?.value;
+
+    const emailContent = [
+      `To: ${forwardToEmail}`,
+      `Subject: Fwd: ${subject}`,
+      `In-Reply-To: ${originalMessageId}`,
+      `References: ${originalMessageId}`,
+      "",
+      Buffer.from(response.data.raw, "base64").toString("utf-8"),
+    ].join("\n");
+
+    const encodedMessage = Buffer.from(emailContent).toString("base64");
+
+    await axios.post(
+      sendEmailEndpoint,
+      {
+        raw: encodedMessage,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log(`Email ${messageId} forwarded to ${forwardToEmail} successfully.`);
+  } catch (error) {
+    console.error(
+      `Error forwarding email ID ${messageId}:`,
+      error.response ? error.response.data : error.message
+    );
+  }
+}
+
+const axios = require('axios');
+
+async function createForwardingAddress(accessToken, forwardingEmail) {
+  const forwardingAddressEndpoint = `https://gmail.googleapis.com/gmail/v1/users/me/settings/forwardingAddresses`;
+  
+  try {
+    const response = await axios.post(
+      forwardingAddressEndpoint,
+      { forwardingEmail },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    console.log(`Forwarding address ${forwardingEmail} created. Check your inbox to verify it if necessary.`);
+  } catch (error) {
+    console.error(
+      `Error creating forwarding address:`,
+      error.response ? error.response.data : error.message
+    );
+    return;
+  }
+}
+
+async function checkForwardingVerification(accessToken, forwardingEmail) {
+  const listEndpoint = `https://gmail.googleapis.com/gmail/v1/users/me/settings/forwardingAddresses`;
+  
+  const response = await axios.get(listEndpoint, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  const forwardingAddresses = response.data.forwardingAddresses || [];
+  return forwardingAddresses.some(
+    (address) => address.forwardingEmail === forwardingEmail && address.verificationStatus === 'accepted'
+  );
+}
+
+async function createFilter(accessToken, forwardingEmail, criteria) {
+  const filterEndpoint = `https://gmail.googleapis.com/gmail/v1/users/me/settings/filters`;
+
+  try {
+    const response = await axios.post(
+      filterEndpoint,
+      {
+        criteria,
+        action: { forward: forwardingEmail },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    console.log(`Filter created successfully for forwarding to ${forwardingEmail}.`);
+  } catch (error) {
+    console.error(
+      `Error creating filter for forwarding:`,
+      error.response ? error.response.data : error.message
+    );
+  }
+}
+
 module.exports = {
   accessGmailApi,
   getMessageDetails,
@@ -269,4 +484,6 @@ module.exports = {
   fetchEmailHistoryAndApplyLabel,
   getOrCreatePriorityLabel,
   fetchEmailHistoryWithRetry,
+  archiveEmail,
+  forwardEmail,
 };
