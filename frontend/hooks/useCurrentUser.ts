@@ -4,6 +4,7 @@ import axios from 'axios';
 interface User {
   id: string;
   email: string;
+  name: string;
   rules: Record<string, Record<string, string>>;
   refreshToken?: string;
   createdAt?: string;
@@ -26,10 +27,10 @@ const useCurrentUser = () => {
         });
 
         if (response.data.user) {
-          console.log(response.data.user);
           const mappedUser: User = {
             id: response.data.user.id,
             email: response.data.user.email,
+            name: response.data.user.name,
             rules: response.data.user.rules,
             refreshToken: response.data.user.refreshToken,
             createdAt: response.data.user.createdAt,

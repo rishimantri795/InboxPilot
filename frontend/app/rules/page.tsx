@@ -211,7 +211,7 @@ export default function RulesPage() {
           <h1 className="text-3xl font-bold">Email Rules</h1>
           <div className="flex items-center space-x-4">
             <div className="text-right">
-              <p className="font-medium">PLACEHOLDER</p>
+              <p className="font-medium">{user.name ? user.name : "John Doe"}</p>
               <p className="text-sm text-gray-500">{user.email}</p>
             </div>
             <DropdownMenu>
@@ -372,14 +372,14 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{currentRule ? 'Edit Rule' : 'Configure Rule'}</DialogTitle>
           <DialogDescription>
             {currentRule ? 'Modify your existing rule' : 'Customize your rule and add actions.'}
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4">
+        <div className="flex 1 overflow-y-auto grid gap-4 p-4">
           {/* Rule Name */}
           <div>
             <Label htmlFor="ruleName">Rule Name</Label>
