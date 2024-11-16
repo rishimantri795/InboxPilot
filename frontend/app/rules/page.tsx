@@ -30,7 +30,7 @@ const prebuiltRules = [
     name: "Archive Newsletters", 
     description: "Automatically archive emails identified as newsletters",
     actions: [
-      { type: "archive", config: { archiveImmediately: true } }
+      { type: "archive" }
     ]
   },
   { 
@@ -328,14 +328,20 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
   // Initialize form fields when dialog opens
   useEffect(() => {
     if (isOpen) {
-      if(currentRule) {
+      if (currentRule) {
         setRuleName(currentRule.name);
         setRuleDescription(currentRule.description);
-        setActions(currentRule.actions);
+        setActions(currentRule.actions.map(action => ({
+          type: action.type,
+          config: { ...action.config }
+        })));
       } else if (prebuiltRule) {
         setRuleName(prebuiltRule.name);
         setRuleDescription(prebuiltRule.description);
-        setActions(prebuiltRule.actions);
+        setActions(prebuiltRule.actions.map(action => ({
+          type: action.type,
+          config: { ...action.config }
+        })));
       } else{
         setRuleName('');
         setRuleDescription('');
@@ -514,28 +520,20 @@ function ActionConfig({ action, onConfigChange }: { action: Action, onConfigChan
           />
         </div>
       );
-    case 'archive':
-      return (
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="archiveImmediately"
-            checked={action.config.archiveImmediately || false}
-            onCheckedChange={(checked) => onConfigChange({ ...action.config, archiveImmediately: checked })}
-          />
-          <Label htmlFor="archiveImmediately">Archive Immediately</Label>
-        </div>
-      );
-    case 'favorite':
-      return (
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="favoriteImmediately"
-            checked={action.config.favoriteImmediately || false}
-            onCheckedChange={(checked) => onConfigChange({ ...action.config, favoriteImmediately: checked })}
-          />
-          <Label htmlFor="favoriteImmediately">Favorite Immediately</Label>
-        </div>
-      );
+      case 'archive':
+        return (
+          <div>
+            <Label>Archive Immediately</Label>
+            <p className="text-sm text-gray-500">This action will be applied automatically.</p>
+          </div>
+        );
+      case 'favorite':
+        return (
+          <div>
+            <Label>Favorite Immediately</Label>
+            <p className="text-sm text-gray-500">This action will be applied automatically.</p>
+          </div>
+        );
     default:
       return null;
   }
