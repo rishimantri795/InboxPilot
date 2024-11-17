@@ -14,6 +14,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { PlusIcon, TagIcon, SendIcon, ArchiveIcon, StarIcon, PencilIcon, TrashIcon, LogOutIcon } from 'lucide-react';
 import useCurrentUser from '@/hooks/useCurrentUser';
 import { addRule, deleteRule } from '@/lib/api';
+import { Toaster, toast } from 'sonner'
+import 'react-toastify/dist/ReactToastify.css';
 
 // Prebuilt rules with actions as arrays
 const prebuiltRules = [
@@ -30,7 +32,7 @@ const prebuiltRules = [
     name: "Archive Newsletters", 
     description: "Automatically archive emails identified as newsletters",
     actions: [
-      { type: "archive", config: { archiveImmediately: true } }
+      { type: "archive" }
     ]
   },
   { 
@@ -205,13 +207,15 @@ export default function RulesPage() {
     return <div>Error: {error}</div>;
   } else {
     return (
+      <>
+      <Toaster/>
       <div className="container mx-auto px-4 py-8">
         {/* Header Section */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Email Rules</h1>
           <div className="flex items-center space-x-4">
             <div className="text-right">
-              <p className="font-medium">PLACEHOLDER</p>
+              <p className="font-medium">{user.name ? user.name : "John Doe"}</p>
               <p className="text-sm text-gray-500">{user.email}</p>
             </div>
             <DropdownMenu>
@@ -315,6 +319,7 @@ export default function RulesPage() {
           onSave={handleSaveRule}
         />
       </div>
+    </>
     );
   }
 }
@@ -328,14 +333,20 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
   // Initialize form fields when dialog opens
   useEffect(() => {
     if (isOpen) {
-      if(currentRule) {
+      if (currentRule) {
         setRuleName(currentRule.name);
         setRuleDescription(currentRule.description);
-        setActions(currentRule.actions);
+        setActions(currentRule.actions.map(action => ({
+          type: action.type,
+          config: { ...action.config }
+        })));
       } else if (prebuiltRule) {
         setRuleName(prebuiltRule.name);
         setRuleDescription(prebuiltRule.description);
-        setActions(prebuiltRule.actions);
+        setActions(prebuiltRule.actions.map(action => ({
+          type: action.type,
+          config: { ...action.config }
+        })));
       } else{
         setRuleName('');
         setRuleDescription('');
@@ -346,6 +357,14 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
 
   // Add a new action to the rule
   const handleAddAction = (type: string) => {
+    const restrictedTypes = ['draft', 'archive', 'favorite'];
+    if (restrictedTypes.includes(type)) {
+      const hasExisting = actions.some((action) => action.type === type);
+      if (hasExisting) {
+        toast.error(`You can only have one ${type} action.`);
+        return;
+      }
+    }
     const newAction: Action = { type, config: {} };
     setActions([...actions, newAction]);
   };
@@ -364,6 +383,18 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
     setActions(newActions);
   };
 
+  const canSaveRule = () => {
+    if (!ruleName.trim() || !ruleDescription.trim()) return false;
+
+    for (const action of actions) {
+      if (action.type === 'label' && !action.config.labelName?.trim()) return false;
+      if (action.type === 'forward' && !action.config.forwardTo?.trim()) return false;
+      if (action.type === 'draft' && !action.config.draftTemplate?.trim()) return false;
+    }
+
+    return actions.length > 0;
+  };
+
   // Save the configured rule
   const handleSave = () => {
     onSave({ name: ruleName, description: ruleDescription, actions });
@@ -372,14 +403,14 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{currentRule ? 'Edit Rule' : 'Configure Rule'}</DialogTitle>
           <DialogDescription>
             {currentRule ? 'Modify your existing rule' : 'Customize your rule and add actions.'}
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4">
+        <div className="flex 1 overflow-y-auto grid gap-4 p-4">
           {/* Rule Name */}
           <div>
             <Label htmlFor="ruleName">Rule Name</Label>
@@ -439,7 +470,7 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSave} disabled={!ruleName || actions.length === 0}>
+          <Button onClick={handleSave} disabled={!canSaveRule()}>
             {currentRule ? 'Update Rule' : 'Save Rule'}
           </Button>
         </DialogFooter>
@@ -494,28 +525,20 @@ function ActionConfig({ action, onConfigChange }: { action: Action, onConfigChan
           />
         </div>
       );
-    case 'archive':
-      return (
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="archiveImmediately"
-            checked={action.config.archiveImmediately || false}
-            onCheckedChange={(checked) => onConfigChange({ ...action.config, archiveImmediately: checked })}
-          />
-          <Label htmlFor="archiveImmediately">Archive Immediately</Label>
-        </div>
-      );
-    case 'favorite':
-      return (
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="favoriteImmediately"
-            checked={action.config.favoriteImmediately || false}
-            onCheckedChange={(checked) => onConfigChange({ ...action.config, favoriteImmediately: checked })}
-          />
-          <Label htmlFor="favoriteImmediately">Favorite Immediately</Label>
-        </div>
-      );
+      case 'archive':
+        return (
+          <div>
+            <Label>Archive Immediately</Label>
+            <p className="text-sm text-gray-500">This action will be applied automatically.</p>
+          </div>
+        );
+      case 'favorite':
+        return (
+          <div>
+            <Label>Favorite Immediately</Label>
+            <p className="text-sm text-gray-500">This action will be applied automatically.</p>
+          </div>
+        );
     default:
       return null;
   }

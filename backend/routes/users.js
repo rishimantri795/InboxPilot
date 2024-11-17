@@ -57,6 +57,7 @@ router.post("/verifyToken", async (req, res) => {
     //   message: "User authenticated",
     // });
     const uid = decodedToken.uid;
+    const name = decodedToken.name || "John Doe";
 
     // Generate a new user ID (you can also let Firestore generate it)
     const newUserRef = db.collection("Users").doc(uid); // This generates a new document reference
@@ -64,11 +65,12 @@ router.post("/verifyToken", async (req, res) => {
     // Create a new user document with the provided data
     await newUserRef.set({
       email: decodedToken.email,
+      name,
       rules: {
         // Assuming you want to store the first rule as provided
         0: {
           action: "default",
-          prompt: "defuault",
+          prompt: "default",
           type: "default",
         },
       },
