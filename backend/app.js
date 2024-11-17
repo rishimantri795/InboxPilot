@@ -53,6 +53,7 @@ app.use(passport.session());
 app.use("/api/users", users);
 
 // Notification handling
+// Notification handling
 app.post("/notifications", async (req, res) => {
   const message = req.body.message;
 
@@ -63,51 +64,58 @@ app.post("/notifications", async (req, res) => {
     const emailAddress = decodedMessage.emailAddress;
     const newHistoryId = decodedMessage.historyId;
 
-    console.log(
-      `Received Pub/Sub Message for ${emailAddress}, historyId: ${newHistoryId}`
-    );
+    console.log(`Received Pub/Sub Message for ${emailAddress}, historyId: ${newHistoryId}`);
 
     try {
-      const userSnapshot = await db
-        .collection("Users")
-        .where("email", "==", emailAddress)
-        .limit(1)
-        .get();
+      const userSnapshot = await db.collection("Users").where("email", "==", emailAddress).limit(1).get();
 
       if (!userSnapshot.empty) {
         const userDoc = userSnapshot.docs[0];
-
         const user = userDoc.data();
-        console.log(user.id);
 
         if (user.historyId && user.historyId === newHistoryId) {
-          console.log(
-            "Duplicate notification received; ignoring this historyId."
-          );
+          console.log("Duplicate notification received; ignoring this historyId.");
           return res.status(204).send();
         }
-        console.log(user.refreshToken);
 
-        const accessToken = await getAccessTokenFromRefreshToken(
-          user.refreshToken
-        );
+        if (user.refreshToken) {
+          console.log(`User ${emailAddress} has a valid refreshToken, proceeding to check history.`);
 
-        // Add job to the Bull queue
-        await taskQueue.add({
-          email: emailAddress,
-          historyId: user.historyId,
-          accessToken: accessToken,
-          rules: user.rules,
-        });
+          const accessToken = await getAccessTokenFromRefreshToken(user.refreshToken);
 
-        console.log(
-          `Queued task for email: ${emailAddress}, historyId: ${user.historyId}`,
-          user.rules
-        );
+          if (accessToken && user.rules) {
+            // Fetch the history to check if this was an inbox message
+            const history = await fetchEmailHistory(accessToken, user.historyId || 1, newHistoryId);
 
-        // Update the user's historyId in Firestore
-        await userDoc.ref.update({ historyId: newHistoryId });
-        console.log(`Updated historyId for ${emailAddress} to ${newHistoryId}`);
+            // Changed: Direct check of labelIds in the history array
+            const hasInboxMessage = history.some((message) => message.labelIds && message.labelIds.includes("INBOX"));
+
+            console.log("HASINBOXMESSAGE" + hasInboxMessage);
+
+            if (hasInboxMessage) {
+              console.log(`Found inbox message, enqueueing task for ${emailAddress}`);
+
+              await taskQueue.add({
+                email: emailAddress,
+                historyId: newHistoryId,
+                accessToken: accessToken,
+                rules: user.rules,
+              });
+
+              console.log(`Queued task for email: ${emailAddress}, historyId: ${newHistoryId}`, user.rules);
+
+              // Update the user's historyId in Firestore
+              await userDoc.ref.update({ historyId: newHistoryId });
+              console.log(`Updated historyId for ${emailAddress} to ${newHistoryId}`);
+            } else {
+              console.log(`No inbox message found in history for ${emailAddress}, skipping task creation`);
+            }
+          } else {
+            console.log(`Task not enqueued due to missing accessToken or rules for email: ${emailAddress}`);
+          }
+        } else {
+          console.log(`User ${emailAddress} does not have a valid refreshToken.`);
+        }
       } else {
         console.log(`User with email ${emailAddress} not found in Firestore.`);
       }
@@ -121,7 +129,6 @@ app.post("/notifications", async (req, res) => {
     res.status(400).send("Invalid message");
   }
 });
-
 // Process the Bull queue
 
 // Error handling middleware
