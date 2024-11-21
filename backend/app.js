@@ -97,7 +97,8 @@ app.post("/notifications", async (req, res) => {
 
               await taskQueue.add({
                 email: emailAddress,
-                historyId: newHistoryId,
+                // historyId: newHistoryId,
+                historyId: user.historyId,
                 accessToken: accessToken,
                 rules: user.rules,
               });
