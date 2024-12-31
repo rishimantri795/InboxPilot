@@ -154,7 +154,7 @@ async function applyLabelToEmail(accessToken, messageId, labelId) {
 async function favouriteEmail(accessToken, messageId, labelId) {
   const messageEndpoint = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}/modify`;
 
-  // Not sure if it would work, but after some research, The only way to favourite an email is by labeing it as STARRED  
+  // Not sure if it would work, but after some research, The only way to favourite an email is by labeing it as STARRED
   // labeling an email as STARRED is how gmail knows that it is a favourited email
   try {
     await axios.post(
@@ -179,15 +179,15 @@ async function favouriteEmail(accessToken, messageId, labelId) {
 }
 
 async function createDraftEmail(accessToken, to, subject, messageDescription) {
-  const draftEndpoint = 'https://gmail.googleapis.com/gmail/v1/users/me/drafts';
+  const draftEndpoint = "https://gmail.googleapis.com/gmail/v1/users/me/drafts";
 
   // Construct the raw email content
   const emailContent = [
     `To: ${to}`,
     `Subject: ${subject}`,
-    '',
+    "",
     messageDescription,
-  ].join('\n');
+  ].join("\n");
 
   // Encode the email content in base64
   const encodedMessage = Buffer.from(emailContent);
@@ -204,7 +204,7 @@ async function createDraftEmail(accessToken, to, subject, messageDescription) {
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       }
     );
@@ -216,7 +216,6 @@ async function createDraftEmail(accessToken, to, subject, messageDescription) {
     );
   }
 }
-
 
 // Fetch email history and apply labels to new messages
 async function fetchEmailHistoryAndApplyLabel(accessToken, historyId) {
@@ -397,7 +396,9 @@ async function forwardEmail(accessToken, messageId, forwardToEmail) {
       }
     );
 
-    console.log(`Email ${messageId} forwarded to ${forwardToEmail} successfully.`);
+    console.log(
+      `Email ${messageId} forwarded to ${forwardToEmail} successfully.`
+    );
   } catch (error) {
     console.error(
       `Error forwarding email ID ${messageId}:`,
@@ -406,11 +407,9 @@ async function forwardEmail(accessToken, messageId, forwardToEmail) {
   }
 }
 
-const axios = require('axios');
-
 async function createForwardingAddress(accessToken, forwardingEmail) {
   const forwardingAddressEndpoint = `https://gmail.googleapis.com/gmail/v1/users/me/settings/forwardingAddresses`;
-  
+
   try {
     const response = await axios.post(
       forwardingAddressEndpoint,
@@ -418,12 +417,14 @@ async function createForwardingAddress(accessToken, forwardingEmail) {
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       }
     );
 
-    console.log(`Forwarding address ${forwardingEmail} created. Check your inbox to verify it if necessary.`);
+    console.log(
+      `Forwarding address ${forwardingEmail} created. Check your inbox to verify it if necessary.`
+    );
   } catch (error) {
     console.error(
       `Error creating forwarding address:`,
@@ -435,7 +436,7 @@ async function createForwardingAddress(accessToken, forwardingEmail) {
 
 async function checkForwardingVerification(accessToken, forwardingEmail) {
   const listEndpoint = `https://gmail.googleapis.com/gmail/v1/users/me/settings/forwardingAddresses`;
-  
+
   const response = await axios.get(listEndpoint, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -444,7 +445,9 @@ async function checkForwardingVerification(accessToken, forwardingEmail) {
 
   const forwardingAddresses = response.data.forwardingAddresses || [];
   return forwardingAddresses.some(
-    (address) => address.forwardingEmail === forwardingEmail && address.verificationStatus === 'accepted'
+    (address) =>
+      address.forwardingEmail === forwardingEmail &&
+      address.verificationStatus === "accepted"
   );
 }
 
@@ -461,12 +464,14 @@ async function createFilter(accessToken, forwardingEmail, criteria) {
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       }
     );
 
-    console.log(`Filter created successfully for forwarding to ${forwardingEmail}.`);
+    console.log(
+      `Filter created successfully for forwarding to ${forwardingEmail}.`
+    );
   } catch (error) {
     console.error(
       `Error creating filter for forwarding:`,

@@ -1,59 +1,58 @@
-const axios = require("axios");
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
+
 const admin = require("../api/firebase");
 const db = admin.firestore();
-const nodemailer = require("nodemailer");
-const { google } = require("googleapis");
-const https = require("https");
-const { watchGmailInbox } = require("../utils/gmailService"); // Import watchGmailInbox function
 
-// Create an https agent that ignores self-signed certificate errors (for development only)
-const agent = new https.Agent({
-  rejectUnauthorized: false, // Ignore SSL certificate verification
-});
-
-// Passport Google Strategy
 passport.use(
   new GoogleStrategy(
     {
       clientID: process.env.CLIENT_ID,
       clientSecret: process.env.CLIENT_SECRET,
       callbackURL: process.env.GOOGLE_CALLBACK_URL,
-      accessType: "offline", // Ensure you get a refresh token
-      prompt: "consent", // Force re-consent to get new permissions
-      scope: ["profile", "email", "https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.modify"],
+      accessType: "offline",
+      prompt: "consent",
+      scope: [
+        "profile",
+        "email",
+        "https://www.googleapis.com/auth/gmail.readonly",
+      ],
     },
     async function (accessToken, refreshToken, profile, done) {
       try {
-        console.log("Refresh Token:", refreshToken); // Log the refresh token
+        console.log(refreshToken);
 
-        // Check if the user exists in Firestore
-        const userSnapshot = await db.collection("Users").where("email", "==", profile.emails[0].value).limit(1).get();
+        // Use profile.id for Firestore document path
+        const userDoc = await db.collection("Users").doc(profile.id).get();
 
-        if (!userSnapshot.empty) {
-          // User exists, update with the new refresh token (if any)
-          const userDocRef = userSnapshot.docs[0].ref;
-          const userData = userSnapshot.docs[0].data();
-          userData.refreshToken = refreshToken || userData.refreshToken; // Update refreshToken if available
-          await userDocRef.update(userData); // Update user with new refresh token
+        if (userDoc.exists) {
+          // User exists, retrieve user data and add profile.id to it
+          const userData = userDoc.data();
 
-          // Watch Gmail inbox for the authenticated user
-          await watchGmailInbox(accessToken);
+          if (userData.refreshT != refreshToken) {
+            db.collection("Users").doc(profile.id).update({
+              refreshT: refreshToken,
+            });
+          }
+          userData.id = profile.id; // Add the id to the user data object
           return done(null, userData);
         } else {
-          // Create a new user in Firestore
+          // User does not exist, create a new user
           const newUser = {
-            id: profile.id,
-            email: profile.emails[0].value,
-            refreshToken: refreshToken,
-            createdAt: new Date(),
+            id: profile.id, // Explicitly add the profile.id to the new user data
+            Email: profile.emails[0].value, // Store email as a field
+            refreshT: refreshToken,
+            Rules: {
+              0: {
+                action: "default",
+                prompt: "default",
+                type: "default",
+              },
+            },
+            createdAt: new Date(), // Optional: add a timestamp
           };
           await db.collection("Users").doc(profile.id).set(newUser);
-
-          // Watch Gmail inbox for the authenticated user
-          await watchGmailInbox(accessToken);
-          return done(null, newUser);
+          return done(null, newUser); // Return the new user object
         }
       } catch (err) {
         return done(err);
@@ -62,20 +61,24 @@ passport.use(
   )
 );
 
+// Serialize user to store user ID in session
 passport.serializeUser((user, done) => {
-  done(null, user.id);
+  console.log("Serializing user:", user); // Debugging log
+  done(null, user.id); // Use the user's Google ID for serialization
 });
 
+// Deserialize user from session to retrieve user object
 passport.deserializeUser(async (id, done) => {
   try {
+    console.log("Deserializing user with id:", id); // Debugging log
     const userDoc = await db.collection("Users").doc(id).get();
     if (userDoc.exists) {
       done(null, userDoc.data());
     } else {
       done(new Error("User not found"));
     }
-  } catch (error) {
-    done(error);
+  } catch (err) {
+    done(err);
   }
 });
 

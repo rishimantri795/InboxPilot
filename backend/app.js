@@ -19,7 +19,7 @@ const { access } = require("fs");
 const taskQueue = new Bull("task-queue", {
   redis: {
     host: process.env.HOST, // Replace with your Redis host
-    port: 18153, // Replace with your Redis port
+    port: 13420, // Replace with your Redis port
     password: process.env.REDISPASS, // Replace with your Redis password
   },
 });
@@ -38,11 +38,11 @@ app.use(
     secret: "your-secure-secret", // Use a strong, secure secret in production
     resave: false,
     saveUninitialized: false,
-    cookie: { 
+    cookie: {
       secure: false, // Set to true if using HTTPS
-      sameSite: 'lax' // Adjust based on your needs
+      sameSite: "lax", // Adjust based on your needs
     },
-    name: "connect.sid" // Optional: customize the cookie name
+    name: "connect.sid", // Optional: customize the cookie name
   })
 );
 
@@ -54,6 +54,7 @@ app.use("/api/users", users);
 
 // Notification handling
 app.post("/notifications", async (req, res) => {
+  console.log(process.env.HOST, process.env.REDISPASS);
   const message = req.body.message;
 
   if (message && message.data) {
@@ -76,7 +77,9 @@ app.post("/notifications", async (req, res) => {
 
       if (!userSnapshot.empty) {
         const userDoc = userSnapshot.docs[0];
+
         const user = userDoc.data();
+        console.log(user.id);
 
         if (user.historyId && user.historyId === newHistoryId) {
           console.log(
@@ -84,21 +87,25 @@ app.post("/notifications", async (req, res) => {
           );
           return res.status(204).send();
         }
-        console.log(user.refreshToken);
+        console.log(user.refreshToken + "refresh token");
 
         const accessToken = await getAccessTokenFromRefreshToken(
           user.refreshToken
         );
+
+        console.log("moving");
 
         // Add job to the Bull queue
         await taskQueue.add({
           email: emailAddress,
           historyId: user.historyId,
           accessToken: accessToken,
+          rules: user.rules,
         });
 
         console.log(
-          `Queued task for email: ${emailAddress}, historyId: ${user.historyId}`
+          `Queued task for email: ${emailAddress}, historyId: ${user.historyId}`,
+          user.rules
         );
 
         // Update the user's historyId in Firestore
