@@ -1,10 +1,8 @@
 const express = require("express");
 const path = require("path");
-const Bull = require("bull");
 const admin = require("./api/firebase.js");
 const db = admin.firestore();
 const { getAccessTokenFromRefreshToken } = require("./utils/tokenService.js");
-const { fetchEmailHistory } = require("./utils/gmailService.js");
 const cors = require("cors");
 const passport = require("passport");
 const session = require("express-session");
@@ -13,16 +11,9 @@ require("./middleware/passport.js");
 
 const app = express();
 const users = require("./routes/users");
-const { access } = require("fs");
 
-// Bull queue configuration
-const taskQueue = new Bull("task-queue", {
-  redis: {
-    host: process.env.HOST, // Replace with your Redis host
-    port: 18153, // Replace with your Redis port
-    password: process.env.REDISPASS, // Replace with your Redis password
-  },
-});
+const { fetchEmailHistory, getOrCreatePriorityLabel, applyLabelToEmail, fetchEmailHistoryWithRetry, fetchEmailHistoryAndApplyLabel, getMessageDetails, archiveEmail, forwardEmail, favoriteEmail, getOriginalEmailDetails, createDraft } = require("./utils/gmailService.js");
+const { classifyEmail, createDraftEmail } = require("./utils/openai.js");
 
 app.use(express.json());
 
@@ -52,7 +43,6 @@ app.use(passport.session());
 // Routes
 app.use("/api/users", users);
 
-// Notification handling
 // Notification handling
 app.post("/notifications", async (req, res) => {
   const message = req.body.message;
@@ -87,32 +77,90 @@ app.post("/notifications", async (req, res) => {
             // Fetch the history to check if this was an inbox message
             const history = await fetchEmailHistory(accessToken, user.historyId || 1, newHistoryId);
 
-            // Changed: Direct check of labelIds in the history array
+            // Direct check of labelIds in the history array
             const hasInboxMessage = history.some((message) => message.labelIds && message.labelIds.includes("INBOX"));
 
             console.log("HASINBOXMESSAGE" + hasInboxMessage);
 
             if (hasInboxMessage) {
-              console.log(`Found inbox message, enqueueing task for ${emailAddress}`);
+              console.log(`Processing emails for ${emailAddress}`);
 
-              await taskQueue.add({
-                email: emailAddress,
-                // historyId: newHistoryId,
-                historyId: user.historyId,
-                accessToken: accessToken,
-                rules: user.rules,
-              });
+              const userMessages = await fetchEmailHistoryWithRetry(accessToken, user.historyId);
 
-              console.log(`Queued task for email: ${emailAddress}, historyId: ${newHistoryId}`, user.rules);
+              if (userMessages.length === 0) {
+                console.log("No new messages found after retries.");
+                return res.status(204).send();
+              }
+
+              // Process each message directly
+              for (const message of userMessages) {
+                try {
+                  console.log("Processing message:", message.id);
+                  const emailContent = await getMessageDetails(accessToken, message.id);
+                  console.log(emailContent);
+
+                  const ruleKey = await classifyEmail(emailContent, user.rules);
+                  console.log("Rule key:", ruleKey);
+
+                  if (ruleKey === "Null") {
+                    console.error("email not valid to rule");
+                    continue;
+                  }
+
+                  const rule = user.rules[parseInt(ruleKey)];
+                  console.log("Rule:", rule);
+
+                  for (const action of JSON.parse(rule.type)) {
+                    console.log("Action config:", action.config);
+                    console.log("Action:", action);
+
+                    switch (action.type) {
+                      case "label":
+                        console.log("Applying label:", action.config.labelName);
+                        const labelId = await getOrCreatePriorityLabel(accessToken, action.config.labelName);
+                        await applyLabelToEmail(accessToken, message.id, labelId);
+                        break;
+
+                      case "archive":
+                        console.log("Archiving email");
+                        await archiveEmail(accessToken, message.id);
+                        break;
+
+                      case "forward":
+                        console.log("Forwarding email to:", action.config.forwardTo);
+                        await forwardEmail(accessToken, message.id, action.config.forwardTo);
+                        break;
+
+                      case "favorite":
+                        console.log("Favoriting email");
+                        await favoriteEmail(accessToken, message.id);
+                        break;
+
+                      case "draft":
+                        const fromEmail = await getOriginalEmailDetails(accessToken, message.id);
+                        console.log("fromEmail:", fromEmail);
+                        const reply = await createDraftEmail(emailContent, action.config.draftTemplate);
+                        await createDraft(accessToken, message.threadId, reply, message.id, fromEmail);
+                        break;
+                    }
+                  }
+                } catch (error) {
+                  console.error(`Error processing message ${message.id}:`, error);
+                  // Continue with next message even if current one fails
+                  continue;
+                }
+              }
+
+              console.log(`Processed emails for ${emailAddress}, HistoryId: ${newHistoryId}`);
 
               // Update the user's historyId in Firestore
               await userDoc.ref.update({ historyId: newHistoryId });
               console.log(`Updated historyId for ${emailAddress} to ${newHistoryId}`);
             } else {
-              console.log(`No inbox message found in history for ${emailAddress}, skipping task creation`);
+              console.log(`No inbox message found in history for ${emailAddress}, skipping processing`);
             }
           } else {
-            console.log(`Task not enqueued due to missing accessToken or rules for email: ${emailAddress}`);
+            console.log(`Processing skipped due to missing accessToken or rules for email: ${emailAddress}`);
           }
         } else {
           console.log(`User ${emailAddress} does not have a valid refreshToken.`);
@@ -130,7 +178,6 @@ app.post("/notifications", async (req, res) => {
     res.status(400).send("Invalid message");
   }
 });
-// Process the Bull queue
 
 // Error handling middleware
 app.use((err, req, res, next) => {
