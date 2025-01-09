@@ -12,7 +12,7 @@ require("./middleware/passport.js");
 const app = express();
 const users = require("./routes/users");
 
-const { fetchEmailHistory, getOrCreatePriorityLabel, applyLabelToEmail, fetchEmailHistoryWithRetry, fetchEmailHistoryAndApplyLabel, getMessageDetails, archiveEmail, forwardEmail, favoriteEmail, getOriginalEmailDetails, createDraft } = require("./utils/gmailService.js");
+const { fetchEmailHistory, getOrCreatePriorityLabel, applyLabelToEmail, fetchEmailHistoryWithRetry, fetchEmailHistoryAndApplyLabel, getMessageDetails, archiveEmail, forwardEmail, favoriteEmail, getOriginalEmailDetails, createDraft, getLatestHistoryId } = require("./utils/gmailService.js");
 const { classifyEmail, createDraftEmail } = require("./utils/openai.js");
 
 app.use(express.json());
@@ -79,7 +79,7 @@ app.post("/notifications", async (req, res) => {
 
             // Direct check of labelIds in the history array
             const hasInboxMessage = history.some((message) => message.labelIds && message.labelIds.includes("INBOX"));
-
+            console.log("HEEEEEY!");
             console.log("HASINBOXMESSAGE" + hasInboxMessage);
 
             if (hasInboxMessage) {

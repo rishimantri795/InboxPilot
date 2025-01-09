@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from 'next/link';
+import Link from "next/link";
 
 import axios from "axios"; // Import axios
 axios.defaults.withCredentials = true;
@@ -25,7 +25,6 @@ export default function Home() {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-
         interface User {
           id: string;
           email: string;
@@ -59,7 +58,7 @@ export default function Home() {
         setLoading(false);
       }
     };
-  
+
     fetchCurrentUser();
   }, []);
 
@@ -105,17 +104,8 @@ export default function Home() {
   };
 
   return (
-    
     <div className="min-h-screen p-8 pb-20">
-      <div className="mt-4">
-        {loading ? (
-          <p>Loading...</p>
-        ) : user ? (
-          <p>Signed in as: {user.email}</p>
-        ) : (
-          <p>Not signed in.</p>
-        )}
-      </div>
+      <div className="mt-4">{loading ? <p>Loading...</p> : user ? <p>Signed in as: {user.email}</p> : <p>Not signed in.</p>}</div>
 
       <div className="mt-4">
         <button onClick={passPortAuth}>Sign In with Google (Passport)</button>
@@ -125,16 +115,12 @@ export default function Home() {
       </div>
       <div className="mt-4">
         <Link href="/rules">
-          <button>
-            Go to add rules page
-          </button>
+          <button>Go to add rules page</button>
         </Link>
       </div>
       <div className="mt-4">
         <Link href="/">
-          <button>
-            Go to landing page
-          </button>
+          <button>Go to landing page</button>
         </Link>
       </div>
       <div className="mt-4">

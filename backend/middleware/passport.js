@@ -1,58 +1,65 @@
-const axios = require("axios");
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const admin = require("../api/firebase");
 const db = admin.firestore();
-const nodemailer = require("nodemailer");
-const { google } = require("googleapis");
-const https = require("https");
-const { watchGmailInbox } = require("../utils/gmailService"); // Import watchGmailInbox function
+const { watchGmailInbox } = require("../utils/gmailService");
 
-// Create an https agent that ignores self-signed certificate errors (for development only)
-const agent = new https.Agent({
-  rejectUnauthorized: false, // Ignore SSL certificate verification
-});
-
-// Passport Google Strategy
+// passport google strategy
 passport.use(
   new GoogleStrategy(
     {
       clientID: process.env.CLIENT_ID,
       clientSecret: process.env.CLIENT_SECRET,
       callbackURL: process.env.GOOGLE_CALLBACK_URL,
-      accessType: "offline", // Ensure you get a refresh token
-      prompt: "consent", // Force re-consent to get new permissions
+      accessType: "offline", // ensure you get a refresh token
+      prompt: "consent", // force re-consent to get new permissions
       scope: ["profile", "email", "https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.modify"],
     },
     async function (accessToken, refreshToken, profile, done) {
       try {
-        console.log("Refresh Token:", refreshToken); // Log the refresh token
+        // check if user exists in db matching the email passed in
+        const userSnapshot = await db.collection("Users").where("email", "==", profile.emails[0].value).limit(1).get(); // limit(1) limits to 1 doc and .get() returns querySnapshot
 
-        // Check if the user exists in Firestore
-        const userSnapshot = await db.collection("Users").where("email", "==", profile.emails[0].value).limit(1).get();
-
+        // why we can't do userSnapshot? ---> bc firestore always returns a QuerySnapshot object, even if not docs match
         if (!userSnapshot.empty) {
-          // User exists, update with the new refresh token (if any)
-          const userDocRef = userSnapshot.docs[0].ref;
-          const userData = userSnapshot.docs[0].data();
-          userData.refreshToken = refreshToken || userData.refreshToken; // Update refreshToken if available
-          await userDocRef.update(userData); // Update user with new refresh token
+          const userDocRef = userSnapshot.docs[0].ref; // doc reference which allows to perform operations such update on doc
+          const userData = userSnapshot.docs[0].data(); // extracts the actual data from the doc as a javascript object
 
-          // Watch Gmail inbox for the authenticated user
-          await watchGmailInbox(accessToken);
+          console.log("HIII");
+          console.log("IN DB", userData.refreshToken);
+          console.log("NEW REFRESH TOKEN", refreshToken);
+          userData.refreshToken = refreshToken || userData.refreshToken; // update refreshToken if available
+          await userDocRef.update(userData); // update user with potentially new refresh token
+
+          // puts a gmail listener to user
+
+          const historyId = await watchGmailInbox(accessToken);
+
+          // Then fetch any messages since last sync
+          // await fetchEmailHistoryAndApplyLabel(accessToken, historyId);
+
+          // indicates finished authentication. 1st arg is error which is null bc no errors occurred.
+          // 2nd arg is userData to establish a session
           return done(null, userData);
-        } else {
-          // Create a new user in Firestore
+        }
+        // user is not in db so let's create a new user
+        else {
+          // create a new user in firestore
           const newUser = {
             id: profile.id,
             email: profile.emails[0].value,
             refreshToken: refreshToken,
             createdAt: new Date(),
           };
+
+          // actually creates the user in db
           await db.collection("Users").doc(profile.id).set(newUser);
 
-          // Watch Gmail inbox for the authenticated user
-          await watchGmailInbox(accessToken);
+          // puts a gmail listener to user
+          const historyId = await watchGmailInbox(accessToken);
+          userData.historyId = historyId; // Add historyId
+          await userDocRef.update(userData);
+
           return done(null, newUser);
         }
       } catch (err) {

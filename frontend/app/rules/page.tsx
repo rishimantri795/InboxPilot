@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,45 +11,37 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { PlusIcon, TagIcon, SendIcon, ArchiveIcon, StarIcon, PencilIcon, TrashIcon, LogOutIcon } from 'lucide-react';
-import useCurrentUser from '@/hooks/useCurrentUser';
-import { addRule, deleteRule } from '@/lib/api';
-import { Toaster, toast } from 'sonner'
-import 'react-toastify/dist/ReactToastify.css';
+import { PlusIcon, TagIcon, SendIcon, ArchiveIcon, StarIcon, PencilIcon, TrashIcon, LogOutIcon, MailXIcon } from "lucide-react";
+import useCurrentUser from "@/hooks/useCurrentUser";
+import { addRule, deleteRule } from "@/lib/api";
+import { Toaster, toast } from "sonner";
+import "react-toastify/dist/ReactToastify.css";
 
 // Prebuilt rules with actions as arrays
 const prebuiltRules = [
-  { 
-    id: 1, 
-    name: "Label High Priority Emails", 
+  {
+    id: 1,
+    name: "Label High Priority Emails",
     description: "Automatically label emails marked as high priority",
-    actions: [
-      { type: "label", config: { labelName: "High Priority" } }
-    ]
+    actions: [{ type: "label", config: { labelName: "High Priority" } }],
   },
-  { 
-    id: 2, 
-    name: "Archive Newsletters", 
+  {
+    id: 2,
+    name: "Archive Newsletters",
     description: "Automatically archive emails identified as newsletters",
-    actions: [
-      { type: "archive" }
-    ]
+    actions: [{ type: "archive" }],
   },
-  { 
-    id: 3, 
-    name: "Forward Client Emails", 
+  {
+    id: 3,
+    name: "Forward Client Emails",
     description: "Forward emails from specific clients to team members",
-    actions: [
-      { type: "forward", config: { forwardTo: "team@example.com" } }
-    ]
+    actions: [{ type: "forward", config: { forwardTo: "team@example.com" } }],
   },
-  { 
-    id: 4, 
-    name: "Auto-Reply to Out of Office", 
+  {
+    id: 4,
+    name: "Auto-Reply to Out of Office",
     description: "Send automatic replies when out of office",
-    actions: [
-      { type: "draft", config: { /*draftTo: "forward@example.com",*/ draftTemplate: "I'm currently out of office and will reply upon my return." } }
-    ]
+    actions: [{ type: "draft", config: { /*draftTo: "forward@example.com",*/ draftTemplate: "I'm currently out of office and will reply upon my return." } }],
   },
 ];
 
@@ -86,7 +78,6 @@ export default function RulesPage() {
   const { user, loading, error, clearUser } = useCurrentUser();
   const [logoutSuccess, setLogoutSuccess] = useState(false);
 
-
   // Fetch and parse rules from the backend
   useEffect(() => {
     if (user && user.rules) {
@@ -94,7 +85,7 @@ export default function RulesPage() {
         id: key,
         name: ruleData.action,
         description: ruleData.prompt,
-        actions: typeof ruleData.type === 'string' ? JSON.parse(ruleData.type) : ruleData.type,
+        actions: typeof ruleData.type === "string" ? JSON.parse(ruleData.type) : ruleData.type,
       }));
       setRules(transformedRules);
     }
@@ -105,10 +96,10 @@ export default function RulesPage() {
     if (prebuiltRule.name === "Custom Rule") {
       // Initialize a custom rule with empty actions
       setSelectedPrebuiltRule({
-        id: '', // Assign a unique ID if necessary
+        id: "", // Assign a unique ID if necessary
         name: "Custom Rule",
         description: "Create a custom rule",
-        actions: []
+        actions: [],
       });
     } else {
       // Use the selected prebuilt rule
@@ -116,7 +107,7 @@ export default function RulesPage() {
     }
     setCurrentRule(null); // Clear any existing selection
     setIsAddRuleOpen(false);
-    setIsConfigureRuleOpen(true);  
+    setIsConfigureRuleOpen(true);
   };
 
   // Handle saving a rule (both add and update)
@@ -126,12 +117,10 @@ export default function RulesPage() {
       prompt: configuredRule.description,
       type: JSON.stringify(configuredRule.actions), // Stringify actions for backend
     };
-    
+
     if (currentRule) {
       // Update existing rule
-      setRules(rules.map(rule => 
-        rule.id === currentRule.id ? { ...rule, name: configuredRule.name, description: configuredRule.description, actions: configuredRule.actions } : rule
-      ));
+      setRules(rules.map((rule) => (rule.id === currentRule.id ? { ...rule, name: configuredRule.name, description: configuredRule.description, actions: configuredRule.actions } : rule)));
       try {
         await axios.put(`http://localhost:3010/api/users/${user.id}/rules/${currentRule.id}`, serializedRule, { withCredentials: true });
       } catch (error) {
@@ -139,25 +128,25 @@ export default function RulesPage() {
       }
     } else {
       // Add new rule
-      
+
       try {
         const response = await axios.post(`http://localhost:3010/api/users/${user.id}`, serializedRule, { withCredentials: true });
-        const newRule = { 
+        const newRule = {
           id: response.data.id, // Generate a unique ID
-          name: configuredRule.name, 
-          description: configuredRule.description, 
-          actions: configuredRule.actions 
+          name: configuredRule.name,
+          description: configuredRule.description,
+          actions: configuredRule.actions,
         };
         setRules([...rules, newRule]);
       } catch (error) {
         console.error("Failed to add rule:", error);
       }
     }
-    
+
     setIsConfigureRuleOpen(false);
     setCurrentRule(null);
   };
-  
+
   // Handle editing a rule
   const handleEditRule = (rule: Rule) => {
     setCurrentRule(rule);
@@ -168,7 +157,7 @@ export default function RulesPage() {
   const handleDeleteRule = async (ruleId: string) => {
     try {
       await deleteRule(user.id, ruleId);
-      setRules(rules.filter(rule => rule.id !== ruleId));
+      setRules(rules.filter((rule) => rule.id !== ruleId));
     } catch (error) {
       console.error("Failed to delete rule:", error);
     }
@@ -176,26 +165,42 @@ export default function RulesPage() {
 
   // Handle user logout
   const handleLogout = async () => {
-  try {
-    const response = await fetch("http://localhost:3010/api/users/logout", {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    if (response.ok) {
-      console.log("Logged out");
-      router.push("/");
-    } else {
-      const errorData = await response.json();
-      console.error("Failed to log out", errorData);
+    try {
+      const response = await fetch("http://localhost:3010/api/users/logout", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (response.ok) {
+        console.log("Logged out");
+        router.push("/");
+      } else {
+        const errorData = await response.json();
+        console.error("Failed to log out", errorData);
+      }
+    } catch (error) {
+      console.error("Error logging out:", error);
     }
-  } catch (error) {
-    console.error("Error logging out:", error);
-  }
-};
+  };
 
+  //! new
+  const detachGmailListener = async () => {
+    try {
+      const response = await axios.post("http://localhost:3010/api/users/detach-gmail-listener", {}, { withCredentials: true });
+      if (response.status === 200) {
+        console.log("Gmail listener detached successfully");
+        toast.success("Gmail listener detached successfully");
+      } else {
+        console.error("Failed to detach Gmail listener", response.data);
+        toast.error("Failed to detach Gmail listener");
+      }
+    } catch (error) {
+      console.error("Error detaching Gmail listener:", error);
+      toast.error("Error detaching Gmail listener");
+    }
+  };
 
   // Handle loading and error states
   if (loading) {
@@ -208,126 +213,115 @@ export default function RulesPage() {
   } else {
     return (
       <>
-      <Toaster/>
-      <div className="container mx-auto px-4 py-8">
-        {/* Header Section */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Email Rules</h1>
-          <div className="flex items-center space-x-4">
-            <div className="text-right">
-              <p className="font-medium">{user.name ? user.name : "John Doe"}</p>
-              <p className="text-sm text-gray-500">{user.email}</p>
+        <Toaster />
+        <div className="container mx-auto px-4 py-8">
+          {/* Header Section */}
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-bold">Email Rules</h1>
+            <div className="flex items-center space-x-4">
+              <div className="text-right">
+                <p className="font-medium">{user.name ? user.name : "John Doe"}</p>
+                <p className="text-sm text-gray-500">{user.email}</p>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Avatar className="cursor-pointer bg-black text-white">
+                    <AvatarImage src="" alt="User avatar" />
+                    <AvatarFallback className="bg-black text-white">{user.email ? user.email.charAt(0).toUpperCase() : "U"}</AvatarFallback>
+                  </Avatar>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                    <LogOutIcon className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={detachGmailListener} className="cursor-pointer">
+                    <MailXIcon className="mr-2 h-4 w-4" />
+                    <span>Detach Gmail Listener</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Avatar className="cursor-pointer bg-black text-white">
-                  <AvatarImage src="" alt="User avatar" />
-                  <AvatarFallback className="bg-black text-white">
-                    {user.email ? user.email.charAt(0).toUpperCase() : "U"}
-                  </AvatarFallback>
-                </Avatar>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem 
-                  onClick={handleLogout} 
-                  className="cursor-pointer"
-                >
-                  <LogOutIcon className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
-        </div>
-        
-        {/* Add Rule Button */}
-        <Button onClick={() => setIsAddRuleOpen(true)} className="mb-4">
-          <PlusIcon className="mr-2 h-4 w-4" /> Add Rule
-        </Button>
-        
-        {/* Rules Table */}
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Rule Name</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Actions</TableHead>
-              <TableHead>Edit</TableHead>
-              <TableHead>Delete</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rules.map((rule) => (
-              <TableRow key={rule.id}>
-                <TableCell>{rule.name}</TableCell>
-                <TableCell>{rule.description}</TableCell>
-                <TableCell>
-                  {rule.actions.map((action, idx) => (
-                    <span key={idx} className="block">
-                      {action.type.charAt(0).toUpperCase() + action.type.slice(1)}
-                    </span>
-                  ))}
-                </TableCell>
-                <TableCell>
-                  <Button variant="ghost" onClick={() => handleEditRule(rule)}>
-                    <PencilIcon className="h-4 w-4" />
-                  </Button>
-                </TableCell>
-                <TableCell>
-                  <Button variant="ghost" onClick={() => handleDeleteRule(rule.id)}>
-                    <TrashIcon className="h-4 w-4" />
-                  </Button>
-                </TableCell>
+
+          {/* Add Rule Button */}
+          <Button onClick={() => setIsAddRuleOpen(true)} className="mb-4">
+            <PlusIcon className="mr-2 h-4 w-4" /> Add Rule
+          </Button>
+
+          {/* Rules Table */}
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Rule Name</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Actions</TableHead>
+                <TableHead>Edit</TableHead>
+                <TableHead>Delete</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-
-        {/* Add Rule Dialog */}
-        <Dialog open={isAddRuleOpen} onOpenChange={setIsAddRuleOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add a New Rule</DialogTitle>
-              <DialogDescription>
-                Choose a prebuilt rule or create a custom one.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4">
-              {prebuiltRules.map((rule) => (
-                <Button key={rule.id} variant="outline" onClick={() => handleAddRule(rule)}>
-                  {rule.name}
-                </Button>
+            </TableHeader>
+            <TableBody>
+              {rules.map((rule) => (
+                <TableRow key={rule.id}>
+                  <TableCell>{rule.name}</TableCell>
+                  <TableCell>{rule.description}</TableCell>
+                  <TableCell>
+                    {rule.actions.map((action, idx) => (
+                      <span key={idx} className="block">
+                        {action.type.charAt(0).toUpperCase() + action.type.slice(1)}
+                      </span>
+                    ))}
+                  </TableCell>
+                  <TableCell>
+                    <Button variant="ghost" onClick={() => handleEditRule(rule)}>
+                      <PencilIcon className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                  <TableCell>
+                    <Button variant="ghost" onClick={() => handleDeleteRule(rule.id)}>
+                      <TrashIcon className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
               ))}
-            </div>
-            <DialogFooter>
-              <Button 
-                variant="outline" 
-                onClick={() => handleAddRule({ id: '', name: "Custom Rule", description: "Create a custom rule", actions: [] })}
-              >
-                Create Custom Rule
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </TableBody>
+          </Table>
 
-        {/* Configure Rule Dialog */}
-        <ConfigureRuleDialog
-          isOpen={isConfigureRuleOpen}
-          onOpenChange={setIsConfigureRuleOpen}
-          prebuiltRule={selectedPrebuiltRule}
-          currentRule={currentRule}
-          onSave={handleSaveRule}
-        />
-      </div>
-    </>
+          {/* Add Rule Dialog */}
+          <Dialog open={isAddRuleOpen} onOpenChange={setIsAddRuleOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add a New Rule</DialogTitle>
+                <DialogDescription>Choose a prebuilt rule or create a custom one.</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4">
+                {prebuiltRules.map((rule) => (
+                  <Button key={rule.id} variant="outline" onClick={() => handleAddRule(rule)}>
+                    {rule.name}
+                  </Button>
+                ))}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => handleAddRule({ id: "", name: "Custom Rule", description: "Create a custom rule", actions: [] })}>
+                  Create Custom Rule
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Configure Rule Dialog */}
+          <ConfigureRuleDialog isOpen={isConfigureRuleOpen} onOpenChange={setIsConfigureRuleOpen} prebuiltRule={selectedPrebuiltRule} currentRule={currentRule} onSave={handleSaveRule} />
+        </div>
+      </>
     );
   }
 }
 
 // Dialog component for configuring rules
 function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, onSave }) {
-  const [ruleName, setRuleName] = useState(currentRule?.name || prebuiltRule?.name || '');
-  const [ruleDescription, setRuleDescription] = useState(currentRule?.description || prebuiltRule?.description || '');
+  const [ruleName, setRuleName] = useState(currentRule?.name || prebuiltRule?.name || "");
+  const [ruleDescription, setRuleDescription] = useState(currentRule?.description || prebuiltRule?.description || "");
   const [actions, setActions] = useState<Action[]>([]);
 
   // Initialize form fields when dialog opens
@@ -336,28 +330,32 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
       if (currentRule) {
         setRuleName(currentRule.name);
         setRuleDescription(currentRule.description);
-        setActions(currentRule.actions.map(action => ({
-          type: action.type,
-          config: { ...action.config }
-        })));
+        setActions(
+          currentRule.actions.map((action) => ({
+            type: action.type,
+            config: { ...action.config },
+          }))
+        );
       } else if (prebuiltRule) {
         setRuleName(prebuiltRule.name);
         setRuleDescription(prebuiltRule.description);
-        setActions(prebuiltRule.actions.map(action => ({
-          type: action.type,
-          config: { ...action.config }
-        })));
-      } else{
-        setRuleName('');
-        setRuleDescription('');
+        setActions(
+          prebuiltRule.actions.map((action) => ({
+            type: action.type,
+            config: { ...action.config },
+          }))
+        );
+      } else {
+        setRuleName("");
+        setRuleDescription("");
         setActions([]);
       }
     }
-  },  [isOpen, currentRule, prebuiltRule]);
+  }, [isOpen, currentRule, prebuiltRule]);
 
   // Add a new action to the rule
   const handleAddAction = (type: string) => {
-    const restrictedTypes = ['draft', 'archive', 'favorite'];
+    const restrictedTypes = ["draft", "archive", "favorite"];
     if (restrictedTypes.includes(type)) {
       const hasExisting = actions.some((action) => action.type === type);
       if (hasExisting) {
@@ -387,9 +385,9 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
     if (!ruleName.trim() || !ruleDescription.trim()) return false;
 
     for (const action of actions) {
-      if (action.type === 'label' && !action.config.labelName?.trim()) return false;
-      if (action.type === 'forward' && !action.config.forwardTo?.trim()) return false;
-      if (action.type === 'draft' && !action.config.draftTemplate?.trim()) return false;
+      if (action.type === "label" && !action.config.labelName?.trim()) return false;
+      if (action.type === "forward" && !action.config.forwardTo?.trim()) return false;
+      if (action.type === "draft" && !action.config.draftTemplate?.trim()) return false;
     }
 
     return actions.length > 0;
@@ -405,73 +403,51 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>{currentRule ? 'Edit Rule' : 'Configure Rule'}</DialogTitle>
-          <DialogDescription>
-            {currentRule ? 'Modify your existing rule' : 'Customize your rule and add actions.'}
-          </DialogDescription>
+          <DialogTitle>{currentRule ? "Edit Rule" : "Configure Rule"}</DialogTitle>
+          <DialogDescription>{currentRule ? "Modify your existing rule" : "Customize your rule and add actions."}</DialogDescription>
         </DialogHeader>
         <div className="flex 1 overflow-y-auto grid gap-4 p-4">
           {/* Rule Name */}
           <div>
             <Label htmlFor="ruleName">Rule Name</Label>
-            <Input 
-              id="ruleName" 
-              value={ruleName} 
-              onChange={(e) => setRuleName(e.target.value)}
-              placeholder="Enter rule name"
-            />
+            <Input id="ruleName" value={ruleName} onChange={(e) => setRuleName(e.target.value)} placeholder="Enter rule name" />
           </div>
-          
+
           {/* Rule Description */}
           <div>
             <Label htmlFor="ruleDescription">Description</Label>
-            <Input 
-              id="ruleDescription" 
-              value={ruleDescription} 
-              onChange={(e) => setRuleDescription(e.target.value)}
-              placeholder="Enter rule description"
-            />
+            <Input id="ruleDescription" value={ruleDescription} onChange={(e) => setRuleDescription(e.target.value)} placeholder="Enter rule description" />
           </div>
-          
+
           {/* Action Types */}
           <div>
             <Label>Actions</Label>
             <div className="flex flex-wrap gap-2 mt-2">
               {actionTypes.map((actionType) => (
-                <Button 
-                  key={actionType.value} 
-                  variant="outline" 
-                  onClick={() => handleAddAction(actionType.value)}
-                >
+                <Button key={actionType.value} variant="outline" onClick={() => handleAddAction(actionType.value)}>
                   <actionType.icon className="mr-2 h-4 w-4" />
                   {actionType.label}
                 </Button>
               ))}
             </div>
           </div>
-          
+
           {/* List of Actions */}
           {actions.map((action, index) => (
             <div key={index} className="border rounded-lg p-4 relative">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2"
-                onClick={() => handleRemoveAction(index)}
-              >
+              <Button variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => handleRemoveAction(index)}>
                 <TrashIcon className="h-4 w-4" />
               </Button>
-              <ActionConfig
-                action={action}
-                onConfigChange={(config) => handleActionConfigChange(index, config)}
-              />
+              <ActionConfig action={action} onConfigChange={(config) => handleActionConfigChange(index, config)} />
             </div>
           ))}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
           <Button onClick={handleSave} disabled={!canSaveRule()}>
-            {currentRule ? 'Update Rule' : 'Save Rule'}
+            {currentRule ? "Update Rule" : "Save Rule"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -480,33 +456,23 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
 }
 
 // Component to configure individual actions
-function ActionConfig({ action, onConfigChange }: { action: Action, onConfigChange: (config: Record<string, any>) => void }) {
+function ActionConfig({ action, onConfigChange }: { action: Action; onConfigChange: (config: Record<string, any>) => void }) {
   switch (action.type) {
-    case 'label':
+    case "label":
       return (
         <div>
           <Label htmlFor="labelName">Label Name</Label>
-          <Input
-            id="labelName"
-            value={action.config.labelName || ''}
-            onChange={(e) => onConfigChange({ ...action.config, labelName: e.target.value })}
-            placeholder="Enter label name"
-          />
+          <Input id="labelName" value={action.config.labelName || ""} onChange={(e) => onConfigChange({ ...action.config, labelName: e.target.value })} placeholder="Enter label name" />
         </div>
       );
-    case 'forward':
+    case "forward":
       return (
         <div>
           <Label htmlFor="forwardTo">Forward To</Label>
-          <Input
-            id="forwardTo"
-            value={action.config.forwardTo || ''}
-            onChange={(e) => onConfigChange({ ...action.config, forwardTo: e.target.value })}
-            placeholder="Enter email to forward to"
-          />
+          <Input id="forwardTo" value={action.config.forwardTo || ""} onChange={(e) => onConfigChange({ ...action.config, forwardTo: e.target.value })} placeholder="Enter email to forward to" />
         </div>
       );
-    case 'draft':
+    case "draft":
       return (
         <div>
           <Label htmlFor="draftTemplate">Draft Template</Label>
@@ -517,28 +483,23 @@ function ActionConfig({ action, onConfigChange }: { action: Action, onConfigChan
             placeholder="Enter email to draft to"
           /> */}
 
-          <Input
-            id="draftTemplate"
-            value={action.config.draftTemplate || ''}
-            onChange={(e) => onConfigChange({ ...action.config, draftTemplate: e.target.value })}
-            placeholder="Enter draft message"
-          />
+          <Input id="draftTemplate" value={action.config.draftTemplate || ""} onChange={(e) => onConfigChange({ ...action.config, draftTemplate: e.target.value })} placeholder="Enter draft message" />
         </div>
       );
-      case 'archive':
-        return (
-          <div>
-            <Label>Archive Immediately</Label>
-            <p className="text-sm text-gray-500">This action will be applied automatically.</p>
-          </div>
-        );
-      case 'favorite':
-        return (
-          <div>
-            <Label>Favorite Immediately</Label>
-            <p className="text-sm text-gray-500">This action will be applied automatically.</p>
-          </div>
-        );
+    case "archive":
+      return (
+        <div>
+          <Label>Archive Immediately</Label>
+          <p className="text-sm text-gray-500">This action will be applied automatically.</p>
+        </div>
+      );
+    case "favorite":
+      return (
+        <div>
+          <Label>Favorite Immediately</Label>
+          <p className="text-sm text-gray-500">This action will be applied automatically.</p>
+        </div>
+      );
     default:
       return null;
   }

@@ -120,25 +120,100 @@ async function fetchEmailHistory(accessToken, historyId) {
   }
 }
 
+async function getLatestHistoryId(accessToken) {
+  const gmailEndpoint = "https://gmail.googleapis.com/gmail/v1/users/me/messages";
+  try {
+    const response = await axios.get(gmailEndpoint, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/json",
+      },
+      params: { maxResults: 1 },
+    });
+
+    const messageId = response.data.messages[0].id;
+    const messageDetails = await axios.get(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    return messageDetails.data.historyId;
+  } catch (error) {
+    console.error("Error fetching latest history ID:", error.response?.data || error.message);
+    throw error;
+  }
+}
+
 // this runs whenever the user is logged
 // links user to pub/sub
 async function watchGmailInbox(accessToken) {
+  console.log("Setting up Gmail watch...");
   const gmailEndpoint = "https://gmail.googleapis.com/gmail/v1/users/me/watch";
   const requestBody = {
-    labelIds: ["INBOX"], // only monitor the inbox
+    labelIds: ["INBOX"],
     topicName: "projects/inboxpilot-c4098/topics/gmail-watch",
   };
 
   try {
+    // First, stop any existing watch
+    await stopWatchGmailInbox(accessToken);
+
+    // Then start a new watch
     const response = await axios.post(gmailEndpoint, requestBody, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
     });
-    console.log("Watch response:", response.data);
+
+    // Store the historyId from the response
+    const historyId = response.data.historyId;
+    console.log("Watch successfully set up with historyId:", historyId);
+
+    return historyId;
   } catch (error) {
-    console.error("Error setting up Gmail watch:", error.response ? error.response.data : error.message);
+    console.error("Error setting up Gmail watch:", error.response?.data || error.message);
+    throw error;
+  }
+}
+
+async function stopWatchGmailInbox(accessToken) {
+  console.log("HIIIII");
+  const gmailEndpoint = "https://gmail.googleapis.com/gmail/v1/users/me/stop";
+  const requestBody = {
+    labelIds: ["INBOX"], // only monitor the inbox
+    topicName: "projects/inboxpilot-c4098/topics/gmail-watch",
+  };
+  try {
+    const response = await axios.post(
+      gmailEndpoint,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    console.log("Gmail watch stopped successfully:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error stopping Gmail watch:", error.response ? error.response.data : error.message);
+    throw error;
+  }
+}
+
+// Function to get a fresh history ID
+async function getFreshHistoryId(accessToken) {
+  try {
+    const response = await axios.get("https://gmail.googleapis.com/gmail/v1/users/me/profile", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    return response.data.historyId;
+  } catch (error) {
+    console.error("Error getting fresh history ID:", error);
+    throw error;
   }
 }
 
@@ -602,4 +677,5 @@ module.exports = {
   createDraft,
   favoriteEmail,
   getOriginalEmailDetails,
+  getLatestHistoryId,
 };

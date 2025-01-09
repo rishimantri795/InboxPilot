@@ -1,32 +1,36 @@
 const express = require("express");
-const admin = require("../api/firebase.js"); // Import the `admin` object from firebase.js
+const admin = require("../api/firebase.js"); // import the firebase admin object
 const passport = require("passport");
 
 const router = express.Router();
-require("dotenv").config();
+require("dotenv").config(); // we get the env vars in process.env
 
 const db = admin.firestore();
 const axios = require("axios");
 
 const cookieParser = require("cookie-parser");
-router.use(cookieParser());
+router.use(cookieParser()); // enables us to use cookies in the router
+const { watchGmailInbox } = require("../utils/gmailService.js");
+const { getAccessTokenFromRefreshToken } = require("../utils/tokenService.js");
 
+// initiates the google OAuth authentication process
 router.get("/google/auth", (req, res) => {
   passport.authenticate("google", {
     scope: ["profile", "email", "https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.modify"],
-    accessType: "offline",
+    accessType: "offline", // requests a refresh token so we have access even after user logs out
     approvalPrompt: "force",
   })(req, res);
 });
 
+// handles the callback from google after authentication
 router.get(
   "/google/auth/callback",
   passport.authenticate("google", {
-    failureRedirect: "http://localhost:3000/",
+    failureRedirect: "http://localhost:3000/", // goes here if authentication fails
   }),
   async (req, res) => {
     try {
-      res.redirect("http://localhost:3000/rules");
+      res.redirect("http://localhost:3000/rules"); // goes here if authentication succeeds
     } catch (error) {
       console.error("Callback error:", error);
       res.status(500).send("Internal Server Error");
@@ -34,12 +38,63 @@ router.get(
   }
 );
 
-//firebase auth below
-//   ***************************************************************************************************
+//! new
+async function stopGmailWatch(accessToken) {
+  const gmailEndpoint = "https://gmail.googleapis.com/gmail/v1/users/me/stop";
 
-router.get("/auth", async (req, res) => {
-  //   passport.authenticate("google", { scope: ["profile", "email"] })(req, res);
+  try {
+    // Make a POST request to the Gmail API's /stop endpoint
+    const response = await axios.post(
+      gmailEndpoint,
+      {}, // Empty request body
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`, // Access token for authentication
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log("Gmail watch stopped successfully:", response.data);
+
+    // Return success along with the response data
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error stopping Gmail watch:", error.response?.data || error.message);
+
+    // Return failure along with error details
+    return { success: false, error: error.response?.data || error.message };
+  }
+}
+
+//! new
+router.post("/detach-gmail-listener", async (req, res) => {
+  try {
+    const { refreshToken } = req.user; // Get refreshToken from authenticated user
+
+    if (!refreshToken) {
+      return res.status(400).json({ error: "Refresh token not found" });
+    }
+
+    // Fetch a new access token from the refresh token
+    const accessToken = await getAccessTokenFromRefreshToken(refreshToken);
+
+    // Call the stopGmailWatch function
+    const result = await stopGmailWatch(accessToken);
+
+    if (result.success) {
+      return res.status(200).json({ message: "Gmail watch stopped successfully", data: result.data });
+    } else {
+      return res.status(500).json({ error: "Failed to stop Gmail watch", details: result.error });
+    }
+  } catch (error) {
+    console.error("Error detaching Gmail listener:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
 });
+
+// firebase auth belowWW
+// ***************************************************************************************************
 
 router.post("/verifyToken", async (req, res) => {
   const token = req.body.idToken;
@@ -154,12 +209,40 @@ router.post("/logout", (req, res) => {
   });
 });
 
-router.get("/auth/google/callback", async (req, res) => {
-  //   passport.authenticate("google", {
-  //     successRedirect: "/failure",
-  //     failureRedirect: "/",
-  //   })(req, res);
-});
+router.get(
+  "/google/auth/callback",
+  passport.authenticate("google", {
+    failureRedirect: "http://localhost:3000/", // goes here if authentication fails
+  }),
+  async (req, res) => {
+    try {
+      // Get access token from the authenticated user
+      const accessToken = req.user.accessToken;
+
+      if (accessToken) {
+        try {
+          // Set up Gmail watch
+          const historyId = await watchGmailInbox(accessToken);
+
+          // Store the historyId in Firestore
+          if (req.user.id) {
+            await db.collection("Users").doc(req.user.id).update({
+              historyId: historyId,
+            });
+          }
+        } catch (error) {
+          console.error("Error setting up Gmail watch:", error);
+          // Continue with redirection even if watch setup fails
+        }
+      }
+
+      res.redirect("http://localhost:3000/rules");
+    } catch (error) {
+      console.error("Callback error:", error);
+      res.status(500).send("Internal Server Error");
+    }
+  }
+);
 
 router.get("/auth/success", (req, res) => {
   res.send("user created ");
