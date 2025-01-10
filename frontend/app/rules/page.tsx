@@ -219,108 +219,112 @@ export default function RulesPage() {
     return <div>Error: {error}</div>;
   } else {
     return (
-      <>
-        <Toaster />
-        <div className="container mx-auto px-4 py-8">
-          {/* Header Section */}
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold">Email Rules</h1>
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <p className="font-medium">{user.name ? user.name : "John Doe"}</p>
-                <p className="text-sm text-gray-500">{user.email}</p>
-              </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Avatar className="cursor-pointer bg-black text-white">
-                    <AvatarImage src="" alt="User avatar" />
-                    <AvatarFallback className="bg-black text-white">{user.email ? user.email.charAt(0).toUpperCase() : "U"}</AvatarFallback>
-                  </Avatar>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
-                    <LogOutIcon className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
-                  </DropdownMenuItem>
 
-                  <DropdownMenuItem onClick={detachGmailListener} className="cursor-pointer">
-                    <MailXIcon className="mr-2 h-4 w-4" />
-                    <span>Detach Gmail Listener</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarTrigger />
+          <div className="container mx-auto px-4 py-8">
+            {/* Header Section */}
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="text-3xl font-bold">Email Rules</h1>
+              <div className="flex items-center space-x-4">
+                <div className="text-right">
+                  <p className="font-medium">{user.name ? user.name : "John Doe"}</p>
+                  <p className="text-sm text-gray-500">{user.email}</p>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Avatar className="cursor-pointer bg-black text-white">
+                      <AvatarImage src="" alt="User avatar" />
+                      <AvatarFallback className="bg-black text-white">{user.email ? user.email.charAt(0).toUpperCase() : "U"}</AvatarFallback>
+                    </Avatar>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                      <LogOutIcon className="mr-2 h-4 w-4" />
+                      <span>Log out</span>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem onClick={detachGmailListener} className="cursor-pointer">
+                      <MailXIcon className="mr-2 h-4 w-4" />
+                      <span>Detach Gmail Listener</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
-          </div>
 
-          {/* Add Rule Button */}
-          <Button onClick={() => setIsAddRuleOpen(true)} className="mb-4">
-            <PlusIcon className="mr-2 h-4 w-4" /> Add Rule
-          </Button>
+            {/* Add Rule Button */}
+            <Button onClick={() => setIsAddRuleOpen(true)} className="mb-4">
+              <PlusIcon className="mr-2 h-4 w-4" /> Add Rule
+            </Button>
 
-          {/* Rules Table */}
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Rule Name</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Actions</TableHead>
-                <TableHead>Edit</TableHead>
-                <TableHead>Delete</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rules.map((rule) => (
-                <TableRow key={rule.id}>
-                  <TableCell>{rule.name}</TableCell>
-                  <TableCell>{rule.description}</TableCell>
-                  <TableCell>
-                    {rule.actions.map((action, idx) => (
-                      <span key={idx} className="block">
-                        {action.type.charAt(0).toUpperCase() + action.type.slice(1)}
-                      </span>
-                    ))}
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" onClick={() => handleEditRule(rule)}>
-                      <PencilIcon className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" onClick={() => handleDeleteRule(rule.id)}>
-                      <TrashIcon className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+            {/* Rules Table */}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Rule Name</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Actions</TableHead>
+                  <TableHead>Edit</TableHead>
+                  <TableHead>Delete</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          {/* Add Rule Dialog */}
-          <Dialog open={isAddRuleOpen} onOpenChange={setIsAddRuleOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add a New Rule</DialogTitle>
-                <DialogDescription>Choose a prebuilt rule or create a custom one.</DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4">
-                {prebuiltRules.map((rule) => (
-                  <Button key={rule.id} variant="outline" onClick={() => handleAddRule(rule)}>
-                    {rule.name}
-                  </Button>
+              </TableHeader>
+              <TableBody>
+                {rules.map((rule) => (
+                  <TableRow key={rule.id}>
+                    <TableCell>{rule.name}</TableCell>
+                    <TableCell>{rule.description}</TableCell>
+                    <TableCell>
+                      {rule.actions.map((action, idx) => (
+                        <span key={idx} className="block">
+                          {action.type.charAt(0).toUpperCase() + action.type.slice(1)}
+                        </span>
+                      ))}
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" onClick={() => handleEditRule(rule)}>
+                        <PencilIcon className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" onClick={() => handleDeleteRule(rule.id)}>
+                        <TrashIcon className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => handleAddRule({ id: "", name: "Custom Rule", description: "Create a custom rule", actions: [] })}>
-                  Create Custom Rule
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </TableBody>
+            </Table>
 
-          {/* Configure Rule Dialog */}
-          <ConfigureRuleDialog isOpen={isConfigureRuleOpen} onOpenChange={setIsConfigureRuleOpen} prebuiltRule={selectedPrebuiltRule} currentRule={currentRule} onSave={handleSaveRule} />
-        </div>
-      </>
+            {/* Add Rule Dialog */}
+            <Dialog open={isAddRuleOpen} onOpenChange={setIsAddRuleOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add a New Rule</DialogTitle>
+                  <DialogDescription>Choose a prebuilt rule or create a custom one.</DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4">
+                  {prebuiltRules.map((rule) => (
+                    <Button key={rule.id} variant="outline" onClick={() => handleAddRule(rule)}>
+                      {rule.name}
+                    </Button>
+                  ))}
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => handleAddRule({ id: "", name: "Custom Rule", description: "Create a custom rule", actions: [] })}>
+                    Create Custom Rule
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Configure Rule Dialog */}
+            <ConfigureRuleDialog isOpen={isConfigureRuleOpen} onOpenChange={setIsConfigureRuleOpen} prebuiltRule={selectedPrebuiltRule} currentRule={currentRule} onSave={handleSaveRule} />
+          </div>
+      
+      </SidebarProvider>
+      // </>
     );
   }
 }
