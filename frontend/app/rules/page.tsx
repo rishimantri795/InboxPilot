@@ -15,6 +15,11 @@ import { PlusIcon, TagIcon, SendIcon, ArchiveIcon, StarIcon, PencilIcon, TrashIc
 import useCurrentUser from '@/hooks/useCurrentUser';
 import { addRule, deleteRule } from '@/lib/api';
 
+
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+
+import { AppSidebar } from "@/components/ui/app-sidebar"
+
 // Prebuilt rules with actions as arrays
 const prebuiltRules = [
   { 
@@ -205,9 +210,13 @@ export default function RulesPage() {
     return <div>Error: {error}</div>;
   } else {
     return (
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarTrigger />
       <div className="container mx-auto px-4 py-8">
-        {/* Header Section */}
-        <div className="flex justify-between items-center mb-6">
+        {/* Header Section */}   
+        <div className="flex justify-between items-center mb-6">            
+
           <h1 className="text-3xl font-bold">Email Rules</h1>
           <div className="flex items-center space-x-4">
             <div className="text-right">
@@ -238,7 +247,8 @@ export default function RulesPage() {
         
         {/* Add Rule Button */}
         <Button onClick={() => setIsAddRuleOpen(true)} className="mb-4">
-          <PlusIcon className="mr-2 h-4 w-4" /> Add Rule
+          Add Rule 
+          <PlusIcon className="h-4 w-2"/>
         </Button>
         
         {/* Rules Table */}
@@ -315,6 +325,8 @@ export default function RulesPage() {
           onSave={handleSaveRule}
         />
       </div>
+      </SidebarProvider>
+
     );
   }
 }
