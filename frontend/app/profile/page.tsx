@@ -13,22 +13,58 @@ import { useRouter } from 'next/navigation';
 
 import useCurrentUser from '@/hooks/useCurrentUser';
 
-
-const getUserInfo = () => {
-  // This is a mock function. In a real application, you would fetch this data from your database.
-  return [
-    "I am a college student studying computer engineering.",
-    "I enjoy playing basketball in my free time.",
-    "I'm passionate about artificial intelligence and machine learning.",
-  ]
-}
+import axios from 'axios';
+import { useEffect, useState } from 'react'
 
 export default function ProfilePage() {
+
   const { user, loading, error, clearUser } = useCurrentUser();
+  const [userInfo, setUserInfo] = useState(null);
+
+  // const userInfo = [];
+
+  useEffect(() => {
+    async function getUserInfo () {
+      // This is a mock function. In a real application, you would fetch this data from your database.
+
+      // return [
+      //   "I am a college student studying computer engineering.",
+      //   "I enjoy playing basketball in my free time.",
+      //   "I'm passionate about artificial intelligence and machine learning.",
+      // ]
+
+      if (!user) {
+        return null
+      }
+
+      try {
+        const response = await axios.get(`http://localhost:3010/api/users/${user.id}/profile`, {
+          withCredentials: true,
+        });
+
+        if (response.data) {
+          setUserInfo(response.data)
+
+        } else {
+          return null
+     
+        }
+      } catch (err) {
+        console.error("Error fetching current user:", err);
+        return null
+      }
+    };
+
+  getUserInfo()
+
+  }, [user])
 
   // console.log(user)
   const router = useRouter();
+
+
   const handleLogout = async () => {
+
     try {
       const response = await fetch("http://localhost:3010/api/users/logout", {
         method: "POST",
@@ -49,9 +85,9 @@ export default function ProfilePage() {
     }
   };
 
-  const userInfo = getUserInfo()
+  // const userInfo = getUserInfo()
 
-  if (loading) {
+  if (loading || userInfo === null) {
     return <div>Loading...</div>;
   } else if (!user) {
     router.push("/");
@@ -60,9 +96,11 @@ export default function ProfilePage() {
     return <div>Error: {error}</div>;
   } else {
 
+    console.log("user info: ", userInfo)
+
     return (
         <SidebarProvider>
-            <AppSidebar />
+            <AppSidebar currentTab='User Profile'/>
             <SidebarTrigger />
 
           <div className="container mx-auto py-10">
@@ -97,7 +135,7 @@ export default function ProfilePage() {
             </div>
             </div>
 
-          <UserProfile initialInfo={userInfo} />
+          <UserProfile initialInfo={userInfo} user={user.id}/>
 
         </div>
 

@@ -34,6 +34,7 @@ const useCurrentUser = () => {
             rules: response.data.user.rules,
             refreshToken: response.data.user.refreshToken,
             createdAt: response.data.user.createdAt,
+            profile: response.data.user.profile,
           };
           setUser(mappedUser);
           console.log("Authenticated user:", mappedUser);

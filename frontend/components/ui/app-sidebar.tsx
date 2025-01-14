@@ -31,7 +31,7 @@ const items = [
   // },
 ]
 
-export function AppSidebar() {
+export function AppSidebar({currentTab}: {currentTab: string}) {
   return (
     <Sidebar>
       <SidebarContent>
@@ -40,7 +40,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.title} active={currentTab === item.title}>
                   <SidebarMenuButton asChild>
                     <a href={item.url}>
                       <item.icon />

@@ -465,4 +465,131 @@ router.delete("/", (req, res) => {});
 
 router.get("/:id", (req, res) => {});
 
+//route to get profile info from user db
+
+router.get("/:id/profile", async (req, res) => {
+
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).send("Missing user ID.");
+  }
+
+  try {
+    const userRef = db.collection("Users").doc(id);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    const userData = userDoc.data();
+    const existingProfile = userData.profile || [];
+
+    return res.status(200).json(existingProfile);
+  } catch (error) {
+    console.error("Error fetching rules:", error);
+    return res.status(500).json({ error: "Internal Server Error." });
+  }
+
+});
+
+
+router.post("/:id/add_to_profile", async (req, res) => {
+
+  const { id } = req.params;
+  const { info }   = req.body;
+
+  if (!id) {
+    return res.status(400).send("Missing user ID.");
+  }
+
+  if (!info) {
+    return res.status(400).json({ error: "Missing profile data." });
+  }
+
+  try {
+    const userRef = db.collection("Users").doc(id);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+
+    const userData = userDoc.data();
+    const existingProfile = userData.profile || [];
+
+    existingProfile.push(info);
+
+    await userRef.update({
+      profile: existingProfile,
+    });
+    
+    const updatedUserDoc = await userRef.get();
+    const updatedUserData = updatedUserDoc.data();
+
+    return res.status(200).json({
+      message: "Profile updated successfully.",
+      user: {
+        id: updatedUserDoc.id,
+        ...updatedUserData,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    return res.status(500).json({ error: "Internal Server Error." });
+  }
+
+});
+
+
+router.post("/:id/delete_from_profile", async (req, res) => {
+  
+  const { id } = req.params;
+  const { info } = req.body;
+
+  if (!id) {
+    return res.status(400).send("Missing user ID.");
+  }
+
+  if (!info) {
+    return res.status(400).json({ error: "Missing profile data." });
+  }
+
+  try {
+    const userRef = db.collection("Users").doc(id);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    const userData = userDoc.data();
+    const existingProfile = userData.profile || [];
+
+    const updatedProfile = existingProfile.filter((item) => item !== info);
+
+    await userRef.update({
+      profile: updatedProfile,
+    });
+
+    const updatedUserDoc = await userRef.get();
+    const updatedUserData = updatedUserDoc.data();
+
+    return res.status(200).json({
+      message: "Profile item deleted successfully.",
+      user: {
+        id: updatedUserDoc.id,
+        ...updatedUserData,
+      },
+    });
+  } catch (error) {
+    console.error("Error deleting profile item:", error);
+    return res.status(500).json({ error: "Internal Server Error." });
+  }
+
+})
+
+
 module.exports = router;

@@ -12,7 +12,7 @@ const openai = new OpenAI({
   apiKey: envvars.OPENAI_API_KEY,
 });
 
-async function classifyEmail(emailContent, rules) {
+async function classifyEmail(emailContent, rules, profile) {
   const ruleKeys = Object.keys(rules);
 
   const ruleDescriptions = ruleKeys.map((key) => {
@@ -24,7 +24,11 @@ async function classifyEmail(emailContent, rules) {
   const prompt = `Here are some rules for handling emails:
 ${ruleDescriptions.join("\n")}
 
-Given the following email, identify the rule that best correlates to the email content, if any. If none of the rules apply strongly, return "Null":
+Here is the user's profile:
+
+${profile.join("\n")}
+
+Given the following email, identify the rule that strongly correlates to the email content, if any. If none of the rules apply strongly, return "Null":
 "${emailContent}"
 
 Return only the key (as a number starting from 0) of the rule that best applies or "Null" if no rule applies.`;

@@ -99,7 +99,7 @@ app.post("/notifications", async (req, res) => {
                   const emailContent = await getMessageDetails(accessToken, message.id);
                   console.log(emailContent);
 
-                  const ruleKey = await classifyEmail(emailContent, user.rules);
+                  const ruleKey = await classifyEmail(emailContent, user.rules, user.profile);
                   console.log("Rule key:", ruleKey);
 
                   if (ruleKey === "Null") {

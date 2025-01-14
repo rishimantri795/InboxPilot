@@ -56,7 +56,7 @@ const prebuiltRules = [
 const actionTypes = [
   { value: "label", label: "Label", icon: TagIcon },
   { value: "forward", label: "Forward", icon: SendIcon },
-  { value: "draft", label: "Automatic Draft", icon: PencilIcon },
+  { value: "draft", label: "Draft Reply", icon: PencilIcon },
   { value: "archive", label: "Archive", icon: ArchiveIcon },
   { value: "favorite", label: "Favorite", icon: StarIcon },
 ];
@@ -127,6 +127,8 @@ export default function RulesPage() {
 
     if (currentRule) {
       // Update existing rule
+      // console.log(user.id);
+      
       setRules(rules.map((rule) => (rule.id === currentRule.id ? { ...rule, name: configuredRule.name, description: configuredRule.description, actions: configuredRule.actions } : rule)));
       try {
         await axios.put(`http://localhost:3010/api/users/${user.id}/rules/${currentRule.id}`, serializedRule, { withCredentials: true });
@@ -221,7 +223,7 @@ export default function RulesPage() {
     return (
 
       <SidebarProvider>
-        <AppSidebar />
+        <AppSidebar currentTab="Rules" />
         <SidebarTrigger />
           <div className="container mx-auto px-4 py-8">
             {/* Header Section */}
@@ -426,8 +428,8 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
 
           {/* Rule Description */}
           <div>
-            <Label htmlFor="ruleDescription">Description</Label>
-            <Input id="ruleDescription" value={ruleDescription} onChange={(e) => setRuleDescription(e.target.value)} placeholder="Enter rule description" />
+            <Label htmlFor="ruleDescription">Email Condition</Label>
+            <Input id="ruleDescription" value={ruleDescription} onChange={(e) => setRuleDescription(e.target.value)} placeholder="Describe condition for the rule" />
           </div>
 
           {/* Action Types */}
