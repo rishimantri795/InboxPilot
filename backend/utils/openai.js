@@ -26,7 +26,7 @@ ${ruleDescriptions.join("\n")}
 
 Here is the user's profile:
 
-${profile.join("\n")}
+${profile == undefined ? "None" : profile.join("\n")}
 
 Given the following email, identify the rule that strongly correlates to the email content, if any. If none of the rules apply strongly, return "Null":
 "${emailContent}"
@@ -39,7 +39,11 @@ Return only the key (as a number starting from 0) of the rule that best applies 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "You are an assistant that helps classify emails based on rules." },
+        {
+          role: "system",
+          content:
+            "You are an assistant that helps classify emails based on rules.",
+        },
         { role: "user", content: prompt },
       ],
     });
