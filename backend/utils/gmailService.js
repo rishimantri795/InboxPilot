@@ -1,5 +1,6 @@
 const axios = require("axios");
 const https = require("https");
+const { htmlToText } = require('html-to-text');
 
 const agent = new https.Agent({ rejectUnauthorized: false });
 
@@ -52,18 +53,30 @@ async function getMessageDetails(accessToken, messageId) {
     const getEmailContent = (payload) => {
       // Check if this is a simple message with body data (text or HTML)
       if (payload.body && payload.body.data) {
-        const encodedContent = payload.body.data;
-        const decodedContent = Buffer.from(encodedContent, "base64").toString("utf-8");
-        return decodedContent;
+        if (payload.mimeType === 'text/plain') {
+          const encodedContent = payload.body.data;
+          const decodedContent = Buffer.from(encodedContent, "base64").toString("utf-8");
+          return decodedContent;
+        } else if (payload.mimeType === 'text/html') {
+          const encodedHtml = payload.body.data;
+          const decodedHtml = Buffer.from(encodedHtml, "base64").toString("utf-8");
+          const plainText = htmlToText(decodedHtml, { wordwrap: false });
+          return plainText;
+        }
       }
 
       // Otherwise, look through the parts for text or HTML content
       if (payload.parts) {
         for (let part of payload.parts) {
-          if (part.mimeType === "text/plain" || part.mimeType === "text/html") {
+          if (part.mimeType === 'text/plain' && part.body && part.body.data) {
             const encodedContent = part.body.data;
             const decodedContent = Buffer.from(encodedContent, "base64").toString("utf-8");
             return decodedContent;
+          } else if (part.mimeType === 'text/html' && part.body && part.body.data) {
+            const encodedHtml = part.body.data;
+            const decodedHtml = Buffer.from(encodedHtml, "base64").toString("utf-8");
+            const plainText = htmlToText(decodedHtml, { wordwrap: false });
+            return plainText;
           }
         }
       }
@@ -74,6 +87,16 @@ async function getMessageDetails(accessToken, messageId) {
     // Get the email content from the payload
     const emailContent = getEmailContent(payload);
     console.log("Email Content:", emailContent);
+    
+    /* potential logic to set hard limit on emails
+    const MAX_CONTENT_LENGTH = 2500; // change as needed
+    let finalContent = emailContent;
+    if (emailContent.length > MAX_CONTENT_LENGTH) {
+      finalContent = emailContent.substring(0, MAX_CONTENT_LENGTH) + '...';
+    }
+    console.log('Final Content:', finalContent);
+    return finalContent;
+    */
     return emailContent;
   } catch (error) {
     console.error(`Error fetching details for message ID ${messageId}:`, error.response ? error.response.data : error.message);
