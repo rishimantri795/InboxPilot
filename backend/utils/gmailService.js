@@ -84,8 +84,23 @@ async function getMessageDetails(accessToken, messageId) {
       return "No email content found";
     };
 
+    const simplifyURL = (text) => {
+      const urlRegex = /(https?:\/\/[^\s\[\]]+)/g;
+    
+      return text.replace(urlRegex, (url) => {
+        try {
+          const parsedUrl = new URL(url);
+          const hostname = parsedUrl.hostname;
+          return `[URL: ${parsedUrl.protocol}//${hostname}]`;
+        } catch (error) {
+          return url;
+        }
+      });
+    };
+    
+
     // Get the email content from the payload
-    const emailContent = getEmailContent(payload);
+    const emailContent = simplifyURL(getEmailContent(payload));
     console.log("Email Content:", emailContent);
     
     /* potential logic to set hard limit on emails
