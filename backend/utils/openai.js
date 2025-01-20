@@ -12,7 +12,7 @@ const openai = new OpenAI({
   apiKey: envvars.OPENAI_API_KEY,
 });
 
-async function classifyEmail(emailContent, rules) {
+async function classifyEmail(emailContent, rules, profile) {
   const ruleKeys = Object.keys(rules);
 
   const ruleDescriptions = ruleKeys.map((key) => {
@@ -26,6 +26,7 @@ ${ruleDescriptions.join("\n")}
 
 Here is the user's profile:
 
+${profile == undefined ? "None" : profile.join("\n")}
 
 Given the following email, identify the rule that strongly correlates to the email content, if any. If none of the rules apply strongly, return "Null":
 "${emailContent}"
