@@ -38,7 +38,10 @@ Return only the key (as a number starting from 0) of the rule that best applies 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "You are an assistant that helps classify emails based on rules." },
+        {
+          role: "system",
+          content: "You are an assistant that helps classify emails based on rules.",
+        },
         { role: "user", content: prompt },
       ],
     });
