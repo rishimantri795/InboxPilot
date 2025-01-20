@@ -129,3 +129,20 @@ body {
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
+
+.shepherd-modal-overlay {
+  z-index: 9998 !important;
+}
+
+.shepherd-element {
+  z-index: 10000 !important;
+}
+
+.shepherd-button-exit {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+[data-dialog-content] {
+  z-index: 9999;
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -17,6 +17,9 @@ import { addRule, deleteRule } from "@/lib/api";
 import { Toaster, toast } from "sonner";
 import "react-toastify/dist/ReactToastify.css";
 
+import 'shepherd.js/dist/css/shepherd.css';
+import Shepherd from 'shepherd.js';
+
 
 
 
@@ -25,6 +28,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/ui/app-sidebar"
 
 // Prebuilt rules with actions as arrays
+
 const prebuiltRules = [
   {
     id: 1,
@@ -84,6 +88,111 @@ export default function RulesPage() {
   const [currentRule, setCurrentRule] = useState<Rule | null>(null);
   const { user, loading, error, clearUser } = useCurrentUser();
   const [logoutSuccess, setLogoutSuccess] = useState(false);
+  const [tour, setTour] = useState<Shepherd.Tour | null>(null);
+
+  useEffect(() => {
+
+    const newTour = new Shepherd.Tour({
+      useModalOverlay: true,
+      defaultStepOptions: {
+        text: 'Click here to add a new rule for your email inbox',
+        attachTo: {
+          element: '#add-rule-button',
+          on: 'bottom'
+        },
+        classes: 'shepherd-theme-default bg-black text-white',
+        // classes: 'shepherd-theme-default',
+        scrollTo: true,
+        popperOptions: {
+          modifiers: [{
+            name: 'offset',
+            options: {
+              offset: [0, 12]
+            }
+          }]
+        },
+        exitOnEsc: true,
+        keyboardNavigation: true
+
+      }
+    });
+
+    newTour.addStep({
+      id: 'example-step',
+      text: 'Click here to add a new rule for your email inbox',
+      attachTo: {
+        element: '#add-rule-button',
+        on: 'bottom'
+      },
+      buttons: [
+        {
+          text: 'Exit Tour',
+          action: () => newTour.cancel()
+        }
+      ]
+    });
+
+    newTour.addStep({
+      id: 'dialog-step',
+      text: 'We can choose from some prebuilt rules or create a custom rule. Let\'s create a custom rule for now',
+      attachTo: {
+        element: '[data-dialog-content]',
+        on: 'bottom-start'
+      },
+      classes: 'shepherd-dialog-step',
+      modalOverlayOpeningRadius: 4,
+      buttons: [
+        {
+          text: 'Exit Tour',
+          classes: 'shephard-button-exit', 
+          action() {
+            setIsAddRuleOpen(false); // Close dialog first
+            newTour.cancel();
+        }
+        }
+      ]
+    });
+
+
+    newTour.addStep({
+      id: 'configure-step1',
+      text: 'Let\'s configure the rule.\n Start by giving it a name.\n Next, describe the condition for the rule. Finally, add actions to be performed when the condition is met',
+      attachTo: {
+        element: '[data-configure-content]',
+        on: 'top-start'
+      },
+      classes: 'shepherd-dialog-step',
+      modalOverlayOpeningRadius: 4,
+      buttons: [
+        {
+          text: 'Exit Tour',
+          classes: 'shephard-button-exit', 
+          action() {
+            setIsConfigureRuleOpen(false); // Close dialog first
+            newTour.cancel();
+        }
+        }
+      ]
+    }); 
+
+    newTour.addStep({
+      id: 'finish-step',
+      text: 'Thanks for taking the tour! You can always start it again by clicking the button',
+      attachTo: {
+        element: 'tour-finish',
+        on: 'bottom'
+      },
+      buttons: [
+        {
+          text: 'Exit Tour',
+          action: () => newTour.cancel()
+        }
+      ]
+    });
+
+    setTour(newTour);
+
+  }, []);    
 
   // Fetch and parse rules from the backend
   useEffect(() => {
@@ -97,6 +206,37 @@ export default function RulesPage() {
       setRules(transformedRules);
     }
   }, [user]);
+
+  useEffect(() => {
+
+    if (isAddRuleOpen && tour.isActive()) {
+    setTimeout(() => {
+      tour.show('dialog-step');
+    }, 100);
+    }
+
+    else if (tour?.isActive() && !isConfigureRuleOpen) {
+      tour.complete();
+    }
+
+
+  }, [isAddRuleOpen]);
+
+  useEffect(() => {
+    if (tour?.isActive() && isConfigureRuleOpen) {
+      
+      setTimeout(() => {
+        tour.show('configure-step1');
+      }, 100);
+    }
+
+    else if (tour?.isActive() && !isConfigureRuleOpen) {
+      // tour.complete();
+      //move to next step
+      // tour.next();
+      tour.show('finish-step');
+    }
+  }, [isConfigureRuleOpen]);
 
   // Handle adding a new rule
   const handleAddRule = (prebuiltRule: Rule) => {
@@ -257,9 +397,14 @@ export default function RulesPage() {
             </div>
 
             {/* Add Rule Button */}
-            <Button onClick={() => setIsAddRuleOpen(true)} className="mb-4">
-              <PlusIcon className="mr-2 h-4 w-4" /> Add Rule
+            <div className="flex mb-6 space-x-4">
+            <Button id="add-rule-button" onClick = {() => setIsAddRuleOpen(true)} className="mb-2">
+              Add Rule <PlusIcon className="mr-2 h-4 w-4" />
             </Button>
+
+            <Button id='tour-finish' onClick={() => tour.start()}>Start Tour</Button>
+
+            </div>
 
             {/* Rules Table */}
             <Table>
@@ -299,8 +444,10 @@ export default function RulesPage() {
               </TableBody>
             </Table>
 
+
             {/* Add Rule Dialog */}
-            <Dialog open={isAddRuleOpen} onOpenChange={setIsAddRuleOpen}>
+
+            <Dialog open={isAddRuleOpen} onOpenChange = {setIsAddRuleOpen}>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Add a New Rule</DialogTitle>
@@ -314,7 +461,8 @@ export default function RulesPage() {
                   ))}
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => handleAddRule({ id: "", name: "Custom Rule", description: "Create a custom rule", actions: [] })}>
+
+                  <Button data-dialog-content variant="outline" onClick={() => handleAddRule({ id: "", name: "Custom Rule", description: "Create a custom rule", actions: [] })}>
                     Create Custom Rule
                   </Button>
                 </DialogFooter>
@@ -326,7 +474,6 @@ export default function RulesPage() {
           </div>
       
       </SidebarProvider>
-      // </>
     );
   }
 }
@@ -414,7 +561,7 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+      <DialogContent data-configure-content className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{currentRule ? "Edit Rule" : "Configure Rule"}</DialogTitle>
           <DialogDescription>{currentRule ? "Modify your existing rule" : "Customize your rule and add actions."}</DialogDescription>

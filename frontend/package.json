@@ -29,6 +29,7 @@
     "react": "^18",
     "react-dom": "^18",
     "react-toastify": "^11.0.2",
+    "shepherd.js": "^14.4.0",
     "sonner": "^1.7.0",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7"
