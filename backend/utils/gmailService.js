@@ -217,6 +217,33 @@ async function getFreshHistoryId(accessToken) {
   }
 }
 
+// Function to fetch the latest email using users.messages.list
+async function fetchLatestEmail(accessToken) {
+  const url = `https://gmail.googleapis.com/gmail/v1/users/me/messages`;
+  const headers = {
+    Authorization: `Bearer ${accessToken}`,
+  };
+
+  const params = new URLSearchParams({
+    labelIds: "INBOX", // Filter for inbox messages
+    q: "is:unread", // Optional: Only get unread emails (adjust as needed)
+    maxResults: "1", // Only fetch the latest email
+    sortOrder: "desc", // Sort by the most recent first
+  });
+
+  try {
+    const response = await fetch(`${url}?${params.toString()}`, { headers });
+    if (response.ok) {
+      return await response.json();
+    } else {
+      throw new Error("Error fetching latest email");
+    }
+  } catch (error) {
+    console.error("Error fetching latest email:", error);
+    throw error;
+  }
+}
+
 // Helper function to apply a label to an email
 async function applyLabelToEmail(accessToken, messageId, labelId) {
   const messageEndpoint = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}/modify`;
@@ -678,4 +705,5 @@ module.exports = {
   favoriteEmail,
   getOriginalEmailDetails,
   getLatestHistoryId,
+  fetchLatestEmail,
 };
