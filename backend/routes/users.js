@@ -468,7 +468,6 @@ router.get("/:id", (req, res) => {});
 //route to get profile info from user db
 
 router.get("/:id/profile", async (req, res) => {
-
   const { id } = req.params;
 
   if (!id) {
@@ -491,14 +490,11 @@ router.get("/:id/profile", async (req, res) => {
     console.error("Error fetching rules:", error);
     return res.status(500).json({ error: "Internal Server Error." });
   }
-
 });
 
-
 router.post("/:id/add_to_profile", async (req, res) => {
-
   const { id } = req.params;
-  const { info }   = req.body;
+  const { info } = req.body;
 
   if (!id) {
     return res.status(400).send("Missing user ID.");
@@ -516,7 +512,6 @@ router.post("/:id/add_to_profile", async (req, res) => {
       return res.status(404).json({ error: "User not found." });
     }
 
-
     const userData = userDoc.data();
     const existingProfile = userData.profile || [];
 
@@ -525,7 +520,7 @@ router.post("/:id/add_to_profile", async (req, res) => {
     await userRef.update({
       profile: existingProfile,
     });
-    
+
     const updatedUserDoc = await userRef.get();
     const updatedUserData = updatedUserDoc.data();
 
@@ -540,12 +535,9 @@ router.post("/:id/add_to_profile", async (req, res) => {
     console.error("Error updating profile:", error);
     return res.status(500).json({ error: "Internal Server Error." });
   }
-
 });
 
-
 router.post("/:id/delete_from_profile", async (req, res) => {
-  
   const { id } = req.params;
   const { info } = req.body;
 
@@ -588,8 +580,6 @@ router.post("/:id/delete_from_profile", async (req, res) => {
     console.error("Error deleting profile item:", error);
     return res.status(500).json({ error: "Internal Server Error." });
   }
-
-})
-
+});
 
 module.exports = router;

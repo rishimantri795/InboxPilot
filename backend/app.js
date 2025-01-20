@@ -12,7 +12,7 @@ require("./middleware/passport.js");
 const app = express();
 const users = require("./routes/users");
 
-const { fetchEmailHistory, getOrCreatePriorityLabel, applyLabelToEmail, fetchEmailHistoryWithRetry, fetchEmailHistoryAndApplyLabel, getMessageDetails, archiveEmail, forwardEmail, favoriteEmail, getOriginalEmailDetails, createDraft, getLatestHistoryId } = require("./utils/gmailService.js");
+const { fetchEmailHistory, getOrCreatePriorityLabel, applyLabelToEmail, fetchEmailHistoryWithRetry, fetchEmailHistoryAndApplyLabel, getMessageDetails, archiveEmail, forwardEmail, favoriteEmail, getOriginalEmailDetails, createDraft, getLatestHistoryId, fetchLatestEmail } = require("./utils/gmailService.js");
 const { classifyEmail, createDraftEmail } = require("./utils/openai.js");
 
 app.use(express.json());
@@ -43,7 +43,6 @@ app.use(passport.session());
 // Routes
 app.use("/api/users", users);
 
-// Notification handling
 app.post("/notifications", async (req, res) => {
   const message = req.body.message;
 
@@ -52,9 +51,8 @@ app.post("/notifications", async (req, res) => {
     const decodedMessage = JSON.parse(buff.toString("utf-8"));
 
     const emailAddress = decodedMessage.emailAddress;
-    const newHistoryId = decodedMessage.historyId;
 
-    console.log(`Received Pub/Sub Message for ${emailAddress}, historyId: ${newHistoryId}`);
+    console.log(`Received Pub/Sub Message for ${emailAddress}`);
 
     try {
       const userSnapshot = await db.collection("Users").where("email", "==", emailAddress).limit(1).get();
@@ -63,101 +61,77 @@ app.post("/notifications", async (req, res) => {
         const userDoc = userSnapshot.docs[0];
         const user = userDoc.data();
 
-        if (user.historyId && user.historyId === newHistoryId) {
-          console.log("Duplicate notification received; ignoring this historyId.");
-          return res.status(204).send();
-        }
-
         if (user.refreshToken) {
-          console.log(`User ${emailAddress} has a valid refreshToken, proceeding to check history.`);
+          console.log(`User ${emailAddress} has a valid refreshToken, proceeding to fetch the latest message.`);
 
           const accessToken = await getAccessTokenFromRefreshToken(user.refreshToken);
 
           if (accessToken && user.rules) {
-            // Fetch the history to check if this was an inbox message
-            const history = await fetchEmailHistory(accessToken, user.historyId || 1, newHistoryId);
+            // Fetch the latest email using the users.messages.list endpoint
+            const latestMessageResponse = await fetchLatestEmail(accessToken);
 
-            // Direct check of labelIds in the history array
-            const hasInboxMessage = history.some((message) => message.labelIds && message.labelIds.includes("INBOX"));
-            console.log("HEEEEEY!");
-            console.log("HASINBOXMESSAGE" + hasInboxMessage);
+            if (latestMessageResponse.messages && latestMessageResponse.messages.length > 0) {
+              const latestMessage = latestMessageResponse.messages[0]; // Get the most recent message
 
-            if (hasInboxMessage) {
-              console.log(`Processing emails for ${emailAddress}`);
+              try {
+                console.log("Processing latest message:", latestMessage.id);
+                const emailContent = await getMessageDetails(accessToken, latestMessage.id);
+                console.log(emailContent);
 
-              const userMessages = await fetchEmailHistoryWithRetry(accessToken, user.historyId);
+                const ruleKey = await classifyEmail(emailContent, user.rules, user.profile);
+                console.log("Rule key:", ruleKey);
 
-              if (userMessages.length === 0) {
-                console.log("No new messages found after retries.");
-                return res.status(204).send();
-              }
-
-              // Process each message directly
-              for (const message of userMessages) {
-                try {
-                  console.log("Processing message:", message.id);
-                  const emailContent = await getMessageDetails(accessToken, message.id);
-                  console.log(emailContent);
-
-                  const ruleKey = await classifyEmail(emailContent, user.rules, user.profile);
-                  console.log("Rule key:", ruleKey);
-
-                  if (ruleKey === "Null") {
-                    console.error("email not valid to rule");
-                    continue;
-                  }
-
-                  const rule = user.rules[parseInt(ruleKey)];
-                  console.log("Rule:", rule);
-
-                  for (const action of JSON.parse(rule.type)) {
-                    console.log("Action config:", action.config);
-                    console.log("Action:", action);
-
-                    switch (action.type) {
-                      case "label":
-                        console.log("Applying label:", action.config.labelName);
-                        const labelId = await getOrCreatePriorityLabel(accessToken, action.config.labelName);
-                        await applyLabelToEmail(accessToken, message.id, labelId);
-                        break;
-
-                      case "archive":
-                        console.log("Archiving email");
-                        await archiveEmail(accessToken, message.id);
-                        break;
-
-                      case "forward":
-                        console.log("Forwarding email to:", action.config.forwardTo);
-                        await forwardEmail(accessToken, message.id, action.config.forwardTo);
-                        break;
-
-                      case "favorite":
-                        console.log("Favoriting email");
-                        await favoriteEmail(accessToken, message.id);
-                        break;
-
-                      case "draft":
-                        const fromEmail = await getOriginalEmailDetails(accessToken, message.id);
-                        console.log("fromEmail:", fromEmail);
-                        const reply = await createDraftEmail(emailContent, action.config.draftTemplate);
-                        await createDraft(accessToken, message.threadId, reply, message.id, fromEmail);
-                        break;
-                    }
-                  }
-                } catch (error) {
-                  console.error(`Error processing message ${message.id}:`, error);
-                  // Continue with next message even if current one fails
-                  continue;
+                if (ruleKey === "Null") {
+                  console.error("Email not valid for rule");
+                  return res.status(204).send(); // No valid rule match
                 }
+
+                const rule = user.rules[parseInt(ruleKey)];
+                console.log("Rule:", rule);
+
+                for (const action of JSON.parse(rule.type)) {
+                  console.log("Action config:", action.config);
+                  console.log("Action:", action);
+
+                  switch (action.type) {
+                    case "label":
+                      console.log("Applying label:", action.config.labelName);
+                      const labelId = await getOrCreatePriorityLabel(accessToken, action.config.labelName);
+                      await applyLabelToEmail(accessToken, latestMessage.id, labelId);
+                      break;
+
+                    case "archive":
+                      console.log("Archiving email");
+                      await archiveEmail(accessToken, latestMessage.id);
+                      break;
+
+                    case "forward":
+                      console.log("Forwarding email to:", action.config.forwardTo);
+                      await forwardEmail(accessToken, latestMessage.id, action.config.forwardTo);
+                      break;
+
+                    case "favorite":
+                      console.log("Favoriting email");
+                      await favoriteEmail(accessToken, latestMessage.id);
+                      break;
+
+                    case "draft":
+                      const fromEmail = await getOriginalEmailDetails(accessToken, latestMessage.id);
+                      console.log("fromEmail:", fromEmail);
+                      const reply = await createDraftEmail(emailContent, action.config.draftTemplate);
+                      await createDraft(accessToken, latestMessage.threadId, reply, latestMessage.id, fromEmail);
+                      break;
+                  }
+                }
+              } catch (error) {
+                console.error(`Error processing latest message ${latestMessage.id}:`, error);
               }
 
-              console.log(`Processed emails for ${emailAddress}, HistoryId: ${newHistoryId}`);
+              console.log(`Processed latest email for ${emailAddress}`);
 
-              // Update the user's historyId in Firestore
-              await userDoc.ref.update({ historyId: newHistoryId });
-              console.log(`Updated historyId for ${emailAddress} to ${newHistoryId}`);
+              // No need to update historyId in this case
             } else {
-              console.log(`No inbox message found in history for ${emailAddress}, skipping processing`);
+              console.log(`No messages found for ${emailAddress}`);
             }
           } else {
             console.log(`Processing skipped due to missing accessToken or rules for email: ${emailAddress}`);
