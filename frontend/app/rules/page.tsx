@@ -33,26 +33,26 @@ const prebuiltRules = [
   {
     id: 1,
     name: "Label High Priority Emails",
-    description: "Automatically label emails marked as high priority",
+    description: "Emails which require priority, immediate action, or are time-sensitive",
     actions: [{ type: "label", config: { labelName: "High Priority" } }],
   },
   {
     id: 2,
     name: "Archive Newsletters",
-    description: "Automatically archive emails identified as newsletters",
+    description: "Emails which contain a newsletter or news update",
     actions: [{ type: "archive" }],
   },
   {
     id: 3,
     name: "Forward Client Emails",
-    description: "Forward emails from specific clients to team members",
-    actions: [{ type: "forward", config: { forwardTo: "team@example.com" } }],
+    description: "Emails and queries from InboxPilot customers about the product",
+    actions: [{ type: "forward", config: { forwardTo: "inboxpilots@gmail.com" } }],
   },
   {
     id: 4,
-    name: "Auto-Reply to Out of Office",
-    description: "Send automatic replies when out of office",
-    actions: [{ type: "draft", config: { /*draftTo: "forward@example.com",*/ draftTemplate: "I'm currently out of office and will reply upon my return." } }],
+    name: "Auto-Reply to Cold Emails",
+    description: "Emails which are cold outreach from someone new to introduce themselves or pitch an idea",
+    actions: [{ type: "draft", config: { /*draftTo: "forward@example.com",*/ draftTemplate: "Thank the sender for reaching out and personalize by mentioning a specific aspect of their email" } }],
   },
 ];
 
