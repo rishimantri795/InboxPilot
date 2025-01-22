@@ -146,3 +146,17 @@ body {
 [data-dialog-content] {
   z-index: 9999;
 }
+
+.shepherd-button {
+  background: #1a1a1a !important;
+  border: 1px solid #333 !important;
+  color: white !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 0.375rem !important;
+  transition: all 0.2s !important;
+}
+
+.shepherd-button:hover {
+  background: #333 !important;
+  transform: translateY(-1px) !important;
+}

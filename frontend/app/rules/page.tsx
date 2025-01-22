@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { PlusIcon, TagIcon, SendIcon, ArchiveIcon, StarIcon, PencilIcon, TrashIcon, LogOutIcon, MailXIcon } from "lucide-react";
+import { PlusIcon, TagIcon, SendIcon, ArchiveIcon, StarIcon, PencilIcon, TrashIcon, LogOutIcon, MailXIcon, TramFront } from "lucide-react";
 import useCurrentUser from "@/hooks/useCurrentUser";
 import { addRule, deleteRule } from "@/lib/api";
 import { Toaster, toast } from "sonner";
@@ -124,6 +124,7 @@ export default function RulesPage() {
         element: '#add-rule-button',
         on: 'bottom'
       },
+      modalOverlayOpeningRadius: 8,
       buttons: [
         {
           text: 'Exit Tour',
@@ -134,7 +135,7 @@ export default function RulesPage() {
 
     newTour.addStep({
       id: 'dialog-step',
-      text: 'We can choose from some prebuilt rules or create a custom rule. Let\'s create a custom rule for now',
+      text: 'You can choose from prebuilt rules or create a custom rule. Let\'s create a custom rule for now',
       attachTo: {
         element: '[data-dialog-content]',
         on: 'bottom-start'
@@ -156,10 +157,10 @@ export default function RulesPage() {
 
     newTour.addStep({
       id: 'configure-step1',
-      text: 'Let\'s configure the rule.\n Start by giving it a name.\n Next, describe the condition for the rule. Finally, add actions to be performed when the condition is met',
+      text: 'To configure the rule, start by giving it a name.\n Next, describe the condition for an email to apply to the rule. Finally, add actions to be performed when the condition is met',
       attachTo: {
         element: '[data-configure-content]',
-        on: 'top-start'
+        on: 'bottom-start'
       },
       classes: 'shepherd-dialog-step',
       modalOverlayOpeningRadius: 4,
@@ -179,7 +180,7 @@ export default function RulesPage() {
       id: 'finish-step',
       text: 'Thanks for taking the tour! You can always start it again by clicking the button',
       attachTo: {
-        element: 'tour-finish',
+        element: '#tour-finish',
         on: 'bottom'
       },
       buttons: [
@@ -369,12 +370,12 @@ export default function RulesPage() {
             {/* Header Section */}
             <div className="flex justify-between items-center mb-6">
               <h1 className="text-3xl font-bold">Email Rules</h1>
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-4" id="tour-finish">
                 <div className="text-right">
                   <p className="font-medium">{user.name ? user.name : "John Doe"}</p>
                   <p className="text-sm text-gray-500">{user.email}</p>
                 </div>
-                <DropdownMenu>
+                <DropdownMenu >
                   <DropdownMenuTrigger asChild>
                     <Avatar className="cursor-pointer bg-black text-white">
                       <AvatarImage src="" alt="User avatar" />
@@ -391,6 +392,12 @@ export default function RulesPage() {
                       <MailXIcon className="mr-2 h-4 w-4" />
                       <span>Detach Gmail Listener</span>
                     </DropdownMenuItem>
+
+                    <DropdownMenuItem onClick={() => tour.start()} className="cursor-pointer">
+                      <TramFront className="mr-2 h-4 w-4" />
+                      <span>Start Tour</span>
+                    </DropdownMenuItem>
+            
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -401,8 +408,6 @@ export default function RulesPage() {
             <Button id="add-rule-button" onClick = {() => setIsAddRuleOpen(true)} className="mb-2">
               Add Rule <PlusIcon className="mr-2 h-4 w-4" />
             </Button>
-
-            <Button id='tour-finish' onClick={() => tour.start()}>Start Tour</Button>
 
             </div>
 
@@ -570,13 +575,13 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
           {/* Rule Name */}
           <div>
             <Label htmlFor="ruleName">Rule Name</Label>
-            <Input id="ruleName" value={ruleName} onChange={(e) => setRuleName(e.target.value)} placeholder="Enter rule name" />
+            <Input id="ruleName" value={ruleName} onChange={(e) => setRuleName(e.target.value)} placeholder="ex. Job search rule" />
           </div>
 
           {/* Rule Description */}
           <div>
             <Label htmlFor="ruleDescription">Email Condition</Label>
-            <Input id="ruleDescription" value={ruleDescription} onChange={(e) => setRuleDescription(e.target.value)} placeholder="Describe condition for the rule" />
+            <Input id="ruleDescription" value={ruleDescription} onChange={(e) => setRuleDescription(e.target.value)} placeholder="ex. Emails about my job and internship search" />
           </div>
 
           {/* Action Types */}
@@ -643,7 +648,7 @@ function ActionConfig({ action, onConfigChange }: { action: Action; onConfigChan
             placeholder="Enter email to draft to"
           /> */}
 
-          <Input id="draftTemplate" value={action.config.draftTemplate || ""} onChange={(e) => onConfigChange({ ...action.config, draftTemplate: e.target.value })} placeholder="Enter draft message" />
+          <Input id="draftTemplate" value={action.config.draftTemplate || ""} onChange={(e) => onConfigChange({ ...action.config, draftTemplate: e.target.value })} placeholder="Enter instructions for the reply draft" />
         </div>
       );
     case "archive":
