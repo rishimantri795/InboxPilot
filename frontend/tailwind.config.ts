@@ -54,8 +54,8 @@ const config: Config = {
   				'5': 'hsl(var(--chart-5))'
   			},
   			sidebar: {
-  				// DEFAULT: 'hsl(var(--sidebar-background))',
-  				// foreground: 'hsl(var(--sidebar-foreground))',
+  				DEFAULT: 'hsl(var(--sidebar-background))',
+  				foreground: 'hsl(var(--sidebar-foreground))',
   				primary: 'hsl(var(--sidebar-primary))',
   				'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
   				accent: 'hsl(var(--sidebar-accent))',

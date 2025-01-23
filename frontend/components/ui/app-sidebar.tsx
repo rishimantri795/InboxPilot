@@ -36,7 +36,7 @@ const items = [
 
 export function AppSidebar({currentTab}: {currentTab: string}) {
   return (
-    <Sidebar className="bg-sidebar-white">
+    <Sidebar>
       <SidebarContent>
         <SidebarGroup>
           {/* <SidebarGroupLabel>Inbox Pilot</SidebarGroupLabel> */}
