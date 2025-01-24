@@ -9,6 +9,9 @@ const config: Config = {
   ],
   theme: {
   	extend: {
+			backgroundColor: {
+        'sidebar-white': '#ffffff',  // Custom color if needed
+      }, 
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
