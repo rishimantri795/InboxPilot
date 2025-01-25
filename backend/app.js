@@ -39,13 +39,15 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (allowedOrigins.includes(origin)) {
+      console.log("CORS request origin:", origin); // Debugging
+      if (!origin || allowedOrigins.includes(origin)) {
         callback(null, origin);
       } else {
+        console.error(`CORS blocked origin: ${origin}`);
         callback(new Error("Not allowed by CORS"));
       }
     },
-    credentials: true,
+    credentials: true, // Required for cookies
   })
 );
 
@@ -56,12 +58,14 @@ app.use(
     saveUninitialized: false,
     cookie: {
       secure: true, // Set to true if using HTTPS
-      sameSite: "None", // Adjust based on your needs
+      sameSite: "None", // Required for cross-origin cookies
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     },
     name: "connect.sid", // Optional: customize the cookie name
   })
 );
+
+// Initialize passport
 
 app.use(passport.initialize());
 app.use(passport.session());
