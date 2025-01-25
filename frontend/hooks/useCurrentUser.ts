@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import { useState, useEffect, useCallback } from "react";
+import axios from "axios";
 
 interface User {
   id: string;
@@ -22,9 +22,12 @@ const useCurrentUser = () => {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const response: { data: ResponseData } = await axios.get("http://localhost:3010/api/users/current-user", {
-          withCredentials: true,
-        });
+        const response: { data: ResponseData } = await axios.get(
+          `${process.env.VITE_BACKEND_URL}/api/users/current-user`,
+          {
+            withCredentials: true,
+          }
+        );
 
         if (response.data.user) {
           const mappedUser: User = {

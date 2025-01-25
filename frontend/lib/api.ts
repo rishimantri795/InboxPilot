@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from "axios";
 
 interface Rule {
   id: string;
@@ -35,7 +35,7 @@ export const deleteRule = async (
   ruleIndex: string
 ): Promise<void> => {
   await axios.delete(
-    `http://localhost:3010/api/users/${userId}/rules/${ruleIndex}`,
+    `${process.env.BACKEND_URL}/api/users/${userId}/rules/${ruleIndex}`,
     { withCredentials: true }
   );
 };

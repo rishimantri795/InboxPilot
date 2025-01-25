@@ -1,30 +1,34 @@
-'use client'
+"use client";
 
-import { UserProfile } from './user-profile'
+import { UserProfile } from "./user-profile";
 
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
-import { AppSidebar } from '@/components/ui/app-sidebar'
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/ui/app-sidebar";
 
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { LogOutIcon } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { LogOutIcon } from "lucide-react";
 
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
 
-import useCurrentUser from '@/hooks/useCurrentUser';
+import useCurrentUser from "@/hooks/useCurrentUser";
 
-import axios from 'axios';
-import { useEffect, useState } from 'react'
+import axios from "axios";
+import { useEffect, useState } from "react";
 
 export default function ProfilePage() {
-
   const { user, loading, error, clearUser } = useCurrentUser();
   const [userInfo, setUserInfo] = useState(null);
 
   // const userInfo = [];
 
   useEffect(() => {
-    async function getUserInfo () {
+    async function getUserInfo() {
       // This is a mock function. In a real application, you would fetch this data from your database.
 
       // return [
@@ -34,45 +38,46 @@ export default function ProfilePage() {
       // ]
 
       if (!user) {
-        return null
+        return null;
       }
 
       try {
-        const response = await axios.get(`http://localhost:3010/api/users/${user.id}/profile`, {
-          withCredentials: true,
-        });
+        const response = await axios.get(
+          `${process.env.BACKEND_URL}/api/users/${user.id}/profile`,
+          {
+            withCredentials: true,
+          }
+        );
 
         if (response.data) {
-          setUserInfo(response.data)
-
+          setUserInfo(response.data);
         } else {
-          return null
-     
+          return null;
         }
       } catch (err) {
         console.error("Error fetching current user:", err);
-        return null
+        return null;
       }
-    };
+    }
 
-  getUserInfo()
-
-  }, [user])
+    getUserInfo();
+  }, [user]);
 
   // console.log(user)
   const router = useRouter();
 
-
   const handleLogout = async () => {
-
     try {
-      const response = await fetch("http://localhost:3010/api/users/logout", {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await fetch(
+        `${process.env.VITE_BACKEND_URL}/api/users/logout`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
       if (response.ok) {
         console.log("Logged out");
         router.push("/");
@@ -95,53 +100,47 @@ export default function ProfilePage() {
   } else if (error) {
     return <div>Error: {error}</div>;
   } else {
-
-    console.log("user info: ", userInfo)
+    console.log("user info: ", userInfo);
 
     return (
-        <SidebarProvider>
-            <AppSidebar currentTab='User Profile'/>
-            <SidebarTrigger />
+      <SidebarProvider>
+        <AppSidebar currentTab="User Profile" />
+        <SidebarTrigger />
 
-          <div className="container mx-auto py-10">
-            <div className="flex justify-between items-center mb-6">            
-
-              <h1 className="text-3xl font-bold mb-6">Profile</h1>
+        <div className="container mx-auto py-10">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-bold mb-6">Profile</h1>
 
             <div className="flex items-center space-x-4 pr-4">
-                    <div className="text-right">
-                      <p className="font-medium">PLACEHOLDER</p>
-                      <p className="text-sm text-gray-500">{user.email}</p>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Avatar className="cursor-pointer bg-black text-white">
-                          <AvatarImage src="" alt="User avatar" />
-                          <AvatarFallback className="bg-black text-white">
-                            {user.email ? user.email.charAt(0).toUpperCase() : "U"}
-                          </AvatarFallback>
-                        </Avatar>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem 
-                          onClick={handleLogout} 
-                          className="cursor-pointer"
-                        >
-                          <LogOutIcon className="mr-2 h-4 w-4" />
-                          <span>Log out</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+              <div className="text-right">
+                <p className="font-medium">PLACEHOLDER</p>
+                <p className="text-sm text-gray-500">{user.email}</p>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Avatar className="cursor-pointer bg-black text-white">
+                    <AvatarImage src="" alt="User avatar" />
+                    <AvatarFallback className="bg-black text-white">
+                      {user.email ? user.email.charAt(0).toUpperCase() : "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="cursor-pointer"
+                  >
+                    <LogOutIcon className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-            </div>
+          </div>
 
-          <UserProfile initialInfo={userInfo} user={user.id}/>
-
+          <UserProfile initialInfo={userInfo} user={user.id} />
         </div>
-
       </SidebarProvider>
-    )
+    );
   }
-
 }
-

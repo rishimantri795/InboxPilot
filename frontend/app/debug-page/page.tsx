@@ -10,16 +10,24 @@ axios.defaults.withCredentials = true;
 const apiOptions = [
   {
     label: "Verify Token",
-    endpoint: "http://localhost:3010/api/users/verifyToken",
+    endpoint: `${process.env.VITE_BACKEND_URL}/api/users/verifyToken`,
   },
-  { label: "Fake API", endpoint: "http://localhost:3010/api/users/fakeAPI" },
+  {
+    label: "Fake API",
+    endpoint: `${process.env.VITE_BACKEND_URL}/api/users/fakeAPI`,
+  },
 ];
 
 export default function Home() {
   const [inputText, setInputText] = useState("");
   const [selectedApi, setSelectedApi] = useState(apiOptions[0].endpoint);
 
-  const [user, setUser] = useState<{ id: string; email: string; refreshToken?: string; createdAt?: any } | null>(null);
+  const [user, setUser] = useState<{
+    id: string;
+    email: string;
+    refreshToken?: string;
+    createdAt?: any;
+  } | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -36,7 +44,9 @@ export default function Home() {
           user?: User;
         }
 
-        const response: { data: ResponseData } = await axios.get("http://localhost:3010/api/users/current-user");
+        const response: { data: ResponseData } = await axios.get(
+          `${process.env.VITE_BACKEND_URL}/api/users/current-user`
+        );
         if (response.data.user) {
           const mappedUser = {
             id: response.data.user.id,
@@ -65,7 +75,7 @@ export default function Home() {
   const passPortAuth = async () => {
     try {
       // Redirect to the Passport.js authentication route
-      window.location.href = "http://localhost:3010/api/users/google/auth"; // Change this URL based on your server configuration
+      window.location.href = `${process.env.VITE_BACKEND_URL}/api/users/google/auth`; // Change this URL based on your server configuration
     } catch (e) {
       console.error("Error during Passport authentication:", e);
     }
@@ -92,7 +102,9 @@ export default function Home() {
 
   const signOutPassport = async () => {
     try {
-      const response = await axios.post("http://localhost:3010/api/users/logout");
+      const response = await axios.post(
+        `${process.env.VITE_BACKEND_URL}/api/users/logout`
+      );
       if (response.status === 200) {
         console.log("Logged out successfully");
       } else {
@@ -105,7 +117,15 @@ export default function Home() {
 
   return (
     <div className="min-h-screen p-8 pb-20">
-      <div className="mt-4">{loading ? <p>Loading...</p> : user ? <p>Signed in as: {user.email}</p> : <p>Not signed in.</p>}</div>
+      <div className="mt-4">
+        {loading ? (
+          <p>Loading...</p>
+        ) : user ? (
+          <p>Signed in as: {user.email}</p>
+        ) : (
+          <p>Not signed in.</p>
+        )}
+      </div>
 
       <div className="mt-4">
         <button onClick={passPortAuth}>Sign In with Google (Passport)</button>
@@ -127,7 +147,12 @@ export default function Home() {
         <label htmlFor="apiDropdown" className="block mb-2">
           Select API Call:
         </label>
-        <select id="apiDropdown" value={selectedApi} onChange={(e) => setSelectedApi(e.target.value)} className="text-black bg-white border border-gray-300 p-2 text-base">
+        <select
+          id="apiDropdown"
+          value={selectedApi}
+          onChange={(e) => setSelectedApi(e.target.value)}
+          className="text-black bg-white border border-gray-300 p-2 text-base"
+        >
           {apiOptions.map((option, index) => (
             <option key={index} value={option.endpoint}>
               {option.label}
@@ -139,8 +164,16 @@ export default function Home() {
         <label htmlFor="apiInput" className="block mb-2">
           Text Input:
         </label>
-        <input type="text" id="apiInput" value={inputText} onChange={(e) => setInputText(e.target.value)} className="text-black bg-white border border-gray-300 p-2 text-base" />
-        <button onClick={handleApiCall}>Send Text to API (Prints text and api into console)</button>
+        <input
+          type="text"
+          id="apiInput"
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          className="text-black bg-white border border-gray-300 p-2 text-base"
+        />
+        <button onClick={handleApiCall}>
+          Send Text to API (Prints text and api into console)
+        </button>
       </div>
     </div>
   );
