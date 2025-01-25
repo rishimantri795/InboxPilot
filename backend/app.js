@@ -60,6 +60,7 @@ app.use(
       secure: true, // Set to true if using HTTPS
       sameSite: "None", // Required for cross-origin cookies
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      domain: ".theinboxpilot.com",
     },
     name: "connect.sid", // Optional: customize the cookie name
   })
