@@ -45,7 +45,7 @@ app.use(
     saveUninitialized: false,
     cookie: {
       secure: true, // Set to true if using HTTPS
-      sameSite: "lax", // Adjust based on your needs
+      sameSite: "None", // Adjust based on your needs
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       domain: ".theinboxpilot.com", // Leading dot for subdomain compatibility
     },
