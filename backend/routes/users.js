@@ -16,7 +16,12 @@ const { getAccessTokenFromRefreshToken } = require("../utils/tokenService.js");
 // initiates the google OAuth authentication process
 router.get("/google/auth", (req, res) => {
   passport.authenticate("google", {
-    scope: ["profile", "email", "https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.modify"],
+    scope: [
+      "profile",
+      "email",
+      "https://www.googleapis.com/auth/gmail.readonly",
+      "https://www.googleapis.com/auth/gmail.modify",
+    ],
     accessType: "offline", // requests a refresh token so we have access even after user logs out
     approvalPrompt: "force",
   })(req, res);
@@ -26,11 +31,11 @@ router.get("/google/auth", (req, res) => {
 router.get(
   "/google/auth/callback",
   passport.authenticate("google", {
-    failureRedirect: "http://localhost:3000/", // goes here if authentication fails
+    failureRedirect: `${process.env.VITE_FRONTEND_URL}/`, // goes here if authentication fails
   }),
   async (req, res) => {
     try {
-      res.redirect("http://localhost:3000/rules"); // goes here if authentication succeeds
+      res.redirect(`${process.env.VITE_FRONTEND_URL}/rules`); // goes here if authentication succeeds
     } catch (error) {
       console.error("Callback error:", error);
       res.status(500).send("Internal Server Error");
@@ -60,7 +65,10 @@ async function stopGmailWatch(accessToken) {
     // Return success along with the response data
     return { success: true, data: response.data };
   } catch (error) {
-    console.error("Error stopping Gmail watch:", error.response?.data || error.message);
+    console.error(
+      "Error stopping Gmail watch:",
+      error.response?.data || error.message
+    );
 
     // Return failure along with error details
     return { success: false, error: error.response?.data || error.message };
@@ -83,9 +91,16 @@ router.post("/detach-gmail-listener", async (req, res) => {
     const result = await stopGmailWatch(accessToken);
 
     if (result.success) {
-      return res.status(200).json({ message: "Gmail watch stopped successfully", data: result.data });
+      return res
+        .status(200)
+        .json({
+          message: "Gmail watch stopped successfully",
+          data: result.data,
+        });
     } else {
-      return res.status(500).json({ error: "Failed to stop Gmail watch", details: result.error });
+      return res
+        .status(500)
+        .json({ error: "Failed to stop Gmail watch", details: result.error });
     }
   } catch (error) {
     console.error("Error detaching Gmail listener:", error);
@@ -133,7 +148,9 @@ router.post("/verifyToken", async (req, res) => {
     });
 
     // Send a success response
-    res.status(200).send({ id: newUserRef.id, message: "User created successfully!" });
+    res
+      .status(200)
+      .send({ id: newUserRef.id, message: "User created successfully!" });
   } catch (error) {
     res.status(401).send("Unauthorized");
   }
@@ -171,7 +188,9 @@ router.post("/verifyRefreshToken", async (req, res) => {
       res.status(400).json({ valid: false, message: "Invalid refresh token." });
     } else {
       console.error("Error verifying token:", error);
-      res.status(500).json({ valid: false, message: "Token verification failed." });
+      res
+        .status(500)
+        .json({ valid: false, message: "Token verification failed." });
     }
   }
 });
@@ -298,7 +317,8 @@ router.post("/:id", async (req, res) => {
     const existingIndices = Object.keys(existingRules)
       .map(Number)
       .filter((num) => !isNaN(num));
-    const nextIndex = existingIndices.length > 0 ? Math.max(...existingIndices) + 1 : 0;
+    const nextIndex =
+      existingIndices.length > 0 ? Math.max(...existingIndices) + 1 : 0;
 
     await userRef.update({
       [`rules.${nextIndex}`]: {
