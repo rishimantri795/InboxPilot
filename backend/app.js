@@ -31,8 +31,6 @@ const { classifyEmail, createDraftEmail } = require("./utils/openai.js");
 
 app.use(express.json());
 
-const cors = require("cors");
-
 const allowedOrigins = [
   "https://www.theinboxpilot.com",
   "https://theinboxpilot.com",
