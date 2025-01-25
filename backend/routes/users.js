@@ -31,11 +31,11 @@ router.get("/google/auth", (req, res) => {
 router.get(
   "/google/auth/callback",
   passport.authenticate("google", {
-    failureRedirect: `${process.env.VITE_FRONTEND_URL}/`, // goes here if authentication fails
+    failureRedirect: `${process.env.FRONTEND_URL}/`, // goes here if authentication fails
   }),
   async (req, res) => {
     try {
-      res.redirect(`${process.env.VITE_FRONTEND_URL}/rules`); // goes here if authentication succeeds
+      res.redirect(`${process.env.FRONTEND_URL}/rules`); // goes here if authentication succeeds
     } catch (error) {
       console.error("Callback error:", error);
       res.status(500).send("Internal Server Error");
@@ -91,12 +91,10 @@ router.post("/detach-gmail-listener", async (req, res) => {
     const result = await stopGmailWatch(accessToken);
 
     if (result.success) {
-      return res
-        .status(200)
-        .json({
-          message: "Gmail watch stopped successfully",
-          data: result.data,
-        });
+      return res.status(200).json({
+        message: "Gmail watch stopped successfully",
+        data: result.data,
+      });
     } else {
       return res
         .status(500)

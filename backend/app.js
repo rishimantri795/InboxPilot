@@ -32,7 +32,7 @@ const { classifyEmail, createDraftEmail } = require("./utils/openai.js");
 app.use(express.json());
 
 const corsOptions = {
-  origin: `${process.env.FRONTEND_URL}`,
+  origin: `https://theinboxpilot.com`,
   credentials: true,
 };
 
@@ -44,8 +44,10 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false, // Set to true if using HTTPS
+      secure: true, // Set to true if using HTTPS
       sameSite: "lax", // Adjust based on your needs
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      domain: ".theinboxpilot.com", // Leading dot for subdomain compatibility
     },
     name: "connect.sid", // Optional: customize the cookie name
   })
