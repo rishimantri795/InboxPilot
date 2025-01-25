@@ -31,12 +31,25 @@ const { classifyEmail, createDraftEmail } = require("./utils/openai.js");
 
 app.use(express.json());
 
-const corsOptions = {
-  origin: `https://www.theinboxpilot.com`,
-  credentials: true,
-};
+const cors = require("cors");
 
-app.use(cors(corsOptions));
+const allowedOrigins = [
+  "https://www.theinboxpilot.com",
+  "https://theinboxpilot.com",
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (allowedOrigins.includes(origin)) {
+        callback(null, origin);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
 
 app.use(
   session({
