@@ -34,7 +34,7 @@ export function UserProfile({
   const handleAddInfo = async () => {
     try {
       const response = await axios.post(
-        `${process.env.VITE_BACKEND_URLL}/api/users/${user}/add_to_profile`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URLL}/api/users/${user}/add_to_profile`,
         {
           info: newInfo,
         },
@@ -66,7 +66,7 @@ export function UserProfile({
   const handleDeleteRule = async (id: string) => {
     try {
       const response = await axios.post(
-        `${process.env.VITE_BACKEND_URL}/api/users/${user}/delete_from_profile`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user}/delete_from_profile`,
         {
           info: id,
         },

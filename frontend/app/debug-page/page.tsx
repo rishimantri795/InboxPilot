@@ -10,11 +10,11 @@ axios.defaults.withCredentials = true;
 const apiOptions = [
   {
     label: "Verify Token",
-    endpoint: `${process.env.VITE_BACKEND_URL}/api/users/verifyToken`,
+    endpoint: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/verifyToken`,
   },
   {
     label: "Fake API",
-    endpoint: `${process.env.VITE_BACKEND_URL}/api/users/fakeAPI`,
+    endpoint: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/fakeAPI`,
   },
 ];
 
@@ -45,7 +45,7 @@ export default function Home() {
         }
 
         const response: { data: ResponseData } = await axios.get(
-          `${process.env.VITE_BACKEND_URL}/api/users/current-user`
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/current-user`
         );
         if (response.data.user) {
           const mappedUser = {
@@ -75,7 +75,7 @@ export default function Home() {
   const passPortAuth = async () => {
     try {
       // Redirect to the Passport.js authentication route
-      window.location.href = `${process.env.VITE_BACKEND_URL}/api/users/google/auth`; // Change this URL based on your server configuration
+      window.location.href = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/google/auth`; // Change this URL based on your server configuration
     } catch (e) {
       console.error("Error during Passport authentication:", e);
     }
@@ -103,7 +103,7 @@ export default function Home() {
   const signOutPassport = async () => {
     try {
       const response = await axios.post(
-        `${process.env.VITE_BACKEND_URL}/api/users/logout`
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/logout`
       );
       if (response.status === 200) {
         console.log("Logged out successfully");

@@ -43,7 +43,7 @@ export default function ProfilePage() {
 
       try {
         const response = await axios.get(
-          `${process.env.BACKEND_URL}/api/users/${user.id}/profile`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/profile`,
           {
             withCredentials: true,
           }
@@ -69,7 +69,7 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     try {
       const response = await fetch(
-        `${process.env.VITE_BACKEND_URL}/api/users/logout`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/logout`,
         {
           method: "POST",
           credentials: "include",

@@ -398,7 +398,7 @@ export default function RulesPage() {
   const detachGmailListener = async () => {
     try {
       const response = await axios.post(
-        `${process.env.VITE_BACKEND_URL}/api/users/detach-gmail-listener`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/detach-gmail-listener`,
         {},
         { withCredentials: true }
       );

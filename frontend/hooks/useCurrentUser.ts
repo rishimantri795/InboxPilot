@@ -23,7 +23,7 @@ const useCurrentUser = () => {
     const fetchCurrentUser = async () => {
       try {
         const response: { data: ResponseData } = await axios.get(
-          `${process.env.VITE_BACKEND_URL}/api/users/current-user`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/current-user`,
           {
             withCredentials: true,
           }

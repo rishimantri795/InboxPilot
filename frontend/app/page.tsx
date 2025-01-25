@@ -31,13 +31,13 @@ export default function Component() {
   const passPortAuth = async () => {
     try {
       console.log(
-        import.meta.env.VITE_BACKEND_URL +
+        import.meta.env.NEXT_PUBLIC_BACKEND_URL +
           "/api/users/google/auth" +
-          process.env.VITE_BACKEND_URL
+          process.env.NEXT_PUBLIC_BACKEND_URL
       );
       // Redirect to the Passport.js authentication route
       window.location.href = `${
-        import.meta.env.VITE_BACKEND_URL
+        import.meta.env.NEXT_PUBLIC_BACKEND_URL
       }/api/users/google/auth`; // Change this URL based on your server configuration
     } catch (e) {
       console.error("Error during Passport authentication:", e);

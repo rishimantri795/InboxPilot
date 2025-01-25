@@ -35,7 +35,7 @@ export const deleteRule = async (
   ruleIndex: string
 ): Promise<void> => {
   await axios.delete(
-    `${process.env.BACKEND_URL}/api/users/${userId}/rules/${ruleIndex}`,
+    `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${userId}/rules/${ruleIndex}`,
     { withCredentials: true }
   );
 };
