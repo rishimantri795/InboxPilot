@@ -47,7 +47,6 @@ app.use(
       secure: true, // Set to true if using HTTPS
       sameSite: "None", // Adjust based on your needs
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      domain: ".theinboxpilot.com", // Leading dot for subdomain compatibility
     },
     name: "connect.sid", // Optional: customize the cookie name
   })
