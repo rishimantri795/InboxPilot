@@ -31,10 +31,7 @@ const { classifyEmail, createDraftEmail } = require("./utils/openai.js");
 
 app.use(express.json());
 
-const allowedOrigins = [
-  "https://www.theinboxpilot.com",
-  "https://theinboxpilot.com",
-];
+const allowedOrigins = `${process.env.FRONTEND_URL}`;
 
 app.use(
   cors({
@@ -60,7 +57,6 @@ app.use(
       secure: true, // Set to true if using HTTPS
       sameSite: "None", // Required for cross-origin cookies
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      domain: ".theinboxpilot.com",
     },
     name: "connect.sid", // Optional: customize the cookie name
   })
