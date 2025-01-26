@@ -258,6 +258,37 @@ async function stopWatchGmailInbox(accessToken) {
   }
 }
 
+async function startDevWatch(accessToken) {
+  console.log("Setting up Gmail watch...");
+  const gmailEndpoint = "https://gmail.googleapis.com/gmail/v1/users/me/watch";
+  const requestBody = {
+    labelIds: ["INBOX"],
+    topicName: "projects/inboxpilot-c4098/topics/dev-watch",
+  };
+
+  try {
+    // First, stop any existing watch
+    await stopWatchGmailInbox(accessToken);
+
+    // Then start a new watch
+    const response = await axios.post(gmailEndpoint, requestBody, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    // Store the historyId from the response
+    const historyId = response.data.historyId;
+    console.log("Watch successfully set up with historyId:", historyId);
+
+    return historyId;
+  } catch (error) {
+    console.error("Error setting up Gmail watch:", error.response?.data || error.message);
+    throw error;
+  }
+}
+
 // Function to get a fresh history ID
 async function getFreshHistoryId(accessToken) {
   try {
@@ -762,4 +793,5 @@ module.exports = {
   getOriginalEmailDetails,
   getLatestHistoryId,
   fetchLatestEmail,
+  startDevWatch,
 };
