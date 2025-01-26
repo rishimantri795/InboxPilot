@@ -97,12 +97,30 @@ async function getMessageDetails(accessToken, messageId) {
         }
       });
     };
-    
+
+    const getEmailMetadata = (response) => {
+      const labelIds = response.labelIds || [];
+      const headers = response.payload.headers || [];
+
+      const formattedHeaders = headers.reduce((acc, header) => {
+        acc[header.name] = header.value;
+        return acc;
+      }, {});
+
+      return {
+        labels: labelIds.join(', '),
+        headers: formattedHeaders,
+      };
+    }
 
     // Get the email content from the payload
     const emailContent = simplifyURL(getEmailContent(payload));
     console.log("Email Content:", emailContent);
+
+    const emailMetaData = getEmailMetadata(response);
+    console.log("Email Metadata:". emailMetaData)
     
+    const email = emailMetaData + emailContent;
     /* potential logic to set hard limit on emails
     const MAX_CONTENT_LENGTH = 2500; // change as needed
     let finalContent = emailContent;
@@ -112,7 +130,7 @@ async function getMessageDetails(accessToken, messageId) {
     console.log('Final Content:', finalContent);
     return finalContent;
     */
-    return emailContent;
+    return email;
   } catch (error) {
     console.error(`Error fetching details for message ID ${messageId}:`, error.response ? error.response.data : error.message);
   }
