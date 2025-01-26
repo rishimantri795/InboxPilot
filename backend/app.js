@@ -54,8 +54,12 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false, // Set to true if using HTTPS
-      sameSite: "lax", // Required for cross-origin cookies
+      secure: process.env.DEV_TARGET_EMAILS !== "true", // Secure cookies for production (HTTPS)
+      sameSite: process.env.DEV_TARGET_EMAILS === "true" ? "lax" : "None", // Cross-origin cookies for production
+      domain:
+        process.env.DEV_TARGET_EMAILS === "true"
+          ? "localhost"
+          : ".theinboxpilots", // Domain based on environment
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     },
     name: "connect.sid", // Optional: customize the cookie name
