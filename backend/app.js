@@ -29,6 +29,8 @@ const {
 } = require("./utils/gmailService.js");
 const { classifyEmail, createDraftEmail } = require("./utils/openai.js");
 
+app.set("trust proxy", 1); // Trust first proxy
+
 app.use(express.json());
 
 const allowedOrigins = `${process.env.FRONTEND_URL}`;
@@ -53,7 +55,9 @@ app.use(
     secret: "your-secure-secret", // Use a strong, secure secret in production
     resave: false,
     saveUninitialized: false,
+
     cookie: {
+      httpOnly: true,
       secure: process.env.DEV_TARGET_EMAILS !== "true", // Secure cookies for production (HTTPS)
       sameSite: process.env.DEV_TARGET_EMAILS === "true" ? "lax" : "None", // Cross-origin cookies for production
       domain:
