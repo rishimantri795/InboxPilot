@@ -195,6 +195,7 @@ router.post("/verifyRefreshToken", async (req, res) => {
 
 router.get("/current-user", (req, res) => {
   console.log("Is authenticated cookies:", req.cookies);
+  console.log(isAuthenticated(req));
   if (req.isAuthenticated()) {
     res.json({ user: req.user });
   } else {

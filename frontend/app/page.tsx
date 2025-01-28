@@ -28,24 +28,24 @@ export default function Component() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const { user, loading, error } = useCurrentUser();
 
-  useEffect(() => {
-    const fetchCookie = async () => {
-      try {
-        let response = await fetch("https://api.theinboxpilot.com/getCookie", {
-          method: "GET",
-          credentials: "include",
-        });
+  // useEffect(() => {
+  //   const fetchCookie = async () => {
+  //     try {
+  //       let response = await fetch("https://api.theinboxpilot.com/getCookie", {
+  //         method: "GET",
+  //         credentials: "include",
+  //       });
 
-        if (response.ok) {
-          response = await response.json();
-          console.log("gotCookie");
-        }
-      } catch (error) {
-        console.log(error);
-      }
-    };
-    fetchCookie();
-  }, []);
+  //       if (response.ok) {
+  //         response = await response.json();
+  //         console.log("gotCookie");
+  //       }
+  //     } catch (error) {
+  //       console.log(error);
+  //     }
+  //   };
+  //   fetchCookie();
+  // }, []);
 
   const passPortAuth = async () => {
     try {

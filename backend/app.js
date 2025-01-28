@@ -55,7 +55,7 @@ app.use(
     secret: "your-secure-secret", // Use a strong, secure secret in production
     resave: false,
     saveUninitialized: false,
-
+    //try mongo db session instead of memory store
     cookie: {
       httpOnly: true,
       secure: process.env.DEV_TARGET_EMAILS !== "true", // Secure cookies for production (HTTPS)
