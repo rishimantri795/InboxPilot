@@ -44,6 +44,7 @@ export default function Component() {
         console.log(error);
       }
     };
+    fetchCookie();
   }, []);
 
   const passPortAuth = async () => {
