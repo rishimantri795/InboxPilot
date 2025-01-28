@@ -21,12 +21,30 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Component() {
   const router = useRouter();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const { user, loading, error } = useCurrentUser();
+
+  useEffect(() => {
+    const fetchCookie = async () => {
+      try {
+        let response = await fetch("https://theinboxpilot.com/getCookie", {
+          method: "GET",
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          response = await response.json();
+          console.log("gotCookie");
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    };
+  }, []);
 
   const passPortAuth = async () => {
     try {

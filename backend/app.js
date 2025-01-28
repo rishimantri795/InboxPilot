@@ -61,6 +61,7 @@ app.use(
           ? "localhost"
           : ".theinboxpilot.com", // Domain based on environment
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      path: "/",
     },
     name: "connect.sid", // Optional: customize the cookie name
   })
@@ -244,6 +245,18 @@ app.post("/notifications", async (req, res) => {
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
+});
+
+app.get("/getCookie", (req, res) => {
+  res.cookie("exampleCookie", "cookieValue", {
+    httpOnly: true,
+    secure: true, // Ensure cookies are sent over HTTPS
+    sameSite: "None", // Allows cross-site cookies
+    domain: ".theinboxpilot.com", // Main domain
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    path: "/",
+  });
+  res.send("Cookie has been set!");
 });
 
 // Error handling middleware
