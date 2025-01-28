@@ -31,7 +31,7 @@ export default function Component() {
   useEffect(() => {
     const fetchCookie = async () => {
       try {
-        let response = await fetch("https://theinboxpilot.com/getCookie", {
+        let response = await fetch("https://api.theinboxpilot.com/getCookie", {
           method: "GET",
           credentials: "include",
         });
