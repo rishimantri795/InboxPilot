@@ -3,29 +3,18 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Inbox,
-  Mail,
-  Tag,
-  Archive,
-  MessageSquare,
-  Zap,
-  LogIn,
-} from "lucide-react";
+import {Inbox,Mail,Tag, Archive, MessageSquare, Zap, LogIn,} from "lucide-react";
 import useCurrentUser from "@/hooks/useCurrentUser";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import {Dialog,DialogContent,DialogHeader,DialogTitle,  DialogDescription,} from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import logo from "./logo1.png" // Import required for static images
+
 
 export default function Component() {
   const router = useRouter();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { user, loading, error } = useCurrentUser();
 
   // useEffect(() => {
@@ -58,46 +47,64 @@ export default function Component() {
   return (
     <div className="flex flex-col min-h-screen overflow-x-hidden scrollbar-hide">
       <header className="px-4 lg:px-6 h-14 flex items-center justify-between">
-        <a className="flex items-center justify-center" href="#">
-          <Inbox className="h-6 w-6" />
-          <span className="ml-2 text-2xl font-bold">InboxPilot</span>
+      <a className="flex items-center justify-center" href="#">
+          <Image src={logo || "/placeholder.svg"} width={24} height={24} alt="InboxPilot" />
+          <span className="ml-2 text-2xl font-bold hidden sm:inline">InboxPilot</span>
         </a>
-        <nav className="flex items-center gap-4 sm:gap-6">
-          <a
-            className="text-sm font-medium hover:underline underline-offset-4"
-            href="#features"
-          >
+        <nav className="hidden sm:flex items-center gap-4 sm:gap-6">
+          <a className="text-sm font-medium hover:underline underline-offset-4" href="#features">
             Features
           </a>
-          <a
-            className="text-sm font-medium hover:underline underline-offset-4"
-            href="#how-it-works"
-          >
+          <a className="text-sm font-medium hover:underline underline-offset-4" href="#how-it-works">
             How It Works
           </a>
-          <a
-            className="text-sm font-medium hover:underline underline-offset-4"
-            href="#benefits"
-          >
+          <a className="text-sm font-medium hover:underline underline-offset-4" href="#benefits">
             Benefits
           </a>
-          <Button
-            variant="outline"
-            onClick={
-              !user ? () => setIsLoginOpen(true) : () => router.push("/rules")
-            }
-          >
-            {!user ? "Log In" : "Rules"}
-          </Button>
-          {/* <Button variant="outline" size="sm">
-            <LogIn className="h-4 w-4 mr-2" />
-            
-            Log In
-          </Button> */}
         </nav>
+        <Button variant="outline" onClick={!user ? () => setIsLoginOpen(true) : () => router.push("/rules")}>
+          {!user ? "Log In": "Rules"}
+          </Button>
+        <button className="sm:hidden p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          className="w-6 h-6"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+        </svg>
+      </button>
       </header>
+      {mobileMenuOpen && (
+        <div className="sm:hidden fixed inset-0 z-50 bg-white dark:bg-gray-900">
+          <div className="flex flex-col items-center justify-center h-full">
+            <a className="text-lg font-medium py-2" href="#features" onClick={() => setMobileMenuOpen(false)}>
+              Features
+            </a>
+            <a className="text-lg font-medium py-2" href="#how-it-works" onClick={() => setMobileMenuOpen(false)}>
+              How It Works
+            </a>
+            <a className="text-lg font-medium py-2" href="#benefits" onClick={() => setMobileMenuOpen(false)}>
+              Benefits
+            </a>
+            <button className="mt-4 p-2" onClick={() => setMobileMenuOpen(false)}>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                className="w-6 h-6"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
       <main className="flex-1">
-        <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48">
+      <section className="w-full py-8 md:py-16 lg:py-24 xl:py-32">
           <div className="container px-4 md:px-6 mx-auto">
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-12 items-center">
               <div className="flex flex-col justify-center space-y-4">
@@ -106,34 +113,23 @@ export default function Component() {
                     Automate Your Inbox with InboxPilot
                   </h1>
                   <p className="max-w-[600px] text-gray-500 md:text-xl dark:text-gray-400">
-                    Manage your emails effortlessly with AI-powered automation.
-                    Group, label, draft responses, and more with natural
-                    language instructions.
+                    Manage your emails effortlessly with AI-powered automation. Group, label, draft responses, and more
+                    with natural language instructions.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
                   <Button
                     size="lg"
-                    onClick={
-                      !user
-                        ? () => setIsLoginOpen(true)
-                        : () => router.push("/rules")
-                    }
+                    onClick={!user ? () => setIsLoginOpen(true) : () => router.push("/rules")}
                     className="bg-gray-900 hover:bg-gray-800 text-white"
                   >
                     Take Flight
                   </Button>
-                  {/* <Button>Take Flight</Button> */}
                   <Button variant="outline">Learn More</Button>
                 </div>
               </div>
-              <div className="flex justify-center lg:justify-end[50px]">
-                <div className="relative w-[300px] h-[300px] lg:w-[400px] lg:h-[400px]">
-                  <div className="absolute inset-0 bg-black transform -skew-y-6 rounded-3xl"></div>
-                  <div className="absolute inset-4 bg-white dark:bg-gray-800 transform -skew-y-6 rounded-2xl flex items-center justify-center">
-                    <Mail className="w-24 h-24 text-black-500" />
-                  </div>
-                </div>
+              <div className="flex justify-center ">
+                <Image src={logo || "/placeholder.svg"} width={300} alt="InboxPilot" />
               </div>
             </div>
           </div>
@@ -312,8 +308,8 @@ export default function Component() {
           </div>
         </section>
       </main>
-
-      <Dialog open={isLoginOpen} onOpenChange={setIsLoginOpen}>
+      
+      <Dialog  open={isLoginOpen} onOpenChange={setIsLoginOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Log in to Inbox Pilot</DialogTitle>
@@ -354,7 +350,7 @@ export default function Component() {
           </div>
         </DialogContent>
       </Dialog>
-
+    
       <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
         <p className="text-xs text-gray-500 dark:text-gray-400">
           © 2024 InboxPilot. All rights reserved.
