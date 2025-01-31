@@ -31,8 +31,40 @@ async function accessGmailApi(accessToken) {
   }
 }
 
+function combineMetadataAndContent(emailData) {
+  if (!emailData || !emailData.metadata || !emailData.content) {
+    return "";
+  }
+
+  const { metadata, content } = emailData;
+  const { headers, labels } = metadata;
+
+  const relevantHeaders = ['Subject', 'From', 'To', 'Cc', 'Date'];
+
+  const formattedHeaders = relevantHeaders.map(header => {
+    return headers[header] ? `${header}: ${headers[header]}` : '';
+  }).filter(line => line !== '').join('\n');
+
+  const labelsString = labels ? `Labels: ${labels}` : '';
+
+  let combinedString = '';
+  
+  if (labelsString) {
+    combinedString += `${labelsString}\n`;
+  }
+
+  if (formattedHeaders) {
+    combinedString += `${formattedHeaders}\n\n`;
+  }
+
+  combinedString += `${content}`;
+
+  return combinedString.trim();
+}
+
+
 async function getMessageDetails(accessToken, messageId) {
-  const messageEndpoint = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}`;
+  const messageEndpoint = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=full`;
 
   try {
     const response = await axios.get(messageEndpoint, {
@@ -99,8 +131,16 @@ async function getMessageDetails(accessToken, messageId) {
     };
 
     const getEmailMetadata = (response) => {
-      const labelIds = response.labelIds || [];
-      const headers = response.payload.headers || [];
+      if (!response.data.payload) {
+        console.warn('Response payload is missing.');
+        return {
+          labels: '',
+          headers: {},
+        };
+      }
+
+      const labelIds = response.data.labelIds || [];
+      const headers = response.data.payload.headers || [];
 
       const formattedHeaders = headers.reduce((acc, header) => {
         acc[header.name] = header.value;
@@ -118,9 +158,8 @@ async function getMessageDetails(accessToken, messageId) {
     console.log("Email Content:", emailContent);
 
     const emailMetaData = getEmailMetadata(response);
-    console.log("Email Metadata:". emailMetaData)
+    console.log("Email Metadata:", emailMetaData)
     
-    const email = emailMetaData + emailContent;
     /* potential logic to set hard limit on emails
     const MAX_CONTENT_LENGTH = 2500; // change as needed
     let finalContent = emailContent;
@@ -130,7 +169,11 @@ async function getMessageDetails(accessToken, messageId) {
     console.log('Final Content:', finalContent);
     return finalContent;
     */
-    return email;
+    const emailData = {
+      metadata: emailMetaData,
+      content: emailContent,
+    };
+    return combineMetadataAndContent(emailData);
   } catch (error) {
     console.error(`Error fetching details for message ID ${messageId}:`, error.response ? error.response.data : error.message);
   }
@@ -254,6 +297,37 @@ async function stopWatchGmailInbox(accessToken) {
     return response.data;
   } catch (error) {
     console.error("Error stopping Gmail watch:", error.response ? error.response.data : error.message);
+    throw error;
+  }
+}
+
+async function startDevWatch(accessToken) {
+  console.log("Setting up Dev watch...");
+  const gmailEndpoint = "https://gmail.googleapis.com/gmail/v1/users/me/watch";
+  const requestBody = {
+    labelIds: ["INBOX"],
+    topicName: "projects/inboxpilot-c4098/topics/dev-watch",
+  };
+
+  try {
+    // First, stop any existing watch
+    await stopWatchGmailInbox(accessToken);
+
+    // Then start a new watch
+    const response = await axios.post(gmailEndpoint, requestBody, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    // Store the historyId from the response
+    const historyId = response.data.historyId;
+    console.log("Watch successfully set up with historyId:", historyId);
+
+    return historyId;
+  } catch (error) {
+    console.error("Error setting up Dev watch:", error.response?.data || error.message);
     throw error;
   }
 }
@@ -762,4 +836,5 @@ module.exports = {
   getOriginalEmailDetails,
   getLatestHistoryId,
   fetchLatestEmail,
+  startDevWatch,
 };

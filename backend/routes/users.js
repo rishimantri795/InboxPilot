@@ -10,7 +10,7 @@ const axios = require("axios");
 
 const cookieParser = require("cookie-parser");
 router.use(cookieParser()); // enables us to use cookies in the router
-const { watchGmailInbox } = require("../utils/gmailService.js");
+const { watchGmailInbox, startDevWatch } = require("../utils/gmailService.js");
 const { getAccessTokenFromRefreshToken } = require("../utils/tokenService.js");
 
 // initiates the google OAuth authentication process
@@ -92,13 +92,79 @@ router.post("/detach-gmail-listener", async (req, res) => {
 
     if (result.success) {
       return res.status(200).json({
-        message: "Gmail watch stopped successfully",
+        message: "Dev watch successfully",
         data: result.data,
       });
     } else {
       return res
         .status(500)
         .json({ error: "Failed to stop Gmail watch", details: result.error });
+    }
+  } catch (error) {
+    console.error("Error detaching Gmail listener:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+router.post("/attach-dev-listener", async (req, res) => {
+  try {
+    
+    const { refreshToken } = req.user; // Get refreshToken from authenticated user
+
+    if (!refreshToken) {
+      return res.status(400).json({ error: "Refresh token not found" });
+    }
+
+    // Fetch a new access token from the refresh token
+    const accessToken = await getAccessTokenFromRefreshToken(refreshToken);
+
+    // Call the stopGmailWatch function
+    const result = await stopGmailWatch(accessToken);
+
+    const result2 = await startDevWatch(accessToken);
+
+    if (result.success) {
+      return res.status(200).json({
+        message: "Prod listener attached successfully",
+        data: result.data,
+      });
+    } else {
+      return res
+        .status(500)
+        .json({ error: "Failed to attach Dev listener", details: result.error });
+    }
+  } catch (error) {
+    console.error("Error detaching Dev listener:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+router.post("/attach-prod-listener", async (req, res) => {
+  try {
+    
+    const { refreshToken } = req.user; // Get refreshToken from authenticated user
+
+    if (!refreshToken) {
+      return res.status(400).json({ error: "Refresh token not found" });
+    }
+
+    // Fetch a new access token from the refresh token
+    const accessToken = await getAccessTokenFromRefreshToken(refreshToken);
+
+    // Call the stopGmailWatch function
+    const result = await stopGmailWatch(accessToken);
+
+    const result2 = await watchGmailInbox(accessToken);
+
+    if (result.success) {
+      return res.status(200).json({
+        message: "Prod listener attached successfully",
+        data: result.data,
+      });
+    } else {
+      return res
+        .status(500)
+        .json({ error: "Failed to attach Prod listener", details: result.error });
     }
   } catch (error) {
     console.error("Error detaching Gmail listener:", error);

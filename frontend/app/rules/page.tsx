@@ -373,7 +373,7 @@ export default function RulesPage() {
   const handleLogout = async () => {
     try {
       const response = await fetch(
-        `${process.env.VITE_BACKEND_URL}/api/users/logout`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/logout`,
         {
           method: "POST",
           credentials: "include",
@@ -399,6 +399,46 @@ export default function RulesPage() {
     try {
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/detach-gmail-listener`,
+        {},
+        { withCredentials: true }
+      );
+      if (response.status === 200) {
+        console.log("Gmail listener detached successfully");
+        toast.success("Gmail listener detached successfully");
+      } else {
+        console.error("Failed to detach Gmail listener", response.data);
+        toast.error("Failed to detach Gmail listener");
+      }
+    } catch (error) {
+      console.error("Error detaching Gmail listener:", error);
+      toast.error("Error detaching Gmail listener");
+    }
+  };
+
+  const activateProduction = async () => {
+    try {
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/attach-prod-listener`,
+        {},
+        { withCredentials: true }
+      );
+      if (response.status === 200) {
+        console.log("Gmail listener detached successfully");
+        toast.success("Gmail listener detached successfully");
+      } else {
+        console.error("Failed to detach Gmail listener", response.data);
+        toast.error("Failed to detach Gmail listener");
+      }
+    } catch (error) {
+      console.error("Error detaching Gmail listener:", error);
+      toast.error("Error detaching Gmail listener");
+    }
+  };
+
+  const activateDev = async () => {
+    try {
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/attach-dev-listener`,
         {},
         { withCredentials: true }
       );
@@ -463,6 +503,22 @@ export default function RulesPage() {
                   >
                     <MailXIcon className="mr-2 h-4 w-4" />
                     <span>Detach Gmail Listener</span>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    onClick={activateProduction}
+                    className="cursor-pointer"
+                  >
+                    <MailXIcon className="mr-2 h-4 w-4" />
+                    <span>Activate Production P/S</span>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    onClick={activateDev}
+                    className="cursor-pointer"
+                  >
+                    <MailXIcon className="mr-2 h-4 w-4" />
+                    <span>Activate Dev P/S</span>
                   </DropdownMenuItem>
 
                   <DropdownMenuItem
