@@ -321,7 +321,7 @@ export default function RulesPage() {
   // Handle user logout
   const handleLogout = async () => {
     try {
-      const response = await fetch(`${process.env.VITE_BACKEND_URL}/api/users/logout`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/logout`, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -357,19 +357,35 @@ export default function RulesPage() {
     }
   };
 
-  const attachGmailListener = async () => {
+  const activateProduction = async () => {
     try {
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/attach-gmail-listener`, {}, { withCredentials: true });
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/attach-prod-listener`, {}, { withCredentials: true });
       if (response.status === 200) {
-        console.log("Gmail listener attached successfully");
-        toast.success("Gmail listener attached successfully");
+        console.log("Gmail listener detached successfully");
+        toast.success("Gmail listener detached successfully");
       } else {
-        console.error("Failed to attach Gmail listener", response.data);
-        toast.error("Failed to attach Gmail listener");
+        console.error("Failed to detach Gmail listener", response.data);
+        toast.error("Failed to detach Gmail listener");
       }
     } catch (error) {
-      console.error("Error attaching Gmail listener:", error);
-      toast.error("Error attaching Gmail listener");
+      console.error("Error detaching Gmail listener:", error);
+      toast.error("Error detaching Gmail listener");
+    }
+  };
+
+  const activateDev = async () => {
+    try {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/attach-dev-listener`, {}, { withCredentials: true });
+      if (response.status === 200) {
+        console.log("Gmail listener detached successfully");
+        toast.success("Gmail listener detached successfully");
+      } else {
+        console.error("Failed to detach Gmail listener", response.data);
+        toast.error("Failed to detach Gmail listener");
+      }
+    } catch (error) {
+      console.error("Error detaching Gmail listener:", error);
+      toast.error("Error detaching Gmail listener");
     }
   };
 
@@ -411,6 +427,16 @@ export default function RulesPage() {
                   <DropdownMenuItem onClick={detachGmailListener} className="cursor-pointer">
                     <MailXIcon className="mr-2 h-4 w-4" />
                     <span>Detach Gmail Listener</span>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={activateProduction} className="cursor-pointer">
+                    <MailXIcon className="mr-2 h-4 w-4" />
+                    <span>Activate Production P/S</span>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={activateDev} className="cursor-pointer">
+                    <MailXIcon className="mr-2 h-4 w-4" />
+                    <span>Activate Dev P/S</span>
                   </DropdownMenuItem>
 
                   <DropdownMenuItem

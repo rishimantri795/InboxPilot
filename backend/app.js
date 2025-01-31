@@ -15,6 +15,8 @@ const users = require("./routes/users");
 const { fetchEmailHistory, getOrCreatePriorityLabel, applyLabelToEmail, fetchEmailHistoryWithRetry, fetchEmailHistoryAndApplyLabel, getMessageDetails, archiveEmail, forwardEmail, favoriteEmail, getOriginalEmailDetails, createDraft, getLatestHistoryId, fetchLatestEmail } = require("./utils/gmailService.js");
 const { classifyEmail, createDraftEmail } = require("./utils/openai.js");
 
+app.set("trust proxy", 1); // Trust first proxy
+
 app.use(express.json());
 
 const allowedOrigins = `${process.env.FRONTEND_URL}`;
@@ -39,10 +41,14 @@ app.use(
     secret: "your-secure-secret", // Use a strong, secure secret in production
     resave: false,
     saveUninitialized: false,
+    //try mongo db session instead of memory store
     cookie: {
-      secure: false, // Set to true if using HTTPS
-      sameSite: "lax", // Required for cross-origin cookies
+      httpOnly: true,
+      secure: process.env.DEV_TARGET_EMAILS !== "true", // Secure cookies for production (HTTPS)
+      sameSite: process.env.DEV_TARGET_EMAILS === "true" ? "lax" : "None", // Cross-origin cookies for production
+      domain: process.env.DEV_TARGET_EMAILS === "true" ? "localhost" : ".theinboxpilot.com", // Domain based on environment
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      path: "/",
     },
     name: "connect.sid", // Optional: customize the cookie name
   })
@@ -170,6 +176,18 @@ app.post("/notifications", async (req, res) => {
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
+});
+
+app.get("/getCookie", (req, res) => {
+  res.cookie("exampleCookie", "cookieValue", {
+    httpOnly: true,
+    secure: true, // Ensure cookies are sent over HTTPS
+    sameSite: "None", // Allows cross-site cookies
+    domain: ".theinboxpilot.com", // Main domain
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    path: "/",
+  });
+  res.send("Cookie has been set!");
 });
 
 // Error handling middleware
