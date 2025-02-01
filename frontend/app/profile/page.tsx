@@ -106,14 +106,12 @@ export default function ProfilePage() {
       <SidebarProvider>
         <AppSidebar currentTab="User Profile" />
         <SidebarTrigger />
-
-        <div className="container mx-auto py-10">
+        <div className="container mx-auto px-4 py-8">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold mb-6">Profile</h1>
-
             <div className="flex items-center space-x-4 pr-4">
               <div className="text-right">
-                <p className="font-medium">PLACEHOLDER</p>
+              <p className="font-medium">{user.name ? user.name : "John Doe"}</p>
                 <p className="text-sm text-gray-500">{user.email}</p>
               </div>
               <DropdownMenu>
