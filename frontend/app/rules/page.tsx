@@ -90,9 +90,18 @@ export default function RulesPage() {
   const [isConfigureRuleOpen, setIsConfigureRuleOpen] = useState(false);
   const [selectedPrebuiltRule, setSelectedPrebuiltRule] = useState<Rule | null>(null);
   const [currentRule, setCurrentRule] = useState<Rule | null>(null);
-  const { user, loading, error, clearUser } = useCurrentUser();
+  const { clearUser } = useCurrentUser();
   const [logoutSuccess, setLogoutSuccess] = useState(false);
   const [tour, setTour] = useState<Shepherd.Tour | null>(null);
+
+  const { user, loading, error } = useCurrentUser();
+  const [listenerStatus, setListenerStatus] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      fetchListenerStatus();
+    }
+  }, [user]);
 
   useEffect(() => {
     const newTour = new Shepherd.Tour({
@@ -340,6 +349,8 @@ export default function RulesPage() {
     }
   };
 
+  //!new
+
   //! new
   const detachGmailListener = async () => {
     try {
@@ -389,6 +400,32 @@ export default function RulesPage() {
     }
   };
 
+  const fetchListenerStatus = async () => {
+    try {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/listener-status`);
+      setListenerStatus(response.data.status); // Should be 0 or 1
+    } catch (error) {
+      console.error("Failed to fetch listener status:", error);
+    }
+  };
+
+  const toggleListener = async () => {
+    try {
+      const newStatus = listenerStatus === 1 ? 0 : 1;
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/toggle-listener`, { status: newStatus });
+
+      if (response.status === 200) {
+        setListenerStatus(newStatus);
+        toast.success(`Listener ${newStatus === 1 ? "Attached" : "Detached"} Successfully`);
+      } else {
+        toast.error("Failed to update listener status.");
+      }
+    } catch (error) {
+      console.error("Error toggling listener:", error);
+      toast.error("Error toggling listener");
+    }
+  };
+
   // Handle loading and error states
   if (loading) {
     return <div>Loading...</div>;
@@ -424,29 +461,19 @@ export default function RulesPage() {
                     <span>Log out</span>
                   </DropdownMenuItem>
 
-                  <DropdownMenuItem onClick={detachGmailListener} className="cursor-pointer">
+                  <DropdownMenuItem onClick={toggleListener} className="cursor-pointer">
                     <MailXIcon className="mr-2 h-4 w-4" />
-                    <span>Detach Gmail Listener</span>
+                    <span>{listenerStatus === 1 ? "Detach Listener" : "Attach Listener"}</span>
                   </DropdownMenuItem>
 
                   <DropdownMenuItem onClick={activateProduction} className="cursor-pointer">
                     <MailXIcon className="mr-2 h-4 w-4" />
                     <span>Activate Production P/S</span>
                   </DropdownMenuItem>
-
                   <DropdownMenuItem onClick={activateDev} className="cursor-pointer">
                     <MailXIcon className="mr-2 h-4 w-4" />
                     <span>Activate Dev P/S</span>
                   </DropdownMenuItem>
-
-                  <DropdownMenuItem
-                    onClick={attachGmailListener} // New menu item for attaching Gmail listener
-                    className="cursor-pointer"
-                  >
-                    <PlusIcon className="mr-2 h-4 w-4" />
-                    <span>Attach Gmail Listener</span>
-                  </DropdownMenuItem>
-
                   <DropdownMenuItem onClick={() => tour.start()} className="cursor-pointer">
                     <TramFront className="mr-2 h-4 w-4" />
                     <span>Start Tour</span>

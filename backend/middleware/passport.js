@@ -33,8 +33,6 @@ passport.use(
 
           // puts a gmail listener to user
 
-          const historyId = await watchGmailInbox(accessToken);
-
           // Then fetch any messages since last sync
           // await fetchEmailHistoryAndApplyLabel(accessToken, historyId);
 
@@ -56,7 +54,6 @@ passport.use(
           await db.collection("Users").doc(profile.id).set(newUser);
 
           // puts a gmail listener to user
-          const historyId = await watchGmailInbox(accessToken);
           userData.historyId = historyId; // Add historyId
           await userDocRef.update(userData);
 

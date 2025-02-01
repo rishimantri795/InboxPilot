@@ -78,15 +78,6 @@ app.post("/notifications", async (req, res) => {
     console.log("Received message attributes:", attributes);
     console.log("Decoded message:", decodedMessage);
 
-    // Optional: Filter based on attributes (e.g., email)
-    if (process.env.DEV_TARGET_EMAILS == "true") {
-      const targetEmails = ["aryangoel574@gmail.com", "munot.saakshi@gmail.com", "sohaibq914@gmail.com", "rishimantri795@gmail.com", "inboxpilots@gmail.com"];
-      if (decodedMessage.emailAdress && !targetEmails.includes(decodedMessage.emailAddress)) {
-        console.log(`Email ${decodedMessage.emailAddress} not in target list. Ignoring message.`);
-        return res.status(204).send(); // Ignore messages not matching the filter
-      }
-    }
-
     const emailAddress = attributes.email || decodedMessage.emailAddress;
     if (!emailAddress) {
       console.error("No email address found in attributes or message data.");
@@ -101,6 +92,7 @@ app.post("/notifications", async (req, res) => {
       if (!userSnapshot.empty) {
         const userDoc = userSnapshot.docs[0];
         const user = userDoc.data();
+        const userRef = userDoc.ref;
 
         if (user.refreshToken) {
           console.log(`User ${emailAddress} has a valid refreshToken, proceeding to fetch the latest message.`);
@@ -108,12 +100,19 @@ app.post("/notifications", async (req, res) => {
           const accessToken = await getAccessTokenFromRefreshToken(user.refreshToken);
 
           if (accessToken && user.rules) {
-            // Fetch and process the latest email
+            // Fetch the latest email
             const latestMessageResponse = await fetchLatestEmail(accessToken);
             if (latestMessageResponse.messages && latestMessageResponse.messages.length > 0) {
               const latestMessage = latestMessageResponse.messages[0];
               console.log("Processing latest message:", latestMessage.id);
 
+              // Check if the message was already processed
+              if (user.latestProcessedMessageId === latestMessage.id) {
+                console.log(`Email ${latestMessage.id} already processed. Skipping.`);
+                return res.status(204).send();
+              }
+
+              // Process the email
               const emailContent = await getMessageDetails(accessToken, latestMessage.id);
               console.log(emailContent);
 
@@ -150,7 +149,13 @@ app.post("/notifications", async (req, res) => {
                     break;
                 }
               }
-              console.log(`Processed latest email for ${emailAddress}`);
+
+              // Store the latest processed messageId
+              await userRef.update({
+                latestProcessedMessageId: latestMessage.id,
+              });
+
+              console.log(`Processed and stored latest email ID ${latestMessage.id} for ${emailAddress}`);
             } else {
               console.log(`No messages found for ${emailAddress}`);
             }

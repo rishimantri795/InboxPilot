@@ -16,12 +16,7 @@ const { getAccessTokenFromRefreshToken } = require("../utils/tokenService.js");
 // initiates the google OAuth authentication process
 router.get("/google/auth", (req, res) => {
   passport.authenticate("google", {
-    scope: [
-      "profile",
-      "email",
-      "https://www.googleapis.com/auth/gmail.readonly",
-      "https://www.googleapis.com/auth/gmail.modify",
-    ],
+    scope: ["profile", "email", "https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.modify"],
     accessType: "offline", // requests a refresh token so we have access even after user logs out
     approvalPrompt: "force",
   })(req, res);
@@ -65,10 +60,7 @@ async function stopGmailWatch(accessToken) {
     // Return success along with the response data
     return { success: true, data: response.data };
   } catch (error) {
-    console.error(
-      "Error stopping Gmail watch:",
-      error.response?.data || error.message
-    );
+    console.error("Error stopping Gmail watch:", error.response?.data || error.message);
 
     // Return failure along with error details
     return { success: false, error: error.response?.data || error.message };
@@ -96,9 +88,7 @@ router.post("/detach-gmail-listener", async (req, res) => {
         data: result.data,
       });
     } else {
-      return res
-        .status(500)
-        .json({ error: "Failed to stop Gmail watch", details: result.error });
+      return res.status(500).json({ error: "Failed to stop Gmail watch", details: result.error });
     }
   } catch (error) {
     console.error("Error detaching Gmail listener:", error);
@@ -108,7 +98,6 @@ router.post("/detach-gmail-listener", async (req, res) => {
 
 router.post("/attach-dev-listener", async (req, res) => {
   try {
-    
     const { refreshToken } = req.user; // Get refreshToken from authenticated user
 
     if (!refreshToken) {
@@ -129,9 +118,7 @@ router.post("/attach-dev-listener", async (req, res) => {
         data: result.data,
       });
     } else {
-      return res
-        .status(500)
-        .json({ error: "Failed to attach Dev listener", details: result.error });
+      return res.status(500).json({ error: "Failed to attach Dev listener", details: result.error });
     }
   } catch (error) {
     console.error("Error detaching Dev listener:", error);
@@ -141,7 +128,6 @@ router.post("/attach-dev-listener", async (req, res) => {
 
 router.post("/attach-prod-listener", async (req, res) => {
   try {
-    
     const { refreshToken } = req.user; // Get refreshToken from authenticated user
 
     if (!refreshToken) {
@@ -162,9 +148,7 @@ router.post("/attach-prod-listener", async (req, res) => {
         data: result.data,
       });
     } else {
-      return res
-        .status(500)
-        .json({ error: "Failed to attach Prod listener", details: result.error });
+      return res.status(500).json({ error: "Failed to attach Prod listener", details: result.error });
     }
   } catch (error) {
     console.error("Error detaching Gmail listener:", error);
@@ -212,9 +196,7 @@ router.post("/verifyToken", async (req, res) => {
     });
 
     // Send a success response
-    res
-      .status(200)
-      .send({ id: newUserRef.id, message: "User created successfully!" });
+    res.status(200).send({ id: newUserRef.id, message: "User created successfully!" });
   } catch (error) {
     res.status(401).send("Unauthorized");
   }
@@ -252,9 +234,7 @@ router.post("/verifyRefreshToken", async (req, res) => {
       res.status(400).json({ valid: false, message: "Invalid refresh token." });
     } else {
       console.error("Error verifying token:", error);
-      res
-        .status(500)
-        .json({ valid: false, message: "Token verification failed." });
+      res.status(500).json({ valid: false, message: "Token verification failed." });
     }
   }
 });
@@ -382,8 +362,7 @@ router.post("/:id", async (req, res) => {
     const existingIndices = Object.keys(existingRules)
       .map(Number)
       .filter((num) => !isNaN(num));
-    const nextIndex =
-      existingIndices.length > 0 ? Math.max(...existingIndices) + 1 : 0;
+    const nextIndex = existingIndices.length > 0 ? Math.max(...existingIndices) + 1 : 0;
 
     await userRef.update({
       [`rules.${nextIndex}`]: {
@@ -664,6 +643,79 @@ router.post("/:id/delete_from_profile", async (req, res) => {
   } catch (error) {
     console.error("Error deleting profile item:", error);
     return res.status(500).json({ error: "Internal Server Error." });
+  }
+});
+
+router.get("/:id/listener-status", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const userRef = db.collection("Users").doc(id);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    const userData = userDoc.data();
+    const status = userData.listenerStatus || 0; // Default to 0 if not set
+
+    return res.status(200).json({ status });
+  } catch (error) {
+    console.error("Error fetching listener status:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+router.post("/:id/toggle-listener", async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body; // 0 (detach) or 1 (attach)
+
+  if (![0, 1].includes(status)) {
+    return res.status(400).json({ error: "Invalid status value." });
+  }
+
+  try {
+    const userRef = db.collection("Users").doc(id);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    const userData = userDoc.data();
+    const refreshToken = userData.refreshToken; // Get refresh token from Firestore
+
+    if (!refreshToken) {
+      return res.status(400).json({ error: "No refresh token found." });
+    }
+
+    // Fetch a new access token from the refresh token
+    const accessToken = await getAccessTokenFromRefreshToken(refreshToken);
+
+    if (status === 0) {
+      // If detaching, call stopGmailWatch()
+      console.log("Detaching Gmail Listener...");
+      const stopResult = await stopGmailWatch(accessToken);
+      if (!stopResult.success) {
+        return res.status(500).json({ error: "Failed to stop Gmail watch", details: stopResult.error });
+      }
+    } else {
+      // If attaching, call watchGmailInbox()
+      console.log("Attaching Gmail Listener...");
+      const watchResult = await startDevWatch(accessToken);
+      if (!watchResult) {
+        return res.status(500).json({ error: "Failed to start Gmail watch" });
+      }
+    }
+
+    // Update Firestore with the new status
+    await userRef.update({ listenerStatus: status });
+
+    return res.status(200).json({ message: `Listener ${status === 1 ? "attached" : "detached"} successfully.` });
+  } catch (error) {
+    console.error("Error toggling listener status:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
