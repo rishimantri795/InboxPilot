@@ -13,6 +13,9 @@ import {
   SidebarTrigger
 } from "@/components/ui/sidebar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import Image from "next/image"
+import logo from "/app/logo1.png";
+
 
 // Menu items.
 const items = [
@@ -42,7 +45,8 @@ export function AppSidebar({currentTab}: {currentTab: string}) {
           {/* <SidebarGroupLabel>Inbox Pilot</SidebarGroupLabel> */}
           <SidebarGroupContent>
           <div className="flex items-center px-4 py-3">
-              <Inbox className="h-6 w-6" />
+              {/* <Inbox className="h-6 w-6" /> */}
+              <Image src={logo || "/placeholder.svg"} width={24} height={24} alt="InboxPilot" />
               <span className="ml-2 text-2xl font-bold transition-opacity duration-300 color-black">
                 InboxPilot
               </span>
