@@ -155,25 +155,23 @@ async function getMessageDetails(accessToken, messageId) {
 
     // Get the email content from the payload
     const emailContent = simplifyURL(getEmailContent(payload));
-    console.log("Email Content:", emailContent);
 
     const emailMetaData = getEmailMetadata(response);
-    console.log("Email Metadata:", emailMetaData)
     
-    /* potential logic to set hard limit on emails
-    const MAX_CONTENT_LENGTH = 2500; // change as needed
+    const MAX_CONTENT_LENGTH = 1000; // change as needed
     let finalContent = emailContent;
     if (emailContent.length > MAX_CONTENT_LENGTH) {
       finalContent = emailContent.substring(0, MAX_CONTENT_LENGTH) + '...';
     }
-    console.log('Final Content:', finalContent);
-    return finalContent;
-    */
     const emailData = {
       metadata: emailMetaData,
-      content: emailContent,
+      content: finalContent,
     };
-    return combineMetadataAndContent(emailData);
+    finalContent = combineMetadataAndContent(emailData);
+
+    console.log("Email Content:", finalContent);
+
+    return finalContent;
   } catch (error) {
     console.error(`Error fetching details for message ID ${messageId}:`, error.response ? error.response.data : error.message);
   }
