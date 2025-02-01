@@ -17,7 +17,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 const SIDEBAR_COOKIE_NAME = "sidebar:state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = "12rem"
-const SIDEBAR_WIDTH_MOBILE = "18rem"
+const SIDEBAR_WIDTH_MOBILE = "12rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
@@ -220,7 +220,8 @@ Sidebar.displayName = "Sidebar"
 
 const SidebarTrigger = React.forwardRef<React.ElementRef<typeof Button>, React.ComponentProps<typeof Button>>(
   ({ className, onClick, ...props }, ref) => {
-    const { toggleSidebar, state } = useSidebar()
+    const { toggleSidebar, state } = useSidebar();
+    // const isMobile = useIsMobile();
 
     return (
       <Button
@@ -230,7 +231,7 @@ const SidebarTrigger = React.forwardRef<React.ElementRef<typeof Button>, React.C
         size="icon"
         className={cn(
           "h-10 w-10 absolute transition-all duration-300 ease-in-out",
-          state === "expanded" ? "left-[calc(var(--sidebar-width)+0.5rem)]" : "left-2",
+          (useIsMobile() == false && state=== "expanded") ? "left-[calc(var(--sidebar-width)+0.5rem)]"  : "left-2",
           className,
         )}
         onClick={(event) => {

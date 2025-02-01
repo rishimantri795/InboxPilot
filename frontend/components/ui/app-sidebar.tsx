@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import Image from "next/image"
-import logo from "/app/logo1.png";
+import logo from "/app/Inbox Pilot Logo.png";
 
 
 // Menu items.

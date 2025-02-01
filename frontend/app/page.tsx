@@ -8,7 +8,7 @@ import useCurrentUser from "@/hooks/useCurrentUser";
 import {Dialog,DialogContent,DialogHeader,DialogTitle,  DialogDescription,} from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import logo from "./logo1.png" // Import required for static images
+import logo from "./Inbox Pilot Logo.png" // Import required for static images
 
 
 export default function Component() {
