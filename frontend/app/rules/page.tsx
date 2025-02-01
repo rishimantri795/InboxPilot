@@ -67,6 +67,7 @@ const actionTypes = [
   { value: "draft", label: "Draft Reply", icon: PencilIcon },
   { value: "archive", label: "Archive", icon: ArchiveIcon },
   { value: "favorite", label: "Favorite", icon: StarIcon },
+  { value: "file upload", label: "Add Context", icon: TagIcon}
 ];
 
 // Define the Action interface
@@ -277,7 +278,7 @@ export default function RulesPage() {
         )
       );
       try {
-        await axios.put(`${process.env.VITE_BACKEND_URL}/api/users/${user.id}/rules/${currentRule.id}`, serializedRule, { withCredentials: true });
+        await axios.put(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/rules/${currentRule.id}`, serializedRule, { withCredentials: true });
       } catch (error) {
         console.error("Failed to update rule:", error);
       }
@@ -285,7 +286,7 @@ export default function RulesPage() {
       // Add new rule
 
       try {
-        const response = await axios.post(`${process.env.VITE_BACKEND_URL}/api/users/${user.id}`, serializedRule, { withCredentials: true });
+        const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}`, serializedRule, { withCredentials: true });
         const newRule = {
           id: response.data.id, // Generate a unique ID
           name: configuredRule.name,
@@ -429,18 +430,22 @@ export default function RulesPage() {
                     <span>Detach Gmail Listener</span>
                   </DropdownMenuItem>
 
-                  <DropdownMenuItem onClick={activateProduction} className="cursor-pointer">
-                    <MailXIcon className="mr-2 h-4 w-4" />
-                    <span>Activate Production P/S</span>
-                  </DropdownMenuItem>
+                  {process.env.NEXT_PUBLIC_BACKEND_URL == "http://localhost:3010" && (
+                    <>
+                      <DropdownMenuItem onClick={activateProduction} className="cursor-pointer">
+                        <MailXIcon className="mr-2 h-4 w-4" />
+                        <span>Activate Production P/S</span>
+                      </DropdownMenuItem>
 
-                  <DropdownMenuItem onClick={activateDev} className="cursor-pointer">
-                    <MailXIcon className="mr-2 h-4 w-4" />
-                    <span>Activate Dev P/S</span>
-                  </DropdownMenuItem>
+                      <DropdownMenuItem onClick={activateDev} className="cursor-pointer">
+                        <MailXIcon className="mr-2 h-4 w-4" />
+                        <span>Activate Dev P/S</span>
+                      </DropdownMenuItem>
+                    </>
+                  )}
 
                   <DropdownMenuItem
-                    onClick={attachGmailListener} // New menu item for attaching Gmail listener
+                    // onClick={attachGmailListener} // New menu item for attaching Gmail listener
                     className="cursor-pointer"
                   >
                     <PlusIcon className="mr-2 h-4 w-4" />
@@ -649,8 +654,12 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
             <Label>Actions</Label>
             <div className="flex flex-wrap gap-2 mt-2">
               {actionTypes.map((actionType) => (
-                <Button key={actionType.value} variant="outline" onClick={() => handleAddAction(actionType.value)}>
-                  <actionType.icon className="mr-2 h-4 w-4" />
+                <Button key={actionType.value}
+                  variant="outline"
+                  onClick={() => handleAddAction(actionType.value)}
+                  className="text-sm px-2 py-2 whitespace-nowrap"
+                >
+                  <actionType.icon className="h-4 w-4" />
                   {actionType.label}
                 </Button>
               ))}
@@ -733,6 +742,13 @@ function ActionConfig({ action, onConfigChange }: { action: Action; onConfigChan
         <div>
           <Label>Favorite Immediately</Label>
           <p className="text-sm text-gray-500">This action will be applied automatically.</p>
+        </div>
+      );
+    case "file upload":
+      return (
+        <div>
+          <Label>Upload File</Label>
+          <Input type="file" id="fileInput" name="file" required />
         </div>
       );
     default:
