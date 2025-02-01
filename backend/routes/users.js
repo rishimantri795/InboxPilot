@@ -701,11 +701,19 @@ router.post("/:id/toggle-listener", async (req, res) => {
         return res.status(500).json({ error: "Failed to stop Gmail watch", details: stopResult.error });
       }
     } else {
-      // If attaching, call watchGmailInbox()
-      console.log("Attaching Gmail Listener...");
-      const watchResult = await startDevWatch(accessToken);
-      if (!watchResult) {
-        return res.status(500).json({ error: "Failed to start Gmail watch" });
+      // If attaching, determine which function to call
+      if (process.env.DEV_TARGET_EMAILS === "true") {
+        console.log("Attaching Dev Watch...");
+        const watchResult = await startDevWatch(accessToken);
+        if (!watchResult) {
+          return res.status(500).json({ error: "Failed to start Dev Gmail watch" });
+        }
+      } else {
+        console.log("Attaching Production Watch...");
+        const watchResult = await watchGmailInbox(accessToken);
+        if (!watchResult) {
+          return res.status(500).json({ error: "Failed to start Production Gmail watch" });
+        }
       }
     }
 
