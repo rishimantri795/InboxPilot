@@ -111,6 +111,12 @@ app.post("/notifications", async (req, res) => {
                 console.log(`Email ${latestMessage.id} already processed. Skipping.`);
                 return res.status(204).send();
               }
+              
+              await userRef.update({
+                latestProcessedMessageId: latestMessage.id,
+              });
+
+              console.log(`stored latestProcessedMessageId: ${latestMessage.id} for ${emailAddress}`);
 
               // Process the email
               const emailContent = await getMessageDetails(accessToken, latestMessage.id);
@@ -151,11 +157,9 @@ app.post("/notifications", async (req, res) => {
               }
 
               // Store the latest processed messageId
-              await userRef.update({
-                latestProcessedMessageId: latestMessage.id,
-              });
+              
 
-              console.log(`Processed and stored latest email ID ${latestMessage.id} for ${emailAddress}`);
+              console.log(`Processed latest email ID ${latestMessage.id} for ${emailAddress}`);
             } else {
               console.log(`No messages found for ${emailAddress}`);
             }
