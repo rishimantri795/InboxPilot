@@ -354,7 +354,6 @@ async function fetchLatestEmail(accessToken) {
 
   const params = new URLSearchParams({
     labelIds: "INBOX", // Filter for inbox messages
-    q: "is:unread", // Optional: Only get unread emails (adjust as needed)
     maxResults: "1", // Only fetch the latest email
     sortOrder: "desc", // Sort by the most recent first
   });
