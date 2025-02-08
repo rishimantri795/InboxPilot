@@ -155,7 +155,7 @@ app.post("/notifications", async (req, res) => {
                 accessToken,
                 latestMessage.id
               );
-              console.log(emailContent);
+              console.log(emailContent + "emailContentYYYYYYYY");
 
               const ruleKey = await classifyEmail(
                 emailContent,
@@ -203,6 +203,7 @@ app.post("/notifications", async (req, res) => {
                       accessToken,
                       latestMessage.id
                     );
+
                     const reply = await createDraftEmail(
                       emailContent,
                       action.config.draftTemplate,

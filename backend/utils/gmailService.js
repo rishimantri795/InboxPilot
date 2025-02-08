@@ -4,6 +4,60 @@ const { htmlToText } = require("html-to-text");
 
 const agent = new https.Agent({ rejectUnauthorized: false });
 
+const { google } = require("googleapis");
+
+async function getCalendarEvents(refreshToken) {
+  try {
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.CLIENT_ID,
+      process.env.CLIENT_SECRET,
+      process.env.REDIRECT_URI
+    );
+
+    oauth2Client.setCredentials({ refresh_token: refreshToken });
+    const accessToken = await oauth2Client.getAccessToken();
+
+    const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+
+    const now = new Date();
+    const firstDayOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      1
+    ).toISOString();
+    const lastDayOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+      23,
+      59,
+      59
+    ).toISOString();
+
+    const response = await calendar.events.list({
+      calendarId: "primary",
+      timeMin: firstDayOfMonth,
+      timeMax: lastDayOfMonth,
+      singleEvents: true,
+      orderBy: "startTime",
+    });
+
+    const events = response.data.items.map((event) => ({
+      id: event.id,
+      title: event.summary || "No Title",
+      startTime: event.start?.dateTime || event.start?.date,
+      endTime: event.end?.dateTime || event.end?.date,
+    }));
+
+    const eventsJson = JSON.stringify(events, null, 2); // Pretty-print JSON
+
+    return eventsJson;
+  } catch (error) {
+    console.error("Error fetching calendar events:", error.message);
+    throw error;
+  }
+}
+
 // not currently using this
 async function accessGmailApi(accessToken) {
   const gmailEndpoint =
@@ -957,58 +1011,6 @@ async function createFilter(accessToken, forwardingEmail, criteria) {
     console.error(
       `Error creating filter for forwarding:`,
       error.response ? error.response.data : error.message
-    );
-  }
-}
-
-async function getCalendarEvents(accessToken) {
-  try {
-    // Set time range for one month (adjust dates as needed)
-    const now = new Date();
-    const firstDayOfMonth = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      1
-    ).toISOString();
-    const lastDayOfMonth = new Date(
-      now.getFullYear(),
-      now.getMonth() + 1,
-      0,
-      23,
-      59,
-      59
-    ).toISOString();
-
-    const response = await axios.get(
-      "https://www.googleapis.com/calendar/v3/calendars/primary/events",
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
-        params: {
-          timeMin: firstDayOfMonth,
-          timeMax: lastDayOfMonth,
-          singleEvents: true,
-          orderBy: "startTime",
-        },
-      }
-    );
-
-    const events = response.data.items.map((event) => ({
-      id: event.id,
-      title: event.summary || "No Title",
-      description: event.description || "No Description",
-      location: event.location || "No Location",
-      startTime: event.start?.dateTime || event.start?.date || "No Start Time",
-      endTime: event.end?.dateTime || event.end?.date || "No End Time",
-      organizer: event.organizer?.email || "Unknown Organizer",
-      attendees: event.attendees?.map((a) => a.email) || [],
-    }));
-
-    console.log(events);
-    return events;
-  } catch (error) {
-    console.error(
-      "Error fetching calendar events:",
-      error.response?.data || error.message
     );
   }
 }

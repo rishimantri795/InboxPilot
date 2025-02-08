@@ -1,6 +1,7 @@
 const OpenAI = require("openai");
 const path = require("path");
 const dotenv = require("dotenv");
+const { getCalendarEvents } = require("./gmailService");
 
 const result = dotenv.config({
   path: path.resolve(__dirname, ".env"),
@@ -89,8 +90,8 @@ async function createDraftEmail(emailContent, promptDescription, accessToken) {
   }
 
   const events = await getCalendarEvents(accessToken);
-  const prompt = `Here is an email for which we need to draft a response: ${emailContent} Please complete the email draft with a suitable response based on this instruction: ${promptDescription}. The response should be concise and should address the main points of the email. This is the users events that they have on calender to use as context: ${events}. It should also be of the same tone as the original email. Only respond with the body of the draft email. `;
-  console.log("Prompt:", prompt);
+  const prompt = `Here is an email for which we need to draft a response: ${emailContent}" Please complete the email draft with a suitable response based on this instruction: ${promptDescription}. The response should be concise and should address the main points of the email. This is the users events that they have on calender to use as context: ${events}. It should also be of the same tone as the original email. Only respond with the body of the draft email. `;
+  console.log("Promptt:", prompt);
   try {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",

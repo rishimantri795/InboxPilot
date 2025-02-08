@@ -13,12 +13,24 @@ passport.use(
       callbackURL: process.env.GOOGLE_CALLBACK_URL,
       accessType: "offline", // ensure you get a refresh token
       prompt: "consent", // force re-consent to get new permissions
-      scope: ["profile", "email", "https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.modify"],
+      scope: [
+        "profile",
+        "email",
+        "https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/gmail.modify",
+        "https://www.googleapis.com/auth/calendar.readonly",
+        "https://www.googleapis.com/auth/calendar.events.readonly",
+        "https://www.googleapis.com/auth/calendar",
+      ],
     },
     async function (accessToken, refreshToken, profile, done) {
       try {
         // check if user exists in db matching the email passed in
-        const userSnapshot = await db.collection("Users").where("email", "==", profile.emails[0].value).limit(1).get(); // limit(1) limits to 1 doc and .get() returns querySnapshot
+        const userSnapshot = await db
+          .collection("Users")
+          .where("email", "==", profile.emails[0].value)
+          .limit(1)
+          .get(); // limit(1) limits to 1 doc and .get() returns querySnapshot
 
         // why we can't do userSnapshot? ---> bc firestore always returns a QuerySnapshot object, even if not docs match
         if (!userSnapshot.empty) {
