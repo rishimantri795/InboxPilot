@@ -1,6 +1,9 @@
 const express = require("express");
 const admin = require("../api/firebase.js"); // import the firebase admin object
 const passport = require("passport");
+const multer = require("multer");
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 const router = express.Router();
 require("dotenv").config(); // we get the env vars in process.env
@@ -723,6 +726,71 @@ router.post("/:id/toggle-listener", async (req, res) => {
     return res.status(200).json({ message: `Listener ${status === 1 ? "attached" : "detached"} successfully.` });
   } catch (error) {
     console.error("Error toggling listener status:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+router.post("/:id/upload-rule-files", upload.array("files"), async (req, res) => {
+  const { id } = req.params;
+  const { ruleIndex } = req.body; // expect the client to pass which rule these files belong to
+
+  if (!id || ruleIndex === undefined) {
+    return res.status(400).json({ error: "User ID and rule index are required." });
+  }
+
+  try {
+    const userRef = db.collection("Users").doc(id);
+    const userDoc = await userRef.get();
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: "User not found." });
+    }
+    
+    // Get the specific rule from the user's rules.
+    const userData = userDoc.data();
+    const ruleData = userData.rules ? userData.rules[ruleIndex] : null;
+    if (!ruleData) {
+      return res.status(404).json({ error: "Rule not found." });
+    }
+    
+    // Parse the actions array from the stored JSON string.
+    let actions = [];
+    if (typeof ruleData.type === "string") {
+      actions = JSON.parse(ruleData.type);
+    } else {
+      actions = ruleData.type;
+    }
+    
+    // Find the draft action in the actions array.
+    const draftActionIndex = actions.findIndex((action) => action.type === "draft");
+    if (draftActionIndex === -1) {
+      return res.status(400).json({ error: "Draft action not found in the rule." });
+    }
+    
+    // For each uploaded file, create an enriched file object.
+    const newFiles = req.files.map((file) => ({
+      fileName: file.originalname,
+      mimeType: file.mimetype,
+      fileData: file.buffer.toString("base64"),
+      uploadedAt: new Date().toISOString(),
+    }));
+    
+    // Get any existing files from the draft action.
+    // We assume that an enriched file object has a "mimeType" property.
+    const existingFiles = actions[draftActionIndex].config.contextFiles || [];
+    // Remove any raw file objects (those without a mimeType)
+    const filteredExisting = existingFiles.filter((file) => file.mimeType !== undefined);
+    
+    // Now, set contextFiles to include only the already enriched files plus the new ones.
+    actions[draftActionIndex].config.contextFiles = filteredExisting.concat(newFiles);
+    
+    // Update the rule's "type" field with the updated actions array (stringify again).
+    await userRef.update({
+      [`rules.${ruleIndex}.type`]: JSON.stringify(actions)
+    });
+    
+    return res.status(200).json({ message: "Files added successfully.", files: newFiles });
+  } catch (error) {
+    console.error("Error updating rule file data:", error);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });

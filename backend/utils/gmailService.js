@@ -76,7 +76,7 @@ async function getMessageDetails(accessToken, messageId) {
     });
 
     // Log the entire message to see its structure
-    console.log("Message Details:", response.data);
+    console.log("Message Details:", response.data.id, response.data.snippet);
 
     // Extract the payload
     const payload = response.data.payload;
