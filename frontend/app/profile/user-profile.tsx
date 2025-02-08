@@ -34,7 +34,7 @@ export function UserProfile({
   const handleAddInfo = async () => {
     try {
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URLL}/api/users/${user}/add_to_profile`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user}/add_to_profile`,
         {
           info: newInfo,
         },
