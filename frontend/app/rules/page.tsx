@@ -461,11 +461,11 @@ export default function RulesPage() {
                     <LogOutIcon className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>
-
+                  {/* 
                   <DropdownMenuItem onClick={toggleListener} className="cursor-pointer">
                     <MailXIcon className="mr-2 h-4 w-4" />
                     <span>{listenerStatus === 1 ? "Detach Listener" : "Attach Listener"}</span>
-                  </DropdownMenuItem>
+                  </DropdownMenuItem> */}
 
                   <DropdownMenuItem onClick={activateProduction} className="cursor-pointer">
                     <MailXIcon className="mr-2 h-4 w-4" />
