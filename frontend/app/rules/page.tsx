@@ -537,15 +537,18 @@ export default function RulesPage() {
                     <MailXIcon className="mr-2 h-4 w-4" />
                     <span>{listenerStatus === 1 ? "Detach Listener" : "Attach Listener"}</span>
                   </DropdownMenuItem> */}
-
-                  <DropdownMenuItem onClick={activateProduction} className="cursor-pointer">
-                    <MailXIcon className="mr-2 h-4 w-4" />
-                    <span>Activate Production P/S</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={activateDev} className="cursor-pointer">
-                    <MailXIcon className="mr-2 h-4 w-4" />
-                    <span>Activate Dev P/S</span>
-                  </DropdownMenuItem>
+                  {process.env.NEXT_PUBLIC_BACKEND_URL === "http://localhost:3010" && (
+                    <div>
+                      <DropdownMenuItem onClick={activateProduction} className="cursor-pointer">
+                        <MailXIcon className="mr-2 h-4 w-4" />
+                        <span>Activate Production P/S</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={activateDev} className="cursor-pointer">
+                        <MailXIcon className="mr-2 h-4 w-4" />
+                        <span>Activate Dev P/S</span>
+                      </DropdownMenuItem>
+                    </div>
+                  )}
                   <DropdownMenuItem onClick={() => tour.start()} className="cursor-pointer">
                     <TramFront className="mr-2 h-4 w-4" />
                     <span>Start Tour</span>
