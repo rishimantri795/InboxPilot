@@ -84,13 +84,28 @@ Return only the key (as a number starting from 0) of the rule that best applies 
 //   }
 // });
 
-async function createDraftEmail(emailContent, promptDescription, accessToken) {
+async function createDraftEmail(
+  emailContent,
+  promptDescription,
+  calendarEvents,
+  accessToken
+) {
   if ((!emailContent, !promptDescription)) {
     return null;
   }
 
+  const calendarToggle = false;
+
+  if (calendarEvents != undefined && calendarEvents != false) {
+    const calenderToggle = true;
+  }
+
   const events = await getCalendarEvents(accessToken);
-  const prompt = `Here is an email for which we need to draft a response: ${emailContent}" Please complete the email draft with a suitable response based on this instruction: ${promptDescription}. The response should be concise and should address the main points of the email. This is the users events that they have on calender to use as context: ${events}. It should also be of the same tone as the original email. Only respond with the body of the draft email. `;
+  const prompt = `Here is an email for which we need to draft a response: ${emailContent}. Please complete the email draft with a suitable response based on this instruction: ${promptDescription}. The response should be concise and should address the main points of the email. ${
+    calendarToggle
+      ? `This is the user's events that they have on the calendar to use as context: ${events}.`
+      : ""
+  } It should also be of the same tone as the original email. Only respond with the body of the draft email.`;
   console.log("Promptt:", prompt);
   try {
     const completion = await openai.chat.completions.create({

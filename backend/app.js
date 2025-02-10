@@ -207,6 +207,7 @@ app.post("/notifications", async (req, res) => {
                     const reply = await createDraftEmail(
                       emailContent,
                       action.config.draftTemplate,
+                      action.config.calenderEvents,
                       accessToken
                     );
                     await createDraft(
