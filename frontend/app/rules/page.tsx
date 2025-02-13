@@ -489,6 +489,11 @@ export default function RulesPage() {
             <Button id="add-rule-button" onClick={() => setIsAddRuleOpen(true)} className="mb-2">
               Add Rule <PlusIcon className="mr-2 h-4 w-4" />
             </Button>
+
+            <Button onClick={toggleListener} className="mb-2" variant={listenerStatus === 1 ? "destructive" : "default"}>
+              <MailXIcon className="mr-2 h-4 w-4" />
+              {listenerStatus === 1 ? "Detach Listener" : "Attach Listener"}
+            </Button>
           </div>
 
           {/* Rules Table */}

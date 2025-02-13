@@ -80,14 +80,7 @@ export function AppSidebar({ currentTab }) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-              {user && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton className="flex items-center gap-4 px-4 py-3 cursor-pointer" onClick={toggleListener}>
-                    <MailXIcon />
-                    <span>{listenerStatus === 1 ? "Detach Listener" : "Attach Listener"}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
+              {user && <SidebarMenuItem></SidebarMenuItem>}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
