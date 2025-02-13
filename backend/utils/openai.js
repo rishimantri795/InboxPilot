@@ -90,14 +90,15 @@ async function createDraftEmail(
   calendarEvents,
   accessToken
 ) {
+  console.log("calendarEvents:", calendarEvents);
   if ((!emailContent, !promptDescription)) {
     return null;
   }
 
-  const calendarToggle = false;
+  let calendarToggle = false;
 
   if (calendarEvents != undefined && calendarEvents != false) {
-    const calenderToggle = true;
+    calendarToggle = true;
   }
 
   const events = await getCalendarEvents(accessToken);
