@@ -16,6 +16,7 @@ import useCurrentUser from "@/hooks/useCurrentUser";
 import { addRule, deleteRule } from "@/lib/api";
 import { Toaster, toast } from "sonner";
 import "react-toastify/dist/ReactToastify.css";
+import DraftActionConfig from "./DraftActionConfig";
 
 import "shepherd.js/dist/css/shepherd.css";
 import Shepherd from "shepherd.js";
@@ -67,7 +68,6 @@ const actionTypes = [
   { value: "draft", label: "Draft Reply", icon: PencilIcon },
   { value: "archive", label: "Archive", icon: ArchiveIcon },
   { value: "favorite", label: "Favorite", icon: StarIcon },
-  { value: "file upload", label: "Add Context", icon: TagIcon },
 ];
 
 // Define the Action interface
@@ -216,6 +216,7 @@ export default function RulesPage() {
         description: ruleData.prompt,
         actions: typeof ruleData.type === "string" ? JSON.parse(ruleData.type) : ruleData.type,
       }));
+      console.log("Transformed rule:", transformedRules);
       setRules(transformedRules);
     }
   }, [user]);
@@ -262,18 +263,38 @@ export default function RulesPage() {
     setIsConfigureRuleOpen(true);
   };
 
-  // Handle saving a rule (both add and update)
   const handleSaveRule = async (configuredRule: Rule) => {
+    // Transform actions for storage.
+    // For draft actions, convert any file objects to an object with fileName.
+    const actionsForStorage = configuredRule.actions.map((action) => {
+      if (action.type === "draft") {
+        const { contextFiles, ...restConfig } = action.config;
+        const filesData =
+          contextFiles && Array.isArray(contextFiles)
+            ? contextFiles.map((file) => {
+                // For native File objects, use file.name; for already enriched objects, use file.fileName.
+                if (typeof file === "object") {
+                  return { fileName: file.fileName || file.name || "" };
+                }
+                return { fileName: file };
+              })
+            : [];
+        return { type: action.type, config: { ...restConfig, contextFiles: filesData } };
+      }
+      return action;
+    });
+  
+    // Create a serialized rule with actions stored as a JSON string.
     const serializedRule = {
       action: configuredRule.name,
       prompt: configuredRule.description,
-      type: JSON.stringify(configuredRule.actions), // Stringify actions for backend
+      type: JSON.stringify(actionsForStorage),
     };
-
+  
+    let savedRuleId: string | null = null;
+  
     if (currentRule) {
       // Update existing rule
-      // console.log(user.id);
-
       setRules(
         rules.map((rule) =>
           rule.id === currentRule.id
@@ -287,30 +308,80 @@ export default function RulesPage() {
         )
       );
       try {
-        await axios.put(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/rules/${currentRule.id}`, serializedRule, { withCredentials: true });
+        await axios.put(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/rules/${currentRule.id}`,
+          serializedRule,
+          { withCredentials: true }
+        );
+        savedRuleId = currentRule.id;
       } catch (error) {
         console.error("Failed to update rule:", error);
       }
     } else {
       // Add new rule
-
       try {
-        const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}`, serializedRule, { withCredentials: true });
+        const response = await axios.post(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}`,
+          serializedRule,
+          { withCredentials: true }
+        );
         const newRule = {
-          id: response.data.id, // Generate a unique ID
+          id: response.data.id, // assuming the backend returns the new rule's ID
           name: configuredRule.name,
           description: configuredRule.description,
           actions: configuredRule.actions,
         };
         setRules([...rules, newRule]);
+        savedRuleId = newRule.id;
       } catch (error) {
         console.error("Failed to add rule:", error);
       }
     }
-
+  
+    // After saving the rule, loop through draft actions and upload any new files.
+    // This step replaces raw File objects with the enriched file objects from the backend.
+    for (let i = 0; i < configuredRule.actions.length; i++) {
+      const action = configuredRule.actions[i];
+      if (
+        action.type === "draft" &&
+        action.config.contextFiles &&
+        action.config.contextFiles.some((file) => file instanceof File)
+      ) {
+        const formData = new FormData();
+        // Append only the raw File objects
+        const rawFiles = action.config.contextFiles.filter((file) => file instanceof File);
+        rawFiles.forEach((file) => {
+          formData.append("files", file);
+        });
+        // Pass along the rule identifier. In this example, we use the saved rule ID.
+        formData.append("ruleIndex", savedRuleId);
+        
+        try {
+          const uploadResponse = await axios.post(
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/upload-rule-files`,
+            formData,
+            {
+              withCredentials: true,
+              headers: { "Content-Type": "multipart/form-data" },
+            }
+          );
+          // Assume that the backend returns the enriched file objects in uploadResponse.data.files.
+          const enrichedFiles = uploadResponse.data.files;
+          // Remove raw File objects and replace them with the enriched ones.
+          const nonRawFiles = action.config.contextFiles.filter((file) => !(file instanceof File));
+          action.config.contextFiles = nonRawFiles.concat(enrichedFiles);
+          toast.success("Files uploaded successfully.");
+        } catch (uploadError) {
+          console.error("Failed to upload files:", uploadError);
+          toast.error("Failed to upload files.");
+        }
+      }
+    }
+  
     setIsConfigureRuleOpen(false);
     setCurrentRule(null);
-  };
+  };  
+  
 
   // Handle editing a rule
   const handleEditRule = (rule: Rule) => {
@@ -466,15 +537,18 @@ export default function RulesPage() {
                     <MailXIcon className="mr-2 h-4 w-4" />
                     <span>{listenerStatus === 1 ? "Detach Listener" : "Attach Listener"}</span>
                   </DropdownMenuItem> */}
-
-                  <DropdownMenuItem onClick={activateProduction} className="cursor-pointer">
-                    <MailXIcon className="mr-2 h-4 w-4" />
-                    <span>Activate Production P/S</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={activateDev} className="cursor-pointer">
-                    <MailXIcon className="mr-2 h-4 w-4" />
-                    <span>Activate Dev P/S</span>
-                  </DropdownMenuItem>
+                  {process.env.NEXT_PUBLIC_BACKEND_URL === "http://localhost:3010" && (
+                    <div>
+                      <DropdownMenuItem onClick={activateProduction} className="cursor-pointer">
+                        <MailXIcon className="mr-2 h-4 w-4" />
+                        <span>Activate Production P/S</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={activateDev} className="cursor-pointer">
+                        <MailXIcon className="mr-2 h-4 w-4" />
+                        <span>Activate Dev P/S</span>
+                      </DropdownMenuItem>
+                    </div>
+                  )}
                   <DropdownMenuItem onClick={() => tour.start()} className="cursor-pointer">
                     <TramFront className="mr-2 h-4 w-4" />
                     <span>Start Tour</span>
@@ -680,9 +754,9 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
           {/* Action Types */}
           <div>
             <Label>Actions</Label>
-            <div className="flex flex-wrap gap-2 mt-2">
+            <div className="flex gap-2 mt-2">
               {actionTypes.map((actionType) => (
-                <Button key={actionType.value} variant="outline" onClick={() => handleAddAction(actionType.value)} className="text-sm px-2 py-2 whitespace-nowrap">
+                <Button key={actionType.value} variant="outline" onClick={() => handleAddAction(actionType.value)} className="flex-1 px-2 py-2 whitespace-nowrap">
                   <actionType.icon className="h-4 w-4" />
                   {actionType.label}
                 </Button>
@@ -731,29 +805,7 @@ function ActionConfig({ action, onConfigChange }: { action: Action; onConfigChan
         </div>
       );
     case "draft":
-      return (
-        <div>
-          <Label htmlFor="draftTemplate">Draft Template</Label>
-          {/* <Input
-            id="draftTo"
-            value={action.config.draftTo || ''}
-            onChange={(e) => onConfigChange({ ...action.config, draftTo: e.target.value })}
-            placeholder="Enter email to draft to"
-          /> */}
-
-          <Input
-            id="draftTemplate"
-            value={action.config.draftTemplate || ""}
-            onChange={(e) =>
-              onConfigChange({
-                ...action.config,
-                draftTemplate: e.target.value,
-              })
-            }
-            placeholder="Enter instructions for the reply draft"
-          />
-        </div>
-      );
+      return <DraftActionConfig action={action} onConfigChange={onConfigChange} />;
     case "archive":
       return (
         <div>
@@ -766,13 +818,6 @@ function ActionConfig({ action, onConfigChange }: { action: Action; onConfigChan
         <div>
           <Label>Favorite Immediately</Label>
           <p className="text-sm text-gray-500">This action will be applied automatically.</p>
-        </div>
-      );
-    case "file upload":
-      return (
-        <div>
-          <Label>Upload File</Label>
-          <Input type="file" id="fileInput" name="file" required />
         </div>
       );
     default:

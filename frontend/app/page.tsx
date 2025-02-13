@@ -44,6 +44,8 @@ export default function Component() {
       console.error("Error during Passport authentication:", e);
     }
   };
+   
+
   return (
     <div className="flex flex-col min-h-screen overflow-x-hidden scrollbar-hide">
       <header className="px-4 lg:px-6 h-14 flex items-center justify-between">
@@ -125,7 +127,7 @@ export default function Component() {
                   >
                     Take Flight
                   </Button>
-                  <Button variant="outline">Learn More</Button>
+                  {/* <Button variant="outline">Learn More</Button> */}
                 </div>
               </div>
               <div className="flex justify-center ">
@@ -288,15 +290,15 @@ export default function Component() {
                   management.
                 </p>
               </div>
-              <div className="w-full max-w-sm space-y-2">
-                <form className="flex space-x-2">
-                  <Input
+              <div className="w-full max-w-sm space-y-2 ">
+                {/* <form className="flex space-x-2"> */}
+                  {/* <Input
                     className="max-w-lg flex-1"
                     placeholder="Enter your email"
                     type="email"
-                  />
+                  /> */}
                   <Button type="submit">Join the Waitlist</Button>
-                </form>
+                {/* </form> */}
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   By signing up, you agree to our{" "}
                   <a className="underline underline-offset-2" href="#">
