@@ -4,6 +4,60 @@ const { htmlToText } = require('html-to-text');
 
 const agent = new https.Agent({ rejectUnauthorized: false });
 
+const { google } = require("googleapis");
+
+async function getCalendarEvents(refreshToken) {
+  try {
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.CLIENT_ID,
+      process.env.CLIENT_SECRET,
+      process.env.REDIRECT_URI
+    );
+
+    oauth2Client.setCredentials({ refresh_token: refreshToken });
+    const accessToken = await oauth2Client.getAccessToken();
+
+    const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+
+    const now = new Date();
+    const firstDayOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      1
+    ).toISOString();
+    const lastDayOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+      23,
+      59,
+      59
+    ).toISOString();
+
+    const response = await calendar.events.list({
+      calendarId: "primary",
+      timeMin: firstDayOfMonth,
+      timeMax: lastDayOfMonth,
+      singleEvents: true,
+      orderBy: "startTime",
+    });
+
+    const events = response.data.items.map((event) => ({
+      id: event.id,
+      title: event.summary || "No Title",
+      startTime: event.start?.dateTime || event.start?.date,
+      endTime: event.end?.dateTime || event.end?.date,
+    }));
+
+    const eventsJson = JSON.stringify(events, null, 2); // Pretty-print JSON
+
+    return eventsJson;
+  } catch (error) {
+    console.error("Error fetching calendar events:", error.message);
+    throw error;
+  }
+}
+
 // not currently using this
 async function accessGmailApi(accessToken) {
   const gmailEndpoint = "https://gmail.googleapis.com/gmail/v1/users/me/messages";
@@ -76,7 +130,7 @@ async function getMessageDetails(accessToken, messageId) {
     });
 
     // Log the entire message to see its structure
-    console.log("Message Details:", response.data);
+    console.log("Message Details:", response.data.id, response.data.snippet);
 
     // Extract the payload
     const payload = response.data.payload;
@@ -510,52 +564,6 @@ async function favoriteEmail(accessToken, messageId) {
   }
 }
 
-// async function createDraft(accessToken, threadId, messageDescription, messageId, toEmail) {
-//   const draftEndpoint = "https://gmail.googleapis.com/gmail/v1/users/me/drafts";
-
-//   console.log("toEmail:", toEmail);
-
-//   const emailContent = [
-//     `To: ${toEmail}`, // Use the extracted recipient email address
-//     // `Subject: Test Draft Email`,
-//     `In-Reply-To: <${messageId}>`,
-//     `References: <${messageId}>`,
-//     "",
-//     messageDescription,
-//   ].join("\r\n");
-
-//   // Encode the email
-//   const encodedMessage = Buffer.from(emailContent)
-//     .toString("base64")
-//     .replace(/\+/g, "-")
-//     .replace(/\//g, "_")
-//     .replace(/=+$/, ""); // Make it URL-safe by replacing special characters
-
-//   try {
-//     const response = await axios.post(
-//       draftEndpoint,
-//       {
-//         message: {
-//           raw: encodedMessage,
-//           threadId: threadId,
-//         },
-//       },
-//       {
-//         headers: {
-//           Authorization: `Bearer ${accessToken}`,
-//           "Content-Type": "application/json",
-//         },
-//       }
-//     );
-//     console.log(`Draft created with ID: ${response.data.id}`);
-//   } catch (error) {
-//     console.error(
-//       "Error creating draft email:",
-//       error.response ? error.response.data : error.message
-//     );
-//   }
-// }
-
 async function createDraft(accessToken, threadId, messageDescription, messageId, toEmail) {
   const draftEndpoint = "https://gmail.googleapis.com/gmail/v1/users/me/drafts";
 
@@ -834,4 +842,5 @@ module.exports = {
   getLatestHistoryId,
   fetchLatestEmail,
   startDevWatch,
+  getCalendarEvents
 };

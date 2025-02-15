@@ -16,6 +16,7 @@ import useCurrentUser from "@/hooks/useCurrentUser";
 import { addRule, deleteRule } from "@/lib/api";
 import { Toaster, toast } from "sonner";
 import "react-toastify/dist/ReactToastify.css";
+import DraftActionConfig from "./DraftActionConfig";
 
 import "shepherd.js/dist/css/shepherd.css";
 import Shepherd from "shepherd.js";
@@ -67,7 +68,6 @@ const actionTypes = [
   { value: "draft", label: "Draft Reply", icon: PencilIcon },
   { value: "archive", label: "Archive", icon: ArchiveIcon },
   { value: "favorite", label: "Favorite", icon: StarIcon },
-  { value: "file upload", label: "Add Context", icon: TagIcon },
 ];
 
 // Define the Action interface
@@ -79,6 +79,7 @@ interface Action {
 // Updated Rule interface with actions as an array
 interface Rule {
   id: string;
+  ruleIndex?: string;
   name: string;
   description: string;
   actions: Action[];
@@ -211,14 +212,16 @@ export default function RulesPage() {
   useEffect(() => {
     if (user && user.rules) {
       const transformedRules: Rule[] = Object.entries(user.rules).map(([key, ruleData]) => ({
-        id: key,
+        id: key, // Use the key as the unique id
+        ruleIndex: key, // This can still be used if needed for backend operations
         name: ruleData.action,
         description: ruleData.prompt,
-        actions: typeof ruleData.type === "string" ? JSON.parse(ruleData.type) : ruleData.type,
+        actions: ruleData.type || [],
       }));
+      console.log("Transformed rules:", transformedRules);
       setRules(transformedRules);
     }
-  }, [user]);
+  }, [user]);  
 
   useEffect(() => {
     if (isAddRuleOpen && tour.isActive()) {
@@ -262,18 +265,47 @@ export default function RulesPage() {
     setIsConfigureRuleOpen(true);
   };
 
-  // Handle saving a rule (both add and update)
   const handleSaveRule = async (configuredRule: Rule) => {
+    // Transform actions for storage.
+    // For draft actions, convert any file objects to an object with fileName.
+    const actionsForStorage = configuredRule.actions.map((action) => {
+      if (action.type === "draft") {
+        const { contextFiles, ...restConfig } = action.config;
+        const filesData =
+          contextFiles && Array.isArray(contextFiles)
+            ? contextFiles.map((file) => {
+                // If the file is a raw File object, return minimal info.
+                if (file instanceof File) {
+                  return { fileName: file.name };
+                }
+                // If the file already has enriched metadata (e.g., s3Url), return it as is.
+                if (file && file.s3Url) {
+                  return file;
+                }
+                // Otherwise, default to using fileName.
+                if (typeof file === "object") {
+                  return { fileName: file.fileName || file.name || "" };
+                }
+                return { fileName: file };
+              })
+            : [];
+        return { type: action.type, config: { ...restConfig, contextFiles: filesData } };
+      }
+      return action;
+    });
+    
+  
+    // Create a serialized rule with actions stored as a JSON string.
     const serializedRule = {
       action: configuredRule.name,
       prompt: configuredRule.description,
-      type: JSON.stringify(configuredRule.actions), // Stringify actions for backend
+      type: actionsForStorage,
     };
-
+  
+    let savedRuleId: string | null = null;
+  
     if (currentRule) {
       // Update existing rule
-      // console.log(user.id);
-
       setRules(
         rules.map((rule) =>
           rule.id === currentRule.id
@@ -287,30 +319,84 @@ export default function RulesPage() {
         )
       );
       try {
-        await axios.put(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/rules/${currentRule.id}`, serializedRule, { withCredentials: true });
+        await axios.put(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/rules/${currentRule.id}`,
+          serializedRule,
+          { withCredentials: true }
+        );
+        savedRuleId = currentRule.id;
       } catch (error) {
         console.error("Failed to update rule:", error);
       }
     } else {
       // Add new rule
-
       try {
-        const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}`, serializedRule, { withCredentials: true });
+        const response = await axios.post(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}`,
+          serializedRule,
+          { withCredentials: true }
+        );
         const newRule = {
-          id: response.data.id, // Generate a unique ID
+          id: response.data.id, // assuming the backend returns the new rule's ID
           name: configuredRule.name,
           description: configuredRule.description,
           actions: configuredRule.actions,
         };
         setRules([...rules, newRule]);
+        savedRuleId = newRule.id;
       } catch (error) {
         console.error("Failed to add rule:", error);
       }
     }
-
+  
+    // After saving the rule, loop through draft actions and upload any new files.
+    // This step replaces raw File objects with the enriched file objects from the backend.
+    for (let i = 0; i < configuredRule.actions.length; i++) {
+      const action = configuredRule.actions[i];
+      if (
+        action.type === "draft" &&
+        action.config.contextFiles &&
+        action.config.contextFiles.some((file) => file instanceof File)
+      ) {
+        const formData = new FormData();
+        // Append only the raw File objects
+        const rawFiles = action.config.contextFiles.filter((file) => file instanceof File);
+        rawFiles.forEach((file) => {
+          formData.append("files", file);
+        });
+        // Pass along the rule identifier. In this example, we use the saved rule ID.
+        formData.append("ruleIndex", savedRuleId);
+        
+        try {
+          const uploadResponse = await axios.post(
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/upload-rule-files`,
+            formData,
+            {
+              withCredentials: true,
+              headers: { "Content-Type": "multipart/form-data" },
+            }
+          );
+          // Assume that the backend returns the enriched file objects in uploadResponse.data.files.
+          const enrichedFiles = uploadResponse.data.files;
+          // Filter out raw file entries: those that are instances of File or don't have s3Url.
+          const existingEnriched = action.config.contextFiles.filter(
+            file => !(file instanceof File) && file.s3Url !== undefined
+          );
+          // Merge the new enriched files with the existing enriched ones
+          const updatedFiles = [...existingEnriched, ...enrichedFiles];
+          action.config.contextFiles = updatedFiles;
+          toast.success("Files uploaded successfully.");
+        } catch (uploadError) {
+          console.error("Failed to upload files:", uploadError);
+          toast.error("Failed to upload files.");
+        }
+      }
+    }
+  
     setIsConfigureRuleOpen(false);
     setCurrentRule(null);
-  };
+  };  
+  
 
   // Handle editing a rule
   const handleEditRule = (rule: Rule) => {
@@ -429,7 +515,11 @@ export default function RulesPage() {
 
   // Handle loading and error states
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="w-16 h-16 border-4 border-gray-800 border-t-transparent border-solid rounded-full animate-spin"></div>
+      </div>
+    );
   } else if (!user) {
     router.push("/");
     return null; // Prevent rendering below
@@ -466,15 +556,18 @@ export default function RulesPage() {
                     <MailXIcon className="mr-2 h-4 w-4" />
                     <span>{listenerStatus === 1 ? "Detach Listener" : "Attach Listener"}</span>
                   </DropdownMenuItem> */}
-
-                  <DropdownMenuItem onClick={activateProduction} className="cursor-pointer">
-                    <MailXIcon className="mr-2 h-4 w-4" />
-                    <span>Activate Production P/S</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={activateDev} className="cursor-pointer">
-                    <MailXIcon className="mr-2 h-4 w-4" />
-                    <span>Activate Dev P/S</span>
-                  </DropdownMenuItem>
+                  {process.env.NEXT_PUBLIC_BACKEND_URL === "http://localhost:3010" && (
+                    <div>
+                      <DropdownMenuItem onClick={activateProduction} className="cursor-pointer">
+                        <MailXIcon className="mr-2 h-4 w-4" />
+                        <span>Activate Production P/S</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={activateDev} className="cursor-pointer">
+                        <MailXIcon className="mr-2 h-4 w-4" />
+                        <span>Activate Dev P/S</span>
+                      </DropdownMenuItem>
+                    </div>
+                  )}
                   <DropdownMenuItem onClick={() => tour.start()} className="cursor-pointer">
                     <TramFront className="mr-2 h-4 w-4" />
                     <span>Start Tour</span>
@@ -569,7 +662,7 @@ export default function RulesPage() {
           </Dialog>
 
           {/* Configure Rule Dialog */}
-          <ConfigureRuleDialog isOpen={isConfigureRuleOpen} onOpenChange={setIsConfigureRuleOpen} prebuiltRule={selectedPrebuiltRule} currentRule={currentRule} onSave={handleSaveRule} />
+          <ConfigureRuleDialog isOpen={isConfigureRuleOpen} onOpenChange={setIsConfigureRuleOpen} prebuiltRule={selectedPrebuiltRule} currentRule={currentRule} onSave={handleSaveRule} setCurrentRule={setCurrentRule} setRules={setRules} />
         </div>
       </SidebarProvider>
     );
@@ -577,7 +670,8 @@ export default function RulesPage() {
 }
 
 // Dialog component for configuring rules
-function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, onSave }) {
+function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, onSave, setCurrentRule, setRules }) {
+  const { user } = useCurrentUser();
   const [ruleName, setRuleName] = useState(currentRule?.name || prebuiltRule?.name || "");
   const [ruleDescription, setRuleDescription] = useState(currentRule?.description || prebuiltRule?.description || "");
   const [actions, setActions] = useState<Action[]>([]);
@@ -610,6 +704,32 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
       }
     }
   }, [isOpen, currentRule, prebuiltRule]);
+
+  const handleCancel = async () => {
+    try {
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/rules`,
+        { withCredentials: true }
+      );
+      const rawRules = response.data;
+      const transformedRules = rawRules.map(rule => ({
+        id: rule.ruleIndex,
+        ruleIndex: rule.ruleIndex,
+        name: rule.action,
+        description: rule.prompt,
+        actions: rule.type || [],
+      }));
+      setRules(transformedRules);
+      const updatedRule = transformedRules.find(
+        rule => String(rule.ruleIndex) === String(currentRule.ruleIndex)
+      );
+      if (updatedRule) {
+        setCurrentRule(updatedRule);
+        setActions(updatedRule.actions);
+      }
+    } catch (error) {}
+    onOpenChange(false);
+  };  
 
   // Add a new action to the rule
   const handleAddAction = (type: string) => {
@@ -658,63 +778,66 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent data-configure-content className="max-w-3xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle>{currentRule ? "Edit Rule" : "Configure Rule"}</DialogTitle>
-          <DialogDescription>{currentRule ? "Modify your existing rule" : "Customize your rule and add actions."}</DialogDescription>
-        </DialogHeader>
-        <div className="flex 1 overflow-y-auto grid gap-4 p-4">
-          {/* Rule Name */}
-          <div>
-            <Label htmlFor="ruleName">Rule Name</Label>
-            <Input id="ruleName" value={ruleName} onChange={(e) => setRuleName(e.target.value)} placeholder="ex. Job search rule" />
-          </div>
+    <>
+      <Toaster />
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+          <DialogContent data-configure-content className="max-w-3xl max-h-[90vh] flex flex-col">
+            <DialogHeader>
+              <DialogTitle>{currentRule ? "Edit Rule" : "Configure Rule"}</DialogTitle>
+              <DialogDescription>{currentRule ? "Modify your existing rule" : "Customize your rule and add actions."}</DialogDescription>
+            </DialogHeader>
+            <div className="flex 1 overflow-y-auto grid gap-4 p-4">
+              {/* Rule Name */}
+              <div>
+                <Label htmlFor="ruleName">Rule Name</Label>
+                <Input id="ruleName" value={ruleName} onChange={(e) => setRuleName(e.target.value)} placeholder="ex. Job search rule" />
+              </div>
 
-          {/* Rule Description */}
-          <div>
-            <Label htmlFor="ruleDescription">Email Condition</Label>
-            <Input id="ruleDescription" value={ruleDescription} onChange={(e) => setRuleDescription(e.target.value)} placeholder="ex. Emails about my job and internship search" />
-          </div>
+              {/* Rule Description */}
+              <div>
+                <Label htmlFor="ruleDescription">Email Condition</Label>
+                <Input id="ruleDescription" value={ruleDescription} onChange={(e) => setRuleDescription(e.target.value)} placeholder="ex. Emails about my job and internship search" />
+              </div>
 
-          {/* Action Types */}
-          <div>
-            <Label>Actions</Label>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {actionTypes.map((actionType) => (
-                <Button key={actionType.value} variant="outline" onClick={() => handleAddAction(actionType.value)} className="text-sm px-2 py-2 whitespace-nowrap">
-                  <actionType.icon className="h-4 w-4" />
-                  {actionType.label}
-                </Button>
+              {/* Action Types */}
+              <div>
+                <Label>Actions</Label>
+                <div className="flex gap-2 mt-2">
+                  {actionTypes.map((actionType) => (
+                    <Button key={actionType.value} variant="outline" onClick={() => handleAddAction(actionType.value)} className="flex-1 px-2 py-2 whitespace-nowrap">
+                      <actionType.icon className="h-4 w-4" />
+                      {actionType.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* List of Actions */}
+              {actions.map((action, index) => (
+                <div key={index} className="border rounded-lg p-4 relative">
+                  <Button variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => handleRemoveAction(index)}>
+                    <TrashIcon className="h-4 w-4" />
+                  </Button>
+                  <ActionConfig action={action} onConfigChange={(config) => handleActionConfigChange(index, config)} ruleIndex={currentRule?.ruleIndex || prebuiltRule?.ruleIndex} />
+                </div>
               ))}
             </div>
-          </div>
-
-          {/* List of Actions */}
-          {actions.map((action, index) => (
-            <div key={index} className="border rounded-lg p-4 relative">
-              <Button variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => handleRemoveAction(index)}>
-                <TrashIcon className="h-4 w-4" />
+            <DialogFooter>
+              <Button variant="outline" onClick={handleCancel}>
+                Cancel
               </Button>
-              <ActionConfig action={action} onConfigChange={(config) => handleActionConfigChange(index, config)} />
-            </div>
-          ))}
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={!canSaveRule()}>
-            {currentRule ? "Update Rule" : "Save Rule"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+              <Button onClick={handleSave} disabled={!canSaveRule()}>
+                {currentRule ? "Update Rule" : "Save Rule"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+    </>
   );
 }
 
 // Component to configure individual actions
-function ActionConfig({ action, onConfigChange }: { action: Action; onConfigChange: (config: Record<string, any>) => void }) {
+function ActionConfig({ action, onConfigChange, ruleIndex, }: { action: Action; onConfigChange: (config: Record<string, any>) => void; ruleIndex?: string }) {
   switch (action.type) {
     case "label":
       return (
@@ -731,29 +854,7 @@ function ActionConfig({ action, onConfigChange }: { action: Action; onConfigChan
         </div>
       );
     case "draft":
-      return (
-        <div>
-          <Label htmlFor="draftTemplate">Draft Template</Label>
-          {/* <Input
-            id="draftTo"
-            value={action.config.draftTo || ''}
-            onChange={(e) => onConfigChange({ ...action.config, draftTo: e.target.value })}
-            placeholder="Enter email to draft to"
-          /> */}
-
-          <Input
-            id="draftTemplate"
-            value={action.config.draftTemplate || ""}
-            onChange={(e) =>
-              onConfigChange({
-                ...action.config,
-                draftTemplate: e.target.value,
-              })
-            }
-            placeholder="Enter instructions for the reply draft"
-          />
-        </div>
-      );
+      return <DraftActionConfig action={action} onConfigChange={onConfigChange} ruleIndex={ruleIndex}/>;
     case "archive":
       return (
         <div>
@@ -766,13 +867,6 @@ function ActionConfig({ action, onConfigChange }: { action: Action; onConfigChan
         <div>
           <Label>Favorite Immediately</Label>
           <p className="text-sm text-gray-500">This action will be applied automatically.</p>
-        </div>
-      );
-    case "file upload":
-      return (
-        <div>
-          <Label>Upload File</Label>
-          <Input type="file" id="fileInput" name="file" required />
         </div>
       );
     default:

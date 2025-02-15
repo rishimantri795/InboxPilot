@@ -8,6 +8,8 @@ const passport = require("passport");
 const session = require("express-session");
 require("dotenv").config();
 require("./middleware/passport.js");
+const pdf = require("pdf-parse");
+const AWS = require("aws-sdk");
 
 const app = express();
 const users = require("./routes/users");
@@ -20,10 +22,9 @@ app.set("trust proxy", 1); // Trust first proxy
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // Parses URL-encoded bodies
 
-const allowedOrigins = [
-  "http://localhost:3000",
-  process.env.FRONTEND_URL, // Ensure this is set in .env
-];
+const s3 = new AWS.S3();
+
+const allowedOrigins = `${process.env.FRONTEND_URL}`;
 
 app.use(
   cors({
@@ -139,7 +140,7 @@ app.post("/notifications", async (req, res) => {
               const rule = user.rules[parseInt(ruleKey)];
               console.log("Rule:", rule);
 
-              for (const action of JSON.parse(rule.type)) {
+              for (const action of rule.type) {
                 switch (action.type) {
                   case "label":
                     const labelId = await getOrCreatePriorityLabel(accessToken, action.config.labelName);
@@ -156,7 +157,35 @@ app.post("/notifications", async (req, res) => {
                     break;
                   case "draft":
                     const fromEmail = await getOriginalEmailDetails(accessToken, latestMessage.id);
-                    const reply = await createDraftEmail(emailContent, action.config.draftTemplate);
+
+                    async function fetchFileFromS3(s3Key) {
+                      const params = {
+                        Bucket: "inboxpilotbucket",
+                        Key: s3Key,
+                      };
+                      const data = await s3.getObject(params).promise();
+                      return data.Body; // This is a Buffer
+                    }
+
+                    const parsedFiles = await Promise.all(
+                      action.config.contextFiles.map(async (file) => {
+                        try {
+                          // Use AWS SDK to get the file buffer
+                          const buffer = await fetchFileFromS3(file.s3Key);
+                          const data = await pdf(buffer);
+                          return {
+                            ...file,
+                            fileName: file.fileName,
+                            extractedText: data.text,
+                          };
+                        } catch (error) {
+                          console.error(`Error processing file ${file.fileName}:`, error);
+                          throw error;
+                        }
+                      })
+                    );
+                    const calendarEvents = action.config.calendarEvents;
+                    const reply = await createDraftEmail(emailContent, action.config.draftTemplate, parsedFiles, calendarEvents, accessToken);
                     await createDraft(accessToken, latestMessage.threadId, reply, latestMessage.id, fromEmail);
                     break;
                 }

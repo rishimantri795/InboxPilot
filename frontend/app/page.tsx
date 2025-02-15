@@ -112,7 +112,7 @@ export default function Component() {
                   <Button size="lg" onClick={!user ? () => setIsLoginOpen(true) : () => router.push("/rules")} className="bg-gray-900 hover:bg-gray-800 text-white">
                     Take Flight
                   </Button>
-                  <Button variant="outline">Learn More</Button>
+                  {/* <Button variant="outline">Learn More</Button> */}
                 </div>
               </div>
               <div className="flex justify-center ">
@@ -218,11 +218,15 @@ export default function Component() {
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Ready to take Flight?</h2>
                 <p className="mx-auto max-w-[600px] text-gray-500 md:text-xl dark:text-gray-400">Join InboxPilot today and experience the future of email management.</p>
               </div>
-              <div className="w-full max-w-sm space-y-2">
-                <form className="flex space-x-2">
-                  <Input className="max-w-lg flex-1" placeholder="Enter your email" type="email" />
-                  <Button type="submit">Join the Waitlist</Button>
-                </form>
+              <div className="w-full max-w-sm space-y-2 ">
+                {/* <form className="flex space-x-2"> */}
+                {/* <Input
+                    className="max-w-lg flex-1"
+                    placeholder="Enter your email"
+                    type="email"
+                  /> */}
+                <Button type="submit">Join the Waitlist</Button>
+                {/* </form> */}
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   By signing up, you agree to our{" "}
                   <a className="underline underline-offset-2" href="#">

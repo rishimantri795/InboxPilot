@@ -1,6 +1,8 @@
 const OpenAI = require("openai");
 const path = require("path");
 const dotenv = require("dotenv");
+const { getCalendarEvents } = require("./gmailService");
+
 
 const result = dotenv.config({
   path: path.resolve(__dirname, ".env"),
@@ -83,11 +85,36 @@ Return only the key (as a number starting from 0) of the rule that best applies 
 //   }
 // });
 
-async function createDraftEmail(emailContent, promptDescription) {
+async function createDraftEmail(emailContent, promptDescription, files, calendarEvents, accessToken) {
+  console.log("calendarEvents:", calendarEvents);
   if ((!emailContent, !promptDescription)) {
     return null;
   }
-  const prompt = `Here is an email for which we need to draft a response: ${emailContent} Please complete the email draft with a suitable response based on this instruction: ${promptDescription}. The response should be concise and should address the main points of the email. It should also be of the same tone as the original email. Only respond with the body of the draft email.`;
+  let calendarToggle = false;
+
+  if (calendarEvents != undefined && calendarEvents != false) {
+    calendarToggle = true;
+  }
+
+  const events = await getCalendarEvents(accessToken);
+    
+  let filesDetails = '';
+  if (files && files.length > 0) {
+    filesDetails = files
+      .map(file => {
+        return `File Name: ${file.fileName}\nExtracted Text: ${file.extractedText}\n`;
+      })
+      .join('\n');
+  }
+  if (filesDetails === '') {
+    filesDetails = "No files provided for context"
+  }
+  const prompt = `Here is an email for which we need to draft a response: ${emailContent}. Please complete the email draft with a suitable response based on this instruction: ${promptDescription}. The response should be concise and should address the main points of the email. ${
+    calendarToggle
+      ? `This is the user's events that they have on the calendar to use as context: ${events}.`
+      : ""
+  } It should also be of the same tone as the original email. Only respond with the body of the draft email.`;
+  // console.log("Promptt:", prompt);
   console.log("Prompt:", prompt);
   try {
     const completion = await openai.chat.completions.create({
