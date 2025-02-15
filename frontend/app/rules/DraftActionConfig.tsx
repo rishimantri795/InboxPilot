@@ -6,6 +6,7 @@ import { TrashIcon } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 import useCurrentUser from "@/hooks/useCurrentUser";
+import { Checkbox } from "@/components/ui/checkbox";
 
 function DraftActionConfig({ action, onConfigChange, ruleIndex }) {
   const { user } = useCurrentUser();
@@ -106,6 +107,25 @@ function DraftActionConfig({ action, onConfigChange, ruleIndex }) {
       >
         Add Context File
       </Button>
+
+
+      {/* Wrap the Checkbox and Label inside a div for proper alignment */}
+      <div className="mt-2 flex items-center space-x-2">
+        <Checkbox
+          id="calendarEvents"
+          checked={action.config?.calendarEvents || false}
+          // checked={!!action.config?.calendarEvents} // Ensures boolean value
+          onCheckedChange={(checked) =>
+            onConfigChange({
+              ...action.config,
+              calendarEvents: checked === true,
+            })
+          }
+        />
+        <Label htmlFor="calendarEvents">
+          Provide Calendar Events as Context
+        </Label>
+      </div>
 
       <input
         ref={fileInputRef}

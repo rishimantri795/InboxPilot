@@ -181,7 +181,8 @@ app.post("/notifications", async (req, res) => {
                         }
                       })
                     );
-                    const reply = await createDraftEmail(emailContent, action.config.draftTemplate, parsedFiles);
+                    const calendarEvents = action.config.calendarEvents;
+                    const reply = await createDraftEmail(emailContent, action.config.draftTemplate, parsedFiles, calendarEvents, accessToken);
                     await createDraft(accessToken, latestMessage.threadId, reply, latestMessage.id, fromEmail);
                     break;
                 }

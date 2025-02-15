@@ -26,7 +26,15 @@ const s3 = new AWS.S3({
 // initiates the google OAuth authentication process
 router.get("/google/auth", (req, res) => {
   passport.authenticate("google", {
-    scope: ["profile", "email", "https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.modify"],
+    scope: [
+      "profile",
+      "email",
+      "https://www.googleapis.com/auth/gmail.readonly",
+      "https://www.googleapis.com/auth/gmail.modify",
+      "https://www.googleapis.com/auth/calendar.readonly",
+      "https://www.googleapis.com/auth/calendar.events.readonly",
+      "https://www.googleapis.com/auth/calendar",
+    ],
     accessType: "offline", // requests a refresh token so we have access even after user logs out
     approvalPrompt: "force",
   })(req, res);
