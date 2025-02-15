@@ -29,6 +29,7 @@
     "openai": "^4.77.3",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
+    "passport-microsoft": "^2.1.0",
     "path": "^0.12.7",
     "redis": "^4.7.0"
   },

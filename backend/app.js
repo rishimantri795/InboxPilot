@@ -19,12 +19,15 @@ app.set("trust proxy", 1); // Trust first proxy
 
 app.use(express.json());
 
-const allowedOrigins = `${process.env.FRONTEND_URL}`;
+const allowedOrigins = [
+  "http://localhost:3000",
+  process.env.FRONTEND_URL, // Ensure this is set in .env
+];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      console.log("CORS request origin:", origin); // Debugging
+      console.log("CORS request origin:", origin);
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, origin);
       } else {
@@ -32,25 +35,24 @@ app.use(
         callback(new Error("Not allowed by CORS"));
       }
     },
-    credentials: true, // Required for cookies
+    credentials: true, // Required for cookies to work across domains
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
 app.use(
   session({
-    secret: "your-secure-secret", // Use a strong, secure secret in production
+    secret: process.env.SESSION_SECRET || "your-secure-secret",
     resave: false,
     saveUninitialized: false,
-    //try mongo db session instead of memory store
     cookie: {
       httpOnly: true,
-      secure: process.env.DEV_TARGET_EMAILS !== "true", // Secure cookies for production (HTTPS)
-      sameSite: process.env.DEV_TARGET_EMAILS === "true" ? "lax" : "None", // Cross-origin cookies for production
-      domain: process.env.DEV_TARGET_EMAILS === "true" ? "localhost" : ".theinboxpilot.com", // Domain based on environment
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      path: "/",
+      secure: process.env.NODE_ENV === "production", // Set false for local dev
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+      domain: process.env.NODE_ENV === "production" ? "ngrok-free.app" : undefined,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
     },
-    name: "connect.sid", // Optional: customize the cookie name
   })
 );
 
@@ -58,6 +60,13 @@ app.use(
 
 app.use(passport.initialize());
 app.use(passport.session());
+
+app.use((req, res, next) => {
+  console.log("🔹 Incoming request session:", req.session);
+  console.log("🔹 Authenticated:", req.isAuthenticated());
+  console.log("🔹 Cookies received:", req.cookies);
+  next();
+});
 
 // Routes
 app.use("/api/users", users);
@@ -111,7 +120,7 @@ app.post("/notifications", async (req, res) => {
                 console.log(`Email ${latestMessage.id} already processed. Skipping.`);
                 return res.status(204).send();
               }
-              
+
               await userRef.update({
                 latestProcessedMessageId: latestMessage.id,
               });
@@ -157,7 +166,6 @@ app.post("/notifications", async (req, res) => {
               }
 
               // Store the latest processed messageId
-              
 
               console.log(`Processed latest email ID ${latestMessage.id} for ${emailAddress}`);
             } else {

@@ -22,12 +22,12 @@ const useCurrentUser = () => {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const response: { data: ResponseData } = await axios.get(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/current-user`,
-          {
-            withCredentials: true,
-          }
-        );
+        const response: { data: ResponseData } = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/current-user`, {
+          withCredentials: true,
+        });
+
+        console.log("HIII");
+        console.log(response);
 
         if (response.data.user) {
           const mappedUser: User = {

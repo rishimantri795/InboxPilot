@@ -44,9 +44,7 @@ export default function Home() {
           user?: User;
         }
 
-        const response: { data: ResponseData } = await axios.get(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/current-user`
-        );
+        const response: { data: ResponseData } = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/current-user`);
         if (response.data.user) {
           const mappedUser = {
             id: response.data.user.id,
@@ -102,9 +100,7 @@ export default function Home() {
 
   const signOutPassport = async () => {
     try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/logout`
-      );
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/logout`);
       if (response.status === 200) {
         console.log("Logged out successfully");
       } else {
@@ -117,15 +113,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen p-8 pb-20">
-      <div className="mt-4">
-        {loading ? (
-          <p>Loading...</p>
-        ) : user ? (
-          <p>Signed in as: {user.email}</p>
-        ) : (
-          <p>Not signed in.</p>
-        )}
-      </div>
+      <div className="mt-4">{loading ? <p>Loading...</p> : user ? <p>Signed in as: {user.email}</p> : <p>Not signed in.</p>}</div>
 
       <div className="mt-4">
         <button onClick={passPortAuth}>Sign In with Google (Passport)</button>
@@ -147,12 +135,7 @@ export default function Home() {
         <label htmlFor="apiDropdown" className="block mb-2">
           Select API Call:
         </label>
-        <select
-          id="apiDropdown"
-          value={selectedApi}
-          onChange={(e) => setSelectedApi(e.target.value)}
-          className="text-black bg-white border border-gray-300 p-2 text-base"
-        >
+        <select id="apiDropdown" value={selectedApi} onChange={(e) => setSelectedApi(e.target.value)} className="text-black bg-white border border-gray-300 p-2 text-base">
           {apiOptions.map((option, index) => (
             <option key={index} value={option.endpoint}>
               {option.label}
@@ -164,16 +147,8 @@ export default function Home() {
         <label htmlFor="apiInput" className="block mb-2">
           Text Input:
         </label>
-        <input
-          type="text"
-          id="apiInput"
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          className="text-black bg-white border border-gray-300 p-2 text-base"
-        />
-        <button onClick={handleApiCall}>
-          Send Text to API (Prints text and api into console)
-        </button>
+        <input type="text" id="apiInput" value={inputText} onChange={(e) => setInputText(e.target.value)} className="text-black bg-white border border-gray-300 p-2 text-base" />
+        <button onClick={handleApiCall}>Send Text to API (Prints text and api into console)</button>
       </div>
     </div>
   );

@@ -1,6 +1,8 @@
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const admin = require("../api/firebase");
+const MicrosoftStrategy = require("passport-microsoft").Strategy;
+
 const db = admin.firestore();
 const { watchGmailInbox } = require("../utils/gmailService");
 
@@ -66,20 +68,69 @@ passport.use(
   )
 );
 
+// Microsoft OAuth Strategy
+passport.use(
+  new MicrosoftStrategy(
+    {
+      clientID: process.env.MICROSOFT_CLIENT_ID,
+      clientSecret: process.env.MICROSOFT_CLIENT_SECRET,
+      callbackURL: `${process.env.BACKEND_URL}/api/users/outlook/auth/callback`,
+      scope: ["user.read", "mail.read", "mail.send", "offline_access"],
+      passReqToCallback: true,
+    },
+    async (req, accessToken, refreshToken, profile, done) => {
+      try {
+        const userRef = db.collection("Users").doc(profile.id);
+        const userDoc = await userRef.get();
+
+        let user;
+        if (!userDoc.exists) {
+          // Create new user in Firestore
+          user = {
+            id: profile.id,
+            email: profile.emails[0].value,
+            provider: "microsoft",
+            createdAt: new Date(),
+            refreshToken,
+          };
+          await userRef.set(user);
+        } else {
+          user = userDoc.data();
+          user.refreshToken = refreshToken;
+          await userRef.update({ refreshToken });
+        }
+
+        console.log("✅ Microsoft OAuth Success - User:", user);
+        return done(null, user);
+      } catch (error) {
+        console.error("❌ Error in Microsoft OAuth strategy:", error);
+        return done(error, null);
+      }
+    }
+  )
+);
+
+// Serialize user to store in session
 passport.serializeUser((user, done) => {
+  console.log("✅ Serializing user:", user.id);
   done(null, user.id);
 });
 
+// Deserialize user from session
 passport.deserializeUser(async (id, done) => {
+  console.log("✅ Deserializing user ID:", id);
   try {
     const userDoc = await db.collection("Users").doc(id).get();
-    if (userDoc.exists) {
-      done(null, userDoc.data());
-    } else {
-      done(new Error("User not found"));
+    if (!userDoc.exists) {
+      return done(null, false);
     }
+    const user = userDoc.data();
+    user.id = id; // Add user ID
+    console.log("✅ Deserialized user:", user);
+    done(null, user);
   } catch (error) {
-    done(error);
+    console.error("❌ Error deserializing user:", error);
+    done(error, null);
   }
 });
 

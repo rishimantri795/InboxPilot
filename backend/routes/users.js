@@ -12,6 +12,16 @@ const cookieParser = require("cookie-parser");
 router.use(cookieParser()); // enables us to use cookies in the router
 const { watchGmailInbox, startDevWatch } = require("../utils/gmailService.js");
 const { getAccessTokenFromRefreshToken } = require("../utils/tokenService.js");
+const { fetchOutlookEmails } = require("../utils/outlookService.js");
+
+// initiates the google OAuth authentication process
+router.get("/google/auth", (req, res) => {
+  passport.authenticate("google", {
+    scope: ["profile", "email", "https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.modify"],
+    accessType: "offline", // requests a refresh token so we have access even after user logs out
+    approvalPrompt: "force",
+  })(req, res);
+});
 
 // initiates the google OAuth authentication process
 router.get("/google/auth", (req, res) => {
@@ -37,6 +47,48 @@ router.get(
     }
   }
 );
+
+/** ================================
+ * 🔹 MICROSOFT OUTLOOK OAUTH ROUTES
+ * ================================= **/
+router.get("/outlook/auth", passport.authenticate("microsoft"));
+
+router.get("/outlook/auth/callback", passport.authenticate("microsoft", { failureRedirect: `${process.env.FRONTEND_URL}/` }), async (req, res) => {
+  console.log("✅ Microsoft OAuth Callback triggered.");
+
+  // Debugging User Data
+  console.log("🔹 User Data:", req.user);
+
+  // Debugging Cookies
+  console.log("🔹 Cookies in callback:", req.cookies);
+
+  // Debugging Session
+  console.log("🔹 Incoming session:", req.session);
+  console.log("🔹 Passport user:", req.session.passport);
+  console.log("🔹 Authenticated:", req.isAuthenticated());
+
+  if (!req.user) {
+    return res.status(401).send("Authentication failed.");
+  }
+
+  res.redirect(`${process.env.FRONTEND_URL}/rules`);
+});
+
+/** ================================
+ * 🔹 FETCH OUTLOOK EMAILS
+ * ================================= **/
+router.get("/outlook/emails", async (req, res) => {
+  if (!req.isAuthenticated()) return res.status(401).send("Unauthorized.");
+
+  const accessToken = req.user.refreshToken;
+  const emails = await fetchOutlookEmails(accessToken);
+
+  if (emails) {
+    res.json(emails);
+  } else {
+    res.status(500).send("Failed to fetch emails.");
+  }
+});
 
 //! new
 async function stopGmailWatch(accessToken) {
