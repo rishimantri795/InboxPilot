@@ -1,6 +1,8 @@
 const OpenAI = require("openai");
 const path = require("path");
 const dotenv = require("dotenv");
+const { getCalendarEvents } = require("./gmailService");
+
 
 const result = dotenv.config({
   path: path.resolve(__dirname, ".env"),
