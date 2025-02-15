@@ -52,30 +52,30 @@ function DraftActionConfig({ action, onConfigChange, ruleIndex }) {
   
 
   const handleRemoveFile = async (index) => {
-    // Retrieve the file to be removed
     const fileToRemove = action.config.contextFiles[index];
     if (!fileToRemove || !fileToRemove.s3Key) {
       const updatedFiles = action.config.contextFiles.filter((_, i) => i !== index);
       onConfigChange({ ...action.config, contextFiles: updatedFiles });
-      // console.error("File or file s3Key not found.");
-      // toast.error("File not found or already removed.");
       return;
     }
 
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this file? This deletion cannot be undone."
+    );
+    if (!confirmed) return;
+
     try {
-      // Call your backend API to delete the file from S3 and update Firestore
       await axios.delete(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/delete-rule-file`,
         {
           data: {
-            ruleIndex,           // the rule identifier/index
-            fileS3Key: fileToRemove.s3Key, // the S3 key for the file
+            ruleIndex,
+            fileS3Key: fileToRemove.s3Key,
           },
           withCredentials: true,
         }
       );
 
-      // Update the local state: remove the file from the contextFiles array
       const updatedFiles = action.config.contextFiles.filter((_, i) => i !== index);
       onConfigChange({ ...action.config, contextFiles: updatedFiles });
       toast.success("File deleted successfully.");
@@ -99,7 +99,9 @@ function DraftActionConfig({ action, onConfigChange, ruleIndex }) {
 
       <Button
         variant="outline"
-        onClick={() => fileInputRef.current && fileInputRef.current.click()}
+        onClick={() => {
+          fileInputRef.current && fileInputRef.current.click();
+        }}
         className="mt-2"
       >
         Add Context File

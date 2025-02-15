@@ -727,9 +727,7 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
         setCurrentRule(updatedRule);
         setActions(updatedRule.actions);
       }
-    } catch (error) {
-      console.error("Error re-fetching rule on cancel:", error);
-    }
+    } catch (error) {}
     onOpenChange(false);
   };  
 
