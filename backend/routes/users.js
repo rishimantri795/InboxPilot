@@ -2,6 +2,7 @@ const express = require("express");
 const admin = require("../api/firebase.js"); // import the firebase admin object
 const passport = require("passport");
 const multer = require("multer");
+const AWS = require("aws-sdk");
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -15,6 +16,12 @@ const cookieParser = require("cookie-parser");
 router.use(cookieParser()); // enables us to use cookies in the router
 const { watchGmailInbox, startDevWatch } = require("../utils/gmailService.js");
 const { getAccessTokenFromRefreshToken } = require("../utils/tokenService.js");
+
+const s3 = new AWS.S3({
+  region: process.env.AWS_REGION,
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+});
 
 // initiates the google OAuth authentication process
 router.get("/google/auth", (req, res) => {
@@ -513,10 +520,9 @@ router.get("/:id/rules", async (req, res) => {
     const userData = userDoc.data();
     const existingRules = userData.rules || {};
 
-    // Transform rules object into an array
     const rules = Object.keys(existingRules)
       .map((key) => ({
-        ruleIndex: key,
+        ruleIndex: key, // include rule index
         ...existingRules[key],
       }))
       .sort((a, b) => Number(a.ruleIndex) - Number(b.ruleIndex));
@@ -527,6 +533,7 @@ router.get("/:id/rules", async (req, res) => {
     return res.status(500).json({ error: "Internal Server Error." });
   }
 });
+
 
 router.delete("/", (req, res) => {});
 
@@ -732,7 +739,7 @@ router.post("/:id/toggle-listener", async (req, res) => {
 
 router.post("/:id/upload-rule-files", upload.array("files"), async (req, res) => {
   const { id } = req.params;
-  const { ruleIndex } = req.body; // expect the client to pass which rule these files belong to
+  const { ruleIndex } = req.body; // Expect the client to pass which rule these files belong to
 
   if (!id || ruleIndex === undefined) {
     return res.status(400).json({ error: "User ID and rule index are required." });
@@ -753,44 +760,120 @@ router.post("/:id/upload-rule-files", upload.array("files"), async (req, res) =>
     }
     
     // Parse the actions array from the stored JSON string.
-    let actions = [];
-    if (typeof ruleData.type === "string") {
-      actions = JSON.parse(ruleData.type);
-    } else {
-      actions = ruleData.type;
-    }
+    const actions = ruleData.type || [];
     
     // Find the draft action in the actions array.
     const draftActionIndex = actions.findIndex((action) => action.type === "draft");
     if (draftActionIndex === -1) {
       return res.status(400).json({ error: "Draft action not found in the rule." });
     }
-    
-    // For each uploaded file, create an enriched file object.
-    const newFiles = req.files.map((file) => ({
-      fileName: file.originalname,
-      mimeType: file.mimetype,
-      fileData: file.buffer.toString("base64"),
-      uploadedAt: new Date().toISOString(),
-    }));
+
+    // Upload each file to S3.
+    const bucketName = process.env.S3_BUCKET;
+    const newFilesPromises = req.files.map(async (file) => {
+      // Generate a unique key for the file in S3
+      const s3Key = `uploads/${Date.now()}-${file.originalname}`;
+      
+      // Prepare the upload parameters
+      const uploadParams = {
+        Bucket: bucketName,
+        Key: s3Key,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      };
+
+      // Upload the file to S3
+      const data = await s3.upload(uploadParams).promise();
+
+      // Return an enriched file object.
+      return {
+        fileName: file.originalname,
+        mimeType: file.mimetype,
+        s3Key, // optionally store the S3 key for future reference
+        s3Url: data.Location, // S3 returns the public URL if your bucket policy allows it
+        uploadedAt: new Date().toISOString(),
+      };
+    });
+
+    // Wait for all files to upload.
+    const newFiles = await Promise.all(newFilesPromises);
     
     // Get any existing files from the draft action.
-    // We assume that an enriched file object has a "mimeType" property.
-    const existingFiles = actions[draftActionIndex].config.contextFiles || [];
-    // Remove any raw file objects (those without a mimeType)
-    const filteredExisting = existingFiles.filter((file) => file.mimeType !== undefined);
-    
-    // Now, set contextFiles to include only the already enriched files plus the new ones.
-    actions[draftActionIndex].config.contextFiles = filteredExisting.concat(newFiles);
-    
-    // Update the rule's "type" field with the updated actions array (stringify again).
-    await userRef.update({
-      [`rules.${ruleIndex}.type`]: JSON.stringify(actions)
-    });
+  const existingFiles = actions[draftActionIndex].config.contextFiles || [];
+
+  // Filter out raw or minimal entries (that don't have s3Url)
+  const existingEnriched = existingFiles.filter(file => file && file.s3Url);
+
+  // Merge the already enriched files with the new enriched files.
+  const mergedFiles = [...existingEnriched, ...newFiles];
+
+  actions[draftActionIndex].config.contextFiles = mergedFiles;
+
+  // Update the rule document with the merged files.
+  await userRef.update({
+    [`rules.${ruleIndex}.type`]: actions
+  });
     
     return res.status(200).json({ message: "Files added successfully.", files: newFiles });
   } catch (error) {
     console.error("Error updating rule file data:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+router.delete("/:id/delete-rule-file", async (req, res) => {
+  const { id } = req.params;
+  // Expect the client to send the rule index and the s3Key of the file to be deleted
+  const { ruleIndex, fileS3Key } = req.body;
+
+  if (!id || ruleIndex === undefined || !fileS3Key) {
+    return res.status(400).json({ error: "User ID, rule index, and file s3Key are required." });
+  }
+
+  try {
+    // Get the user document
+    const userRef = db.collection("Users").doc(id);
+    const userDoc = await userRef.get();
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: "User not found." });
+    }
+    
+    // Get the specific rule
+    const userData = userDoc.data();
+    const ruleData = userData.rules ? userData.rules[ruleIndex] : null;
+    if (!ruleData) {
+      return res.status(404).json({ error: "Rule not found." });
+    }
+    
+    // Get the actions array (stored directly, not as a JSON string)
+    const actions = ruleData.type || [];
+    
+    // Find the draft action (where the contextFiles are stored)
+    const draftActionIndex = actions.findIndex((action) => action.type === "draft");
+    if (draftActionIndex === -1) {
+      return res.status(400).json({ error: "Draft action not found in the rule." });
+    }
+    
+    // Delete the file from S3
+    const deleteParams = {
+      Bucket: process.env.S3_BUCKET,
+      Key: fileS3Key,
+    };
+    await s3.deleteObject(deleteParams).promise();
+    
+    // Remove the file from the contextFiles array in Firestore
+    const existingFiles = actions[draftActionIndex].config.contextFiles || [];
+    const updatedFiles = existingFiles.filter(file => file.s3Key !== fileS3Key);
+    actions[draftActionIndex].config.contextFiles = updatedFiles;
+    
+    // Update the Firestore document with the new actions array
+    await userRef.update({
+      [`rules.${ruleIndex}.type`]: actions
+    });
+    
+    return res.status(200).json({ message: "File deleted successfully." });
+  } catch (error) {
+    console.error("Error deleting rule file:", error);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });
