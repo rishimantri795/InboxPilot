@@ -662,7 +662,7 @@ export default function RulesPage() {
           </Dialog>
 
           {/* Configure Rule Dialog */}
-          <ConfigureRuleDialog isOpen={isConfigureRuleOpen} onOpenChange={setIsConfigureRuleOpen} prebuiltRule={selectedPrebuiltRule} currentRule={currentRule} onSave={handleSaveRule} />
+          <ConfigureRuleDialog isOpen={isConfigureRuleOpen} onOpenChange={setIsConfigureRuleOpen} prebuiltRule={selectedPrebuiltRule} currentRule={currentRule} onSave={handleSaveRule} setCurrentRule={setCurrentRule} setRules={setRules} />
         </div>
       </SidebarProvider>
     );
@@ -670,7 +670,8 @@ export default function RulesPage() {
 }
 
 // Dialog component for configuring rules
-function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, onSave }) {
+function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, onSave, setCurrentRule, setRules }) {
+  const { user } = useCurrentUser();
   const [ruleName, setRuleName] = useState(currentRule?.name || prebuiltRule?.name || "");
   const [ruleDescription, setRuleDescription] = useState(currentRule?.description || prebuiltRule?.description || "");
   const [actions, setActions] = useState<Action[]>([]);
@@ -706,20 +707,31 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
 
   const handleCancel = async () => {
     try {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/rules`, {
-        withCredentials: true,
-      });
-      const updatedRules = response.data;
-      const updatedRule = updatedRules.find(rule => rule.ruleIndex === currentRule.ruleIndex);
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/rules`,
+        { withCredentials: true }
+      );
+      const rawRules = response.data;
+      const transformedRules = rawRules.map(rule => ({
+        id: rule.ruleIndex,
+        ruleIndex: rule.ruleIndex,
+        name: rule.action,
+        description: rule.prompt,
+        actions: rule.type || [],
+      }));
+      setRules(transformedRules);
+      const updatedRule = transformedRules.find(
+        rule => String(rule.ruleIndex) === String(currentRule.ruleIndex)
+      );
       if (updatedRule) {
         setCurrentRule(updatedRule);
+        setActions(updatedRule.actions);
       }
     } catch (error) {
       console.error("Error re-fetching rule on cancel:", error);
     }
     onOpenChange(false);
-  };
-  
+  };  
 
   // Add a new action to the rule
   const handleAddAction = (type: string) => {
