@@ -3,6 +3,53 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const admin = require("../api/firebase");
 const db = admin.firestore();
 const { watchGmailInbox } = require("../utils/gmailService");
+const { google } = require("googleapis");
+const { saveEmailChunks } = require("../utils/RAGService");
+const { getMessageDetails } = require("../utils/gmailService");
+
+// Delay function
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function fetchLast50Emails(accessToken) {
+  const oauth2Client = new google.auth.OAuth2();
+  oauth2Client.setCredentials({ access_token: accessToken });
+
+  const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+
+  try {
+    const response = await gmail.users.messages.list({
+      userId: "me",
+      maxResults: 100,
+    });
+
+    if (!response.data.messages) {
+      console.log("No emails found.");
+      return [];
+    }
+
+    // Fetch full details for each message and include the message ID
+    const emailDetails = [];
+    for (let i = 0; i < response.data.messages.length; i++) {
+      const message = response.data.messages[i];
+
+      // Fetch email content using the message ID
+      const emailContent = await getMessageDetails(accessToken, message.id);
+
+      // Add a rate-limiting delay (e.g., 500ms between requests)
+      await delay(500); // Adjust the delay based on your needs
+
+      // Push the result into the array
+      emailDetails.push({
+        messageId: message.id,
+        content: emailContent,
+      });
+    }
+
+    return emailDetails;
+  } catch (error) {
+    console.error("Error fetching emails:", error);
+  }
+}
 
 // passport google strategy
 passport.use(
@@ -13,12 +60,21 @@ passport.use(
       callbackURL: process.env.GOOGLE_CALLBACK_URL,
       accessType: "offline", // ensure you get a refresh token
       prompt: "consent", // force re-consent to get new permissions
-      scope: ["profile", "email", "https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.modify"],
+      scope: [
+        "profile",
+        "email",
+        "https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/gmail.modify",
+      ],
     },
     async function (accessToken, refreshToken, profile, done) {
       try {
         // check if user exists in db matching the email passed in
-        const userSnapshot = await db.collection("Users").where("email", "==", profile.emails[0].value).limit(1).get(); // limit(1) limits to 1 doc and .get() returns querySnapshot
+        const userSnapshot = await db
+          .collection("Users")
+          .where("email", "==", profile.emails[0].value)
+          .limit(1)
+          .get(); // limit(1) limits to 1 doc and .get() returns querySnapshot
 
         // why we can't do userSnapshot? ---> bc firestore always returns a QuerySnapshot object, even if not docs match
         if (!userSnapshot.empty) {
@@ -54,9 +110,20 @@ passport.use(
           await db.collection("Users").doc(profile.id).set(newUser);
 
           // puts a gmail listener to user
-          userData.historyId = historyId; // Add historyId
-          await userDocRef.update(userData);
+          // newUser.historyId = historyId; // Add historyId
+          // await userDocRef.update(newUser);
 
+          let emails = await fetchLast50Emails(accessToken);
+
+          console.log("TEMP", emails[0]);
+
+          for (let i = 0; i < emails.length; i++) {
+            await saveEmailChunks(
+              newUser.id,
+              emails[i].messageId,
+              emails[i].content
+            );
+          }
           return done(null, newUser);
         }
       } catch (err) {
