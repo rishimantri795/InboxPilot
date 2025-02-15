@@ -43,16 +43,19 @@ app.use(
 
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "your-secure-secret",
+    secret: "your-secure-secret", // Use a strong, secure secret in production
     resave: false,
     saveUninitialized: false,
+    //try mongo db session instead of memory store
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // Set false for local dev
-      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-      domain: process.env.NODE_ENV === "production" ? "ngrok-free.app" : undefined,
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      secure: process.env.DEV_TARGET_EMAILS !== "true", // Secure cookies for production (HTTPS)
+      sameSite: process.env.DEV_TARGET_EMAILS === "true" ? "lax" : "None", // Cross-origin cookies for production
+      domain: process.env.DEV_TARGET_EMAILS === "true" ? "localhost" : ".theinboxpilot.com", // Domain based on environment
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      path: "/",
     },
+    name: "connect.sid", // Optional: customize the cookie name
   })
 );
 
