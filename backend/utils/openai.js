@@ -83,7 +83,7 @@ Return only the key (as a number starting from 0) of the rule that best applies 
 //   }
 // });
 
-async function createDraftEmail(emailContent, promptDescription, files, calanderEvents, accessTokens) {
+async function createDraftEmail(emailContent, promptDescription, files, calendarEvents, accessToken) {
   console.log("calendarEvents:", calendarEvents);
   if ((!emailContent, !promptDescription)) {
     return null;
