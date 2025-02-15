@@ -118,7 +118,6 @@ passport.serializeUser((user, done) => {
 
 // Deserialize user from session
 passport.deserializeUser(async (id, done) => {
-  console.log("✅ Deserializing user ID:", id);
   try {
     const userDoc = await db.collection("Users").doc(id).get();
     if (!userDoc.exists) {
@@ -126,7 +125,6 @@ passport.deserializeUser(async (id, done) => {
     }
     const user = userDoc.data();
     user.id = id; // Add user ID
-    console.log("✅ Deserialized user:", user);
     done(null, user);
   } catch (error) {
     console.error("❌ Error deserializing user:", error);

@@ -12,7 +12,7 @@ const cookieParser = require("cookie-parser");
 router.use(cookieParser()); // enables us to use cookies in the router
 const { watchGmailInbox, startDevWatch } = require("../utils/gmailService.js");
 const { getAccessTokenFromRefreshToken } = require("../utils/tokenService.js");
-const { fetchOutlookEmails } = require("../utils/outlookService.js");
+const { fetchOutlookEmails, subscribeToOutlookEmails, getAccessTokenFromRefreshTokenOutlook, getRefreshTokenOutlook } = require("../utils/outlookService.js");
 
 // initiates the google OAuth authentication process
 router.get("/google/auth", (req, res) => {
@@ -56,16 +56,15 @@ router.get("/outlook/auth", passport.authenticate("microsoft"));
 router.get("/outlook/auth/callback", passport.authenticate("microsoft", { failureRedirect: `${process.env.FRONTEND_URL}/` }), async (req, res) => {
   console.log("✅ Microsoft OAuth Callback triggered.");
 
-  // Debugging User Data
-  console.log("🔹 User Data:", req.user);
-
-  // Debugging Cookies
-  console.log("🔹 Cookies in callback:", req.cookies);
-
-  // Debugging Session
-  console.log("🔹 Incoming session:", req.session);
-  console.log("🔹 Passport user:", req.session.passport);
-  console.log("🔹 Authenticated:", req.isAuthenticated());
+  // Start Outlook Email Listener
+  try {
+    console.log("HIII!!!", req.user.refreshToken);
+    const accessToken = await getAccessTokenFromRefreshTokenOutlook(req.user.refreshToken);
+    console.log("🔹 OUTLOOK Access Token:", accessToken);
+    await subscribeToOutlookEmails(accessToken);
+  } catch (error) {
+    console.error("❌ Error setting up email listener:", error);
+  }
 
   if (!req.user) {
     return res.status(401).send("Authentication failed.");
@@ -87,6 +86,87 @@ router.get("/outlook/emails", async (req, res) => {
     res.json(emails);
   } else {
     res.status(500).send("Failed to fetch emails.");
+  }
+});
+
+// router.post("/outlook/webhook", async (req, res) => {
+//   console.log("📩 New Outlook Email Notification Received!", req.body);
+
+//   if (req.body.value) {
+//     for (const event of req.body.value) {
+//       console.log("🔹 Email Change Detected:", event);
+
+//       // If the event is for a new email
+//       if (event.resourceData && event.resourceData.id) {
+//         console.log(`📬 New Email ID: ${event.resourceData.id}`);
+
+//         // Fetch the full email details
+//         const emailDetails = await getEmailById(event.resourceData.id);
+//         console.log("📧 New Email Details:", emailDetails);
+//       }
+//     }
+//   }
+
+//   res.sendStatus(200);
+// });
+
+router.get("/outlook/webhook", (req, res) => {
+  console.log("🔹 Microsoft Graph validation request received");
+
+  // Microsoft sends a "validationToken" query parameter during subscription
+  const validationToken = req.query.validationToken;
+
+  if (validationToken) {
+    console.log("✅ Sending back validation token:", validationToken);
+    return res.status(200).send(validationToken);
+  }
+
+  res.status(400).send("Missing validation token");
+});
+router.post("/outlook/webhook", async (req, res) => {
+  // ✅ Handle Microsoft validation request
+  if (req.query && req.query.validationToken) {
+    console.log("🔹 Responding to validation request...");
+    return res.status(200).send(req.query.validationToken);
+  }
+
+  console.log("📩 Received email notification:", JSON.stringify(req.body, null, 2));
+
+  try {
+    // 🔹 Extract message ID from webhook notification
+    const notification = req.body.value && req.body.value[0];
+    if (!notification || !notification.resourceData || !notification.resourceData.id) {
+      console.error("❌ No message ID found in webhook notification.");
+      return res.status(400).send("Invalid webhook notification.");
+    }
+
+    const messageId = notification.resourceData.id;
+    console.log(`📧 New Email Received! Fetching content for Message ID: ${messageId}`);
+
+    // 🔹 Extract userId from resource (e.g., "Users/{userId}/Messages/{messageId}")
+    const resourceParts = notification.resource.split("/");
+    const userId = resourceParts.length > 1 ? resourceParts[1] : null;
+    console.log("USER ID!!!", userId);
+    // 🔹 Fetch email content from Microsoft Graph API
+    const refreshToken = await getRefreshTokenOutlook(userId);
+    const accessToken = await getAccessTokenFromRefreshTokenOutlook(refreshToken);
+    const emailResponse = await axios.get(`https://graph.microsoft.com/v1.0/me/messages/${messageId}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    const email = emailResponse.data;
+
+    // 🔹 Print out email details
+    console.log("📨 Email Details:");
+    console.log(`📍 Subject: ${email.subject}`);
+    console.log(`📤 From: ${email.from.emailAddress.name} <${email.from.emailAddress.address}>`);
+    console.log(`📩 To: ${email.toRecipients.map((r) => r.emailAddress.address).join(", ")}`);
+    console.log(`📝 Body Preview: ${email.bodyPreview}`);
+
+    res.status(202).send("Accepted");
+  } catch (error) {
+    console.error("❌ Error fetching email details:", error.response ? error.response.data : error.message);
+    res.status(500).send("Error processing webhook");
   }
 });
 
