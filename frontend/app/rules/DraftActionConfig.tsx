@@ -59,10 +59,10 @@ function DraftActionConfig({ action, onConfigChange, ruleIndex }) {
       return;
     }
 
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this file? This deletion cannot be undone."
-    );
-    if (!confirmed) return;
+    // const confirmed = window.confirm(
+    //   "Are you sure you want to delete this file? This deletion cannot be undone."
+    // );
+    // if (!confirmed) return;
 
     try {
       await axios.delete(
