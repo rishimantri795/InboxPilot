@@ -109,7 +109,7 @@ async function createDraftEmail(emailContent, promptDescription, files, calendar
   if (filesDetails === '') {
     filesDetails = "No files provided for context"
   }
-  const prompt = `Here is an email for which we need to draft a response: ${emailContent}. Please complete the email draft with a suitable response based on this instruction: ${promptDescription}. The response should be concise and should address the main points of the email. ${
+  const prompt = `Here is an email for which we need to draft a response: ${emailContent}. Please complete the email draft with a suitable response based on this instruction: ${promptDescription}. Attached are the extracted contents of any pdf files the user may have uploaded as context: ${filesDetails}. The response should be concise and should address the main points of the email. ${
     calendarToggle
       ? `This is the user's events that they have on the calendar to use as context: ${events}.`
       : ""
