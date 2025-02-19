@@ -10,47 +10,6 @@ const { getMessageDetails } = require("../utils/gmailService");
 // Delay function
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function fetchLast50Emails(accessToken) {
-  const oauth2Client = new google.auth.OAuth2();
-  oauth2Client.setCredentials({ access_token: accessToken });
-
-  const gmail = google.gmail({ version: "v1", auth: oauth2Client });
-
-  try {
-    const response = await gmail.users.messages.list({
-      userId: "me",
-      maxResults: 300,
-    });
-
-    if (!response.data.messages) {
-      console.log("No emails found.");
-      return [];
-    }
-
-    // Fetch full details for each message and include the message ID
-    const emailDetails = [];
-    for (let i = 0; i < response.data.messages.length; i++) {
-      const message = response.data.messages[i];
-
-      // Fetch email content using the message ID
-      const emailContent = await getMessageDetails(accessToken, message.id);
-
-      // Add a rate-limiting delay (e.g., 500ms between requests)
-      await delay(500); // Adjust the delay based on your needs
-
-      // Push the result into the array
-      emailDetails.push({
-        messageId: message.id,
-        content: emailContent,
-      });
-    }
-
-    return emailDetails;
-  } catch (error) {
-    console.error("Error fetching emails:", error);
-  }
-}
-
 // passport google strategy
 passport.use(
   new GoogleStrategy(
@@ -113,17 +72,6 @@ passport.use(
           // newUser.historyId = historyId; // Add historyId
           // await userDocRef.update(newUser);
 
-          let emails = await fetchLast50Emails(accessToken);
-
-          console.log("TEMP", emails[0]);
-
-          for (let i = 0; i < emails.length; i++) {
-            await saveEmailChunks(
-              newUser.id,
-              emails[i].messageId,
-              emails[i].content
-            );
-          }
           return done(null, newUser);
         }
       } catch (err) {

@@ -12,7 +12,10 @@ const { saveEmailChunks, retrieveFullEmail } = require("./utils/RAGService.js");
 const RAG = require("./routes/RAG.js");
 const pdf = require("pdf-parse");
 const AWS = require("aws-sdk");
-
+const {
+  enqueueOnboardingTask,
+  enqueueEmbeddingTask,
+} = require("./utils/worker.js");
 const app = express();
 const users = require("./routes/users");
 
@@ -83,7 +86,7 @@ app.use(passport.session());
 // Routes
 app.use("/api/users", users);
 
-app.use("/api/augmentedEmailSearch", RAG);
+app.use("/api/onboardingRAG", RAG);
 
 app.post("/notifications", async (req, res) => {
   const message = req.body.message;
@@ -165,7 +168,11 @@ app.post("/notifications", async (req, res) => {
               console.log(
                 "RAG STARTED --------------------------------------------"
               );
-              saveEmailChunks(user.id, latestMessage.id, emailContent);
+              await enqueueEmbeddingTask(
+                user.id,
+                latestMessage.id,
+                emailContent
+              );
               console.log(
                 "RAG ENDED ----------------------------------------------"
               );
