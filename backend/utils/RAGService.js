@@ -162,44 +162,53 @@ async function saveEmailChunks(userId, emailId, emailText) {
   }
 }
 
-async function retrieveFullEmail(userId, query, topK = 7) {
+async function retrieveFullEmail(
+  userId,
+  query,
+  similarityThreshold = 0.8,
+  maxEmails = 30
+) {
   // Step 1: Convert query into embedding
   const queryEmbedding = await getRateLimitedEmbedding(query);
 
-  // Step 2: Search for relevant email chunks using the embedding
+  // Step 2: Retrieve a large number of potential matches
   const results = await index.query({
     vector: queryEmbedding,
-    topK,
-    includeMetadata: true, // We need metadata to identify emails
+    topK: 1000, // High value to retrieve as many matches as possible
+    includeMetadata: true,
     filter: { user_id: userId }, // Only get emails for this user
   });
 
-  // Step 3: Extract email IDs **in the same order as relevance ranking**
-  const emailIdRelevanceMap = new Map(); // Map email_id -> highest match score
-
+  // Step 3: Filter out emails below the similarity threshold
+  let emailIdRelevanceMap = new Map();
   results.matches.forEach((match) => {
-    const emailId = match.metadata.email_id;
-    if (!emailIdRelevanceMap.has(emailId)) {
-      emailIdRelevanceMap.set(emailId, match.score); // Store highest relevance
+    if (match.score >= similarityThreshold) {
+      const emailId = match.metadata.email_id;
+      if (!emailIdRelevanceMap.has(emailId)) {
+        emailIdRelevanceMap.set(emailId, match.score);
+      }
     }
   });
 
-  console.log("Email IDs (ordered by relevance):", [
-    ...emailIdRelevanceMap.keys(),
-  ]);
+  console.log("Email IDs (above threshold):", [...emailIdRelevanceMap.keys()]);
 
-  let fullEmails = []; // Store emails in an ordered array
+  // Step 4: Sort email IDs by highest relevance score & enforce the 30-email limit
+  const sortedEmails = [...emailIdRelevanceMap.entries()]
+    .sort((a, b) => b[1] - a[1]) // Sort by score (descending)
+    .slice(0, maxEmails); // Keep only the top 30
 
-  // Step 4: Retrieve ALL chunks for each matched email_id in order of relevance
-  for (const [emailId, score] of emailIdRelevanceMap.entries()) {
+  let fullEmails = [];
+
+  // Step 5: Retrieve chunks for each email, up to the 30-email limit
+  for (const [emailId, score] of sortedEmails) {
     const emailChunks = await index.query({
       vector: Array(1536).fill(0), // Dummy vector to retrieve all chunks
-      topK: 100, // Assuming emails won't exceed 100 chunks
+      topK: 100,
       includeMetadata: true,
-      filter: { user_id: userId, email_id: emailId }, // Get all chunks for this email
+      filter: { user_id: userId, email_id: emailId },
     });
 
-    // Step 5: Sort chunks based on chunk_id to maintain order
+    // Sort chunks by chunk_id
     const sortedChunks = emailChunks.matches.sort(
       (a, b) => a.metadata.chunk_id - b.metadata.chunk_id
     );
@@ -209,17 +218,16 @@ async function retrieveFullEmail(userId, query, topK = 7) {
       continue;
     }
 
-    // Step 6: Reconstruct full email from ordered chunks
+    // Reconstruct full email
     const fullEmail = sortedChunks
       .map((chunk) => chunk.metadata.content)
       .join("\n");
 
-    // Push to ordered array, preserving the relevance ranking
     fullEmails.push({ emailId, score, content: fullEmail });
-  }
 
-  // Step 7: Sort emails by relevance score (in case retrieval order changed)
-  fullEmails.sort((a, b) => b.score - a.score);
+    // Stop early if we hit the limit (redundant but safe)
+    if (fullEmails.length >= maxEmails) break;
+  }
 
   return fullEmails;
 }

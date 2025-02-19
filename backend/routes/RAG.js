@@ -21,19 +21,32 @@ router.post("/", async (req, res) => {
     return res.status(404).json({ error: "No relevant emails found." });
   }
 
+  const currentDate = new Date().toISOString().split("T")[0]; // Get today's date in YYYY-MM-DD format
+
   const prompt = `
-      You are an AI assistant that helps users retrieve relevant information from their emails. 
-      Your responses should be concise, relevant, and based only on the provided email context. Keep sent dates and email subjects in mind.
-  
-      Here are relevant emails based on the search query:
-  
-      ${fullEmails.map((email) => email.content).join("\n\n")}
-  
-      The user asks: "${query}"
-  
-      Based only on the given emails, answer the question as accurately as possible. 
-      If the answer is unclear, state that the emails do not contain enough information.
-    `;
+  You are an AI assistant that helps users retrieve relevant information from their emails. 
+  Your responses should be **concise, relevant, and strictly based on the provided email context.** 
+
+  **Date Understanding:**
+  - **Today's date is: ${currentDate}**.  
+  - If an email references a relative time (e.g., "tomorrow," "next week," or "yesterday"), interpret it based on the email's **sent date** rather than today's date.  
+  - Convert relative date references into absolute dates when answering user questions.  
+
+  **Relevant Emails Based on the Search Query:**  
+
+  ${fullEmails
+    .map((email) => `Date: ${email.date}\nContent: ${email.content}`)
+    .join("\n\n")}
+
+  **User's Query:** "${query}"  
+
+  **Instructions:**  
+  - Use the email dates to correctly interpret relative time references.  
+  - If the answer is unclear, state that the emails do not contain enough information.  
+  - Do **not** make up details that are not explicitly mentioned in the emails.  
+
+  Based **only** on the given emails and the provided context, answer the question as accurately as possible.
+`;
 
   console.log("Prompt:", prompt);
 

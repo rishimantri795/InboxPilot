@@ -10,10 +10,8 @@ require("dotenv").config();
 require("./middleware/passport.js");
 const { saveEmailChunks, retrieveFullEmail } = require("./utils/RAGService.js");
 const RAG = require("./routes/RAG.js");
-const pdf = require('pdf-parse');
-const AWS = require('aws-sdk');
-const { saveEmailChunks, retrieveFullEmail } = require("./utils/RAGService.js");
-const RAG = require("./routes/RAG.js");
+const pdf = require("pdf-parse");
+const AWS = require("aws-sdk");
 
 const app = express();
 const users = require("./routes/users");
@@ -218,16 +216,16 @@ app.post("/notifications", async (req, res) => {
                       accessToken,
                       latestMessage.id
                     );
-                    
+
                     async function fetchFileFromS3(s3Key) {
                       const params = {
-                        Bucket: 'inboxpilotbucket',
+                        Bucket: "inboxpilotbucket",
                         Key: s3Key,
                       };
                       const data = await s3.getObject(params).promise();
                       return data.Body; // This is a Buffer
                     }
-                    
+
                     const parsedFiles = await Promise.all(
                       action.config.contextFiles.map(async (file) => {
                         try {
@@ -240,7 +238,10 @@ app.post("/notifications", async (req, res) => {
                             extractedText: data.text,
                           };
                         } catch (error) {
-                          console.error(`Error processing file ${file.fileName}:`, error);
+                          console.error(
+                            `Error processing file ${file.fileName}:`,
+                            error
+                          );
                           throw error;
                         }
                       })
@@ -248,8 +249,11 @@ app.post("/notifications", async (req, res) => {
                     const calendarEvents = action.config.calendarEvents;
                     const reply = await createDraftEmail(
                       emailContent,
-                      action.config.draftTemplate
-                    , parsedFiles, calendarEvents, accessToken);
+                      action.config.draftTemplate,
+                      parsedFiles,
+                      calendarEvents,
+                      accessToken
+                    );
                     await createDraft(
                       accessToken,
                       latestMessage.threadId,

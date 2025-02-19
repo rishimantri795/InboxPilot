@@ -19,7 +19,7 @@ async function fetchLast50Emails(accessToken) {
   try {
     const response = await gmail.users.messages.list({
       userId: "me",
-      maxResults: 100,
+      maxResults: 300,
     });
 
     if (!response.data.messages) {
