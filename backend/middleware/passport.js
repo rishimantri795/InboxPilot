@@ -74,7 +74,7 @@ passport.use(
     {
       clientID: process.env.MICROSOFT_CLIENT_ID,
       clientSecret: process.env.MICROSOFT_CLIENT_SECRET,
-      callbackURL: `${process.env.BACKEND_URL}/api/users/outlook/auth/callback`,
+      callbackURL: process.env.MICROSOFT_REDIRECT_URL,
       scope: ["user.read", "mail.read", "mail.send", "offline_access"],
       passReqToCallback: true,
     },
