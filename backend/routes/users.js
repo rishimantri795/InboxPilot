@@ -36,15 +36,7 @@ const s3 = new AWS.S3({
 // initiates the google OAuth authentication process
 router.get("/google/auth", (req, res) => {
   passport.authenticate("google", {
-    scope: [
-      "profile",
-      "email",
-      "https://www.googleapis.com/auth/gmail.readonly",
-      "https://www.googleapis.com/auth/gmail.modify",
-      "https://www.googleapis.com/auth/calendar.readonly",
-      "https://www.googleapis.com/auth/calendar.events.readonly",
-      "https://www.googleapis.com/auth/calendar",
-    ],
+    scope: ["profile", "email", "https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.modify", "https://www.googleapis.com/auth/calendar.readonly", "https://www.googleapis.com/auth/calendar.events.readonly", "https://www.googleapis.com/auth/calendar"],
     accessType: "offline", // requests a refresh token so we have access even after user logs out
     approvalPrompt: "force",
   })(req, res);
@@ -76,9 +68,7 @@ router.get("/outlook/auth/callback", passport.authenticate("microsoft", { failur
 
   // Start Outlook Email Listener
   try {
-    console.log("HIII!!!", req.user.refreshToken);
     const accessToken = await getAccessTokenFromRefreshTokenOutlook(req.user.refreshToken);
-    console.log("🔹 OUTLOOK Access Token:", accessToken);
     await subscribeToOutlookEmails(accessToken);
   } catch (error) {
     console.error("❌ Error setting up email listener:", error);
@@ -128,13 +118,6 @@ router.get("/outlook/emails", async (req, res) => {
 //   res.sendStatus(200);
 // });
 
-// const processedMessages = new Set();
-
-// function markMessageProcessed(messageId, ttl = 3600000) {
-//   processedMessages.add(messageId);
-//   setTimeout(() => processedMessages.delete(messageId), ttl);
-// }
-
 router.get("/outlook/webhook", (req, res) => {
   console.log("🔹 Microsoft Graph validation request received");
 
@@ -166,19 +149,6 @@ router.post("/outlook/webhook", async (req, res) => {
     }
 
     const messageId = notification.resourceData.id;
-
-    // if (processedMessages.has(messageId)) {
-    //   console.log(`Message ${messageId} already processed. Skipping duplicate.`);
-    //   return res.status(200).send("Duplicate notification ignored.");
-    // }
-    // // Mark this message as processed (with a TTL if desired)
-    // markMessageProcessed(messageId);
-
-    // if (notification.changeType !== "created") {
-    //   console.log(`Skipping notification with changeType: ${notification.changeType}`);
-    //   return res.status(200).send("Non-created change ignored.");
-    // }
-
     console.log(`📧 New Email Received! Fetching content for Message ID: ${messageId}`);
 
     // 🔹 Extract userId from resource (e.g., "Users/{userId}/Messages/{messageId}")
@@ -204,131 +174,7 @@ router.post("/outlook/webhook", async (req, res) => {
     res.status(202).send("Accepted");
   } catch (error) {
     console.error("❌ Error fetching email details:", error.response ? error.response.data : error.message);
-    // res.status(200).send("Accepted");
     res.status(500).send("Error processing webhook");
-  }
-});
-
-// Utility function to get an access token either from header or from session.
-async function getAccessToken(req) {
-  // If the Authorization header is present, use it.
-  if (req.headers.authorization) {
-    // Expecting format "Bearer <token>"
-    const token = req.headers.authorization.split(" ")[1];
-    if (token) return token;
-  }
-  // Otherwise, fall back to using req.user.refreshToken.
-  if (!req.user || !req.user.refreshToken) {
-    throw new Error("User is not authenticated or refresh token is missing.");
-  }
-  return await getAccessTokenFromRefreshTokenOutlook(req.user.refreshToken);
-}
-
-// Archive Route
-router.post("/outlook/email/:id/archive", async (req, res) => {
-  const emailId = req.params.id;
-  try {
-    const accessToken = await getAccessToken(req);
-
-    // Fetch the Archive folder details.
-    const archiveFolderResponse = await axios.get(
-      "https://graph.microsoft.com/v1.0/me/mailFolders/Archive",
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    );
-    const archiveFolderId = archiveFolderResponse.data.id;
-
-    // Move the message to the Archive folder.
-    const moveResponse = await axios.post(
-      `https://graph.microsoft.com/v1.0/me/messages/${emailId}/move`,
-      { destinationId: archiveFolderId },
-      { headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" } }
-    );
-    res.status(200).json({ message: "Email archived successfully.", data: moveResponse.data });
-  } catch (error) {
-    console.error("Error archiving email:", error.response ? error.response.data : error.message);
-    res.status(500).json({ error: "Failed to archive email." });
-  }
-});
-
-// Favorite Route
-router.post("/outlook/email/:id/favorite", async (req, res) => {
-  const emailId = req.params.id;
-  try {
-    const accessToken = await getAccessToken(req);
-
-    // Update the email's flag property to "flagged".
-    const patchResponse = await axios.patch(
-      `https://graph.microsoft.com/v1.0/me/messages/${emailId}`,
-      { flag: { flagStatus: "flagged" } },
-      { headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" } }
-    );
-    res.status(200).json({ message: "Email favorited (flagged) successfully.", data: patchResponse.data });
-  } catch (error) {
-    console.error("Error favoriting email:", error.response ? error.response.data : error.message);
-    res.status(500).json({ error: "Failed to favorite email." });
-  }
-});
-
-// Label Route
-router.post("/outlook/email/:id/label", async (req, res) => {
-  const emailId = req.params.id;
-  const { label } = req.body;
-  if (!label) {
-    return res.status(400).json({ error: "Missing label in request body." });
-  }
-  try {
-    const accessToken = await getAccessToken(req);
-
-    // First, fetch the current categories (if any).
-    const getResponse = await axios.get(
-      `https://graph.microsoft.com/v1.0/me/messages/${emailId}`,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    );
-    let categories = getResponse.data.categories || [];
-
-    // Add the new label if it does not exist.
-    if (!categories.includes(label)) {
-      categories.push(label);
-    }
-
-    // Update the message with the new categories array.
-    const patchResponse = await axios.patch(
-      `https://graph.microsoft.com/v1.0/me/messages/${emailId}`,
-      { categories },
-      { headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" } }
-    );
-    res.status(200).json({ message: "Email labeled successfully.", data: patchResponse.data });
-  } catch (error) {
-    console.error("Error labeling email:", error.response ? error.response.data : error.message);
-    res.status(500).json({ error: "Failed to label email." });
-  }
-});
-
-// Forward Route
-router.post("/outlook/email/:id/forward", async (req, res) => {
-  const emailId = req.params.id;
-  const { toRecipients, comment } = req.body;
-  if (!toRecipients || !Array.isArray(toRecipients) || toRecipients.length === 0) {
-    return res.status(400).json({ error: "Missing or invalid toRecipients array in request body." });
-  }
-  try {
-    const accessToken = await getAccessToken(req);
-
-    // Prepare recipients in the required format.
-    const formattedRecipients = toRecipients.map((email) => ({
-      emailAddress: { address: email },
-    }));
-
-    // Call the forward action endpoint.
-    await axios.post(
-      `https://graph.microsoft.com/v1.0/me/messages/${emailId}/forward`,
-      { comment: comment || "", toRecipients: formattedRecipients },
-      { headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" } }
-    );
-    res.status(200).json({ message: "Email forwarded successfully." });
-  } catch (error) {
-    console.error("Error forwarding email:", error.response ? error.response.data : error.message);
-    res.status(500).json({ error: "Failed to forward email." });
   }
 });
 
@@ -818,7 +664,6 @@ router.get("/:id/rules", async (req, res) => {
   }
 });
 
-
 router.delete("/", (req, res) => {});
 
 router.get("/:id", (req, res) => {});
@@ -1035,17 +880,17 @@ router.post("/:id/upload-rule-files", upload.array("files"), async (req, res) =>
     if (!userDoc.exists) {
       return res.status(404).json({ error: "User not found." });
     }
-    
+
     // Get the specific rule from the user's rules.
     const userData = userDoc.data();
     const ruleData = userData.rules ? userData.rules[ruleIndex] : null;
     if (!ruleData) {
       return res.status(404).json({ error: "Rule not found." });
     }
-    
+
     // Parse the actions array from the stored JSON string.
     const actions = ruleData.type || [];
-    
+
     // Find the draft action in the actions array.
     const draftActionIndex = actions.findIndex((action) => action.type === "draft");
     if (draftActionIndex === -1) {
@@ -1057,7 +902,7 @@ router.post("/:id/upload-rule-files", upload.array("files"), async (req, res) =>
     const newFilesPromises = req.files.map(async (file) => {
       // Generate a unique key for the file in S3
       const s3Key = `uploads/${Date.now()}-${file.originalname}`;
-      
+
       // Prepare the upload parameters
       const uploadParams = {
         Bucket: bucketName,
@@ -1081,23 +926,23 @@ router.post("/:id/upload-rule-files", upload.array("files"), async (req, res) =>
 
     // Wait for all files to upload.
     const newFiles = await Promise.all(newFilesPromises);
-    
+
     // Get any existing files from the draft action.
-  const existingFiles = actions[draftActionIndex].config.contextFiles || [];
+    const existingFiles = actions[draftActionIndex].config.contextFiles || [];
 
-  // Filter out raw or minimal entries (that don't have s3Url)
-  const existingEnriched = existingFiles.filter(file => file && file.s3Url);
+    // Filter out raw or minimal entries (that don't have s3Url)
+    const existingEnriched = existingFiles.filter((file) => file && file.s3Url);
 
-  // Merge the already enriched files with the new enriched files.
-  const mergedFiles = [...existingEnriched, ...newFiles];
+    // Merge the already enriched files with the new enriched files.
+    const mergedFiles = [...existingEnriched, ...newFiles];
 
-  actions[draftActionIndex].config.contextFiles = mergedFiles;
+    actions[draftActionIndex].config.contextFiles = mergedFiles;
 
-  // Update the rule document with the merged files.
-  await userRef.update({
-    [`rules.${ruleIndex}.type`]: actions
-  });
-    
+    // Update the rule document with the merged files.
+    await userRef.update({
+      [`rules.${ruleIndex}.type`]: actions,
+    });
+
     return res.status(200).json({ message: "Files added successfully.", files: newFiles });
   } catch (error) {
     console.error("Error updating rule file data:", error);
@@ -1121,40 +966,40 @@ router.delete("/:id/delete-rule-file", async (req, res) => {
     if (!userDoc.exists) {
       return res.status(404).json({ error: "User not found." });
     }
-    
+
     // Get the specific rule
     const userData = userDoc.data();
     const ruleData = userData.rules ? userData.rules[ruleIndex] : null;
     if (!ruleData) {
       return res.status(404).json({ error: "Rule not found." });
     }
-    
+
     // Get the actions array (stored directly, not as a JSON string)
     const actions = ruleData.type || [];
-    
+
     // Find the draft action (where the contextFiles are stored)
     const draftActionIndex = actions.findIndex((action) => action.type === "draft");
     if (draftActionIndex === -1) {
       return res.status(400).json({ error: "Draft action not found in the rule." });
     }
-    
+
     // Delete the file from S3
     const deleteParams = {
       Bucket: process.env.S3_BUCKET,
       Key: fileS3Key,
     };
     await s3.deleteObject(deleteParams).promise();
-    
+
     // Remove the file from the contextFiles array in Firestore
     const existingFiles = actions[draftActionIndex].config.contextFiles || [];
-    const updatedFiles = existingFiles.filter(file => file.s3Key !== fileS3Key);
+    const updatedFiles = existingFiles.filter((file) => file.s3Key !== fileS3Key);
     actions[draftActionIndex].config.contextFiles = updatedFiles;
-    
+
     // Update the Firestore document with the new actions array
     await userRef.update({
-      [`rules.${ruleIndex}.type`]: actions
+      [`rules.${ruleIndex}.type`]: actions,
     });
-    
+
     return res.status(200).json({ message: "File deleted successfully." });
   } catch (error) {
     console.error("Error deleting rule file:", error);

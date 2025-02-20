@@ -3,9 +3,14 @@ const axios = require("axios");
 const admin = require("../api/firebase");
 const db = admin.firestore();
 
-console.log("IN OUTLOOK SERVICE: " + process.env.NOTIFICATION_URL);
 async function subscribeToOutlookEmails(accessToken) {
   try {
+    const existingSubscriptions = await axios.get("https://graph.microsoft.com/v1.0/subscriptions", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
     const response = await axios.post(
       "https://graph.microsoft.com/v1.0/subscriptions",
       {
@@ -24,8 +29,8 @@ async function subscribeToOutlookEmails(accessToken) {
     );
 
     console.log("✅ Subscription Created Successfully!");
-    console.log("🔹 Subscription ID:", response.data.id);
-    console.log("🔹 Expiration:", response.data.expirationDateTime);
+    // console.log("🔹 Subscription ID:", response.data.id);
+    // console.log("🔹 Expiration:", response.data.expirationDateTime);
 
     return response.data; // Return the response to be used elsewhere if needed
   } catch (error) {
@@ -71,7 +76,7 @@ async function getAccessTokenFromRefreshTokenOutlook(refreshToken) {
       }
     );
 
-    console.log("✅ New Access Token:", response.data.access_token);
+    console.log("✅ New Access Token:...");
     return response.data.access_token;
   } catch (error) {
     console.error("❌ Error getting new access token:", error.response ? error.response.data : error.message);
@@ -79,4 +84,46 @@ async function getAccessTokenFromRefreshTokenOutlook(refreshToken) {
   }
 }
 
-module.exports = { subscribeToOutlookEmails, getEmailById, getAccessTokenFromRefreshTokenOutlook, getRefreshTokenOutlook };
+async function applyCategoryToOutlookEmail(emailId, accessToken, category) {
+  try {
+    // Step 1: Fetch the latest email details to get the current changeKey
+    const emailResponse = await axios.get(`https://graph.microsoft.com/v1.0/me/messages/${emailId}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    const latestEmail = emailResponse.data;
+    const changeKey = latestEmail.changeKey; // Extract the latest changeKey
+
+    // Step 2: Apply the category using the updated changeKey
+    const response = await axios.patch(
+      `https://graph.microsoft.com/v1.0/me/messages/${emailId}`,
+      {
+        categories: [category],
+        "@odata.etag": changeKey, // Ensure the latest changeKey is used
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log(`✅ Category "${category}" applied to email ${emailId}`);
+    return response.data;
+  } catch (error) {
+    console.error("❌ Error applying category:", error.response ? error.response.data : error.message);
+    throw error;
+  }
+}
+
+async function storeLatestMessageId(userId, messageId) {
+  await db.collection("Users").doc(userId).update({ latestProcessedMessageId: messageId });
+}
+
+async function getLatestMessageId(userId) {
+  const userDoc = await db.collection("Users").doc(userId).get();
+  return userDoc.exists ? userDoc.data().latestProcessedMessageId : null;
+}
+
+module.exports = { subscribeToOutlookEmails, getEmailById, getAccessTokenFromRefreshTokenOutlook, getRefreshTokenOutlook, applyCategoryToOutlookEmail, storeLatestMessageId, getLatestMessageId };

@@ -9,12 +9,16 @@ const session = require("express-session");
 require("dotenv").config();
 require("./middleware/passport.js");
 const pdf = require("pdf-parse");
+const axios = require("axios");
+
 const AWS = require("aws-sdk");
 
 const app = express();
 const users = require("./routes/users");
 
 const { fetchEmailHistory, getOrCreatePriorityLabel, applyLabelToEmail, fetchEmailHistoryWithRetry, fetchEmailHistoryAndApplyLabel, getMessageDetails, archiveEmail, forwardEmail, favoriteEmail, getOriginalEmailDetails, createDraft, getLatestHistoryId, fetchLatestEmail } = require("./utils/gmailService.js");
+const { fetchOutlookEmails, subscribeToOutlookEmails, getAccessTokenFromRefreshTokenOutlook, getRefreshTokenOutlook, applyCategoryToOutlookEmail, storeLatestMessageId, getLatestMessageId } = require("./utils/outlookService.js");
+
 const { classifyEmail, createDraftEmail } = require("./utils/openai.js");
 
 app.set("trust proxy", 1); // Trust first proxy
@@ -68,6 +72,98 @@ app.use(passport.session());
 
 // Routes
 app.use("/api/users", users);
+
+app.get("/outlook/webhook", (req, res) => {
+  console.log("🔹 Microsoft Graph validation request received");
+
+  // Microsoft sends a "validationToken" query parameter during subscription
+  const validationToken = req.query.validationToken;
+
+  if (validationToken) {
+    console.log("✅ Sending back validation token:", validationToken);
+    return res.status(200).send(validationToken);
+  }
+
+  res.status(400).send("Missing validation token");
+});
+
+app.post("/outlook/webhook", async (req, res) => {
+  if (req.query && req.query.validationToken) {
+    console.log("🔹 Responding to validation request...");
+    return res.status(200).send(req.query.validationToken);
+  }
+
+  console.log("📩 Received email notification");
+
+  try {
+    const notification = req.body.value && req.body.value[0];
+    if (!notification || !notification.resourceData || !notification.resourceData.id) {
+      console.error("❌ No message ID found in webhook notification.");
+      return res.status(400).send("Invalid webhook notification.");
+    }
+
+    const messageId = notification.resourceData.id;
+    console.log(`📧 New Email Received! Fetching content for Message ID: ${messageId}`);
+
+    const resourceParts = notification.resource.split("/");
+    const userId = resourceParts.length > 1 ? resourceParts[1] : null;
+
+    if (!userId) {
+      console.error("❌ User ID not found in resource.");
+      return res.status(400).send("User ID missing.");
+    }
+
+    const lastProcessedMessageId = await getLatestMessageId(userId);
+    if (lastProcessedMessageId === messageId) {
+      console.log("🚫 Duplicate email detected, skipping processing.");
+      return res.status(202).send();
+    }
+    await storeLatestMessageId(userId, messageId);
+
+    console.log("USER ID:", userId);
+
+    const refreshToken = await getRefreshTokenOutlook(userId);
+    const accessToken = await getAccessTokenFromRefreshTokenOutlook(refreshToken);
+
+    const emailResponse = await axios.get(`https://graph.microsoft.com/v1.0/me/messages/${messageId}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    const email = emailResponse.data;
+    console.log("📨 Email Details:", email.body.content);
+
+    const userDoc = await db.collection("Users").doc(userId).get();
+    if (!userDoc.exists) {
+      console.error("❌ User not found.");
+      return res.status(404).send("User not found.");
+    }
+
+    const userData = userDoc.data();
+    const rules = userData.rules || {};
+
+    const ruleKey = await classifyEmail(email.body.content, rules);
+    if (ruleKey === "Null") {
+      console.log("No matching rule found, skipping.");
+      return res.status(204).send();
+    } else {
+      console.log("HIGH PRIORITY");
+    }
+
+    const rule = rules[parseInt(ruleKey)];
+
+    for (const action of rule.type) {
+      if (action.type === "label") {
+        const category = action.config.labelName;
+        await applyCategoryToOutlookEmail(messageId, accessToken, category);
+      }
+    }
+
+    return res.status(202).send("Accepted");
+  } catch (error) {
+    console.error("❌ Error processing webhook:", error.response ? error.response.data : error.message);
+    res.status(500).send("Error processing webhook");
+  }
+});
 
 app.post("/notifications", async (req, res) => {
   const message = req.body.message;
