@@ -128,6 +128,13 @@ router.get("/outlook/emails", async (req, res) => {
 //   res.sendStatus(200);
 // });
 
+// const processedMessages = new Set();
+
+// function markMessageProcessed(messageId, ttl = 3600000) {
+//   processedMessages.add(messageId);
+//   setTimeout(() => processedMessages.delete(messageId), ttl);
+// }
+
 router.get("/outlook/webhook", (req, res) => {
   console.log("🔹 Microsoft Graph validation request received");
 
@@ -159,6 +166,19 @@ router.post("/outlook/webhook", async (req, res) => {
     }
 
     const messageId = notification.resourceData.id;
+
+    // if (processedMessages.has(messageId)) {
+    //   console.log(`Message ${messageId} already processed. Skipping duplicate.`);
+    //   return res.status(200).send("Duplicate notification ignored.");
+    // }
+    // // Mark this message as processed (with a TTL if desired)
+    // markMessageProcessed(messageId);
+
+    // if (notification.changeType !== "created") {
+    //   console.log(`Skipping notification with changeType: ${notification.changeType}`);
+    //   return res.status(200).send("Non-created change ignored.");
+    // }
+
     console.log(`📧 New Email Received! Fetching content for Message ID: ${messageId}`);
 
     // 🔹 Extract userId from resource (e.g., "Users/{userId}/Messages/{messageId}")
@@ -184,7 +204,131 @@ router.post("/outlook/webhook", async (req, res) => {
     res.status(202).send("Accepted");
   } catch (error) {
     console.error("❌ Error fetching email details:", error.response ? error.response.data : error.message);
+    // res.status(200).send("Accepted");
     res.status(500).send("Error processing webhook");
+  }
+});
+
+// Utility function to get an access token either from header or from session.
+async function getAccessToken(req) {
+  // If the Authorization header is present, use it.
+  if (req.headers.authorization) {
+    // Expecting format "Bearer <token>"
+    const token = req.headers.authorization.split(" ")[1];
+    if (token) return token;
+  }
+  // Otherwise, fall back to using req.user.refreshToken.
+  if (!req.user || !req.user.refreshToken) {
+    throw new Error("User is not authenticated or refresh token is missing.");
+  }
+  return await getAccessTokenFromRefreshTokenOutlook(req.user.refreshToken);
+}
+
+// Archive Route
+router.post("/outlook/email/:id/archive", async (req, res) => {
+  const emailId = req.params.id;
+  try {
+    const accessToken = await getAccessToken(req);
+
+    // Fetch the Archive folder details.
+    const archiveFolderResponse = await axios.get(
+      "https://graph.microsoft.com/v1.0/me/mailFolders/Archive",
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    const archiveFolderId = archiveFolderResponse.data.id;
+
+    // Move the message to the Archive folder.
+    const moveResponse = await axios.post(
+      `https://graph.microsoft.com/v1.0/me/messages/${emailId}/move`,
+      { destinationId: archiveFolderId },
+      { headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" } }
+    );
+    res.status(200).json({ message: "Email archived successfully.", data: moveResponse.data });
+  } catch (error) {
+    console.error("Error archiving email:", error.response ? error.response.data : error.message);
+    res.status(500).json({ error: "Failed to archive email." });
+  }
+});
+
+// Favorite Route
+router.post("/outlook/email/:id/favorite", async (req, res) => {
+  const emailId = req.params.id;
+  try {
+    const accessToken = await getAccessToken(req);
+
+    // Update the email's flag property to "flagged".
+    const patchResponse = await axios.patch(
+      `https://graph.microsoft.com/v1.0/me/messages/${emailId}`,
+      { flag: { flagStatus: "flagged" } },
+      { headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" } }
+    );
+    res.status(200).json({ message: "Email favorited (flagged) successfully.", data: patchResponse.data });
+  } catch (error) {
+    console.error("Error favoriting email:", error.response ? error.response.data : error.message);
+    res.status(500).json({ error: "Failed to favorite email." });
+  }
+});
+
+// Label Route
+router.post("/outlook/email/:id/label", async (req, res) => {
+  const emailId = req.params.id;
+  const { label } = req.body;
+  if (!label) {
+    return res.status(400).json({ error: "Missing label in request body." });
+  }
+  try {
+    const accessToken = await getAccessToken(req);
+
+    // First, fetch the current categories (if any).
+    const getResponse = await axios.get(
+      `https://graph.microsoft.com/v1.0/me/messages/${emailId}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    let categories = getResponse.data.categories || [];
+
+    // Add the new label if it does not exist.
+    if (!categories.includes(label)) {
+      categories.push(label);
+    }
+
+    // Update the message with the new categories array.
+    const patchResponse = await axios.patch(
+      `https://graph.microsoft.com/v1.0/me/messages/${emailId}`,
+      { categories },
+      { headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" } }
+    );
+    res.status(200).json({ message: "Email labeled successfully.", data: patchResponse.data });
+  } catch (error) {
+    console.error("Error labeling email:", error.response ? error.response.data : error.message);
+    res.status(500).json({ error: "Failed to label email." });
+  }
+});
+
+// Forward Route
+router.post("/outlook/email/:id/forward", async (req, res) => {
+  const emailId = req.params.id;
+  const { toRecipients, comment } = req.body;
+  if (!toRecipients || !Array.isArray(toRecipients) || toRecipients.length === 0) {
+    return res.status(400).json({ error: "Missing or invalid toRecipients array in request body." });
+  }
+  try {
+    const accessToken = await getAccessToken(req);
+
+    // Prepare recipients in the required format.
+    const formattedRecipients = toRecipients.map((email) => ({
+      emailAddress: { address: email },
+    }));
+
+    // Call the forward action endpoint.
+    await axios.post(
+      `https://graph.microsoft.com/v1.0/me/messages/${emailId}/forward`,
+      { comment: comment || "", toRecipients: formattedRecipients },
+      { headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" } }
+    );
+    res.status(200).json({ message: "Email forwarded successfully." });
+  } catch (error) {
+    console.error("Error forwarding email:", error.response ? error.response.data : error.message);
+    res.status(500).json({ error: "Failed to forward email." });
   }
 });
 
