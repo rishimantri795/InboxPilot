@@ -173,6 +173,7 @@ app.post("/notifications", async (req, res) => {
                 latestMessage.id,
                 emailContent
               );
+
               console.log(
                 "RAG ENDED ----------------------------------------------"
               );
