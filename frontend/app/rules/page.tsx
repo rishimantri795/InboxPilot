@@ -59,6 +59,12 @@ const prebuiltRules = [
       },
     ],
   },
+  {
+    id: 5,
+    name: "Favorite all Receipts",
+    description: "Emails which contain receipts, invoices or order confirmations",
+    actions: [{ type: "favorite" }],
+  }
 ];
 
 // Action types for adding actions
@@ -585,7 +591,7 @@ export default function RulesPage() {
 
             <Button onClick={toggleListener} className="mb-2" variant={listenerStatus === 1 ? "destructive" : "default"}>
               <MailXIcon className="mr-2 h-4 w-4" />
-              {listenerStatus === 1 ? "Detach Listener" : "Attach Listener"}
+              {listenerStatus === 1 ? "Stop Applying Rules" : "Apply Rules"}
             </Button>
           </div>
 

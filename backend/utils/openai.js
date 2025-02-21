@@ -30,10 +30,10 @@ Here is the user's profile:
 
 ${profile == undefined ? "None" : profile.join("\n")}
 
-Given the following email, identify the rule that strongly correlates to the email content, if any. If none of the rules apply strongly, return "Null":
+Given the following email, identify if any rule strongly correlates to the email content. If none of the rules apply strongly, return "Null":
 "${emailContent}"
 
-Return only the key (as a number starting from 0) of the rule that best applies or "Null" if no rule applies.`;
+Pay attention to the wording in the rule conditions to see if a rule best applies. If a rule applies, return only the key (as a number starting from 0) of the rule which applies. Return "Null" if no rule applies.`;
 
   console.log("Prompt:", prompt);
 
@@ -111,7 +111,7 @@ async function createDraftEmail(emailContent, promptDescription, files, calendar
   }
   const prompt = `Here is an email for which we need to draft a response: ${emailContent}. Please complete the email draft with a suitable response based on this instruction: ${promptDescription}. Attached are the extracted contents of any pdf files the user may have uploaded as context: ${filesDetails}. The response should be concise and should address the main points of the email. ${
     calendarToggle
-      ? `This is the user's events that they have on the calendar to use as context: ${events}.`
+      ? `This is the user's events that they have on the calendar to use as context. Pay attention to the datetime of the email and the datetime of the events on the calendar while drafting the response: ${events}.`
       : ""
   } It should also be of the same tone as the original email. Only respond with the body of the draft email.`;
   // console.log("Promptt:", prompt);
