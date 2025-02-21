@@ -1,4 +1,4 @@
-import { Workflow, User, LogOut, MailXIcon } from "lucide-react";
+import { Workflow, User, LogOut, MailXIcon, BotMessageSquare  } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import Image from "next/image";
 import logo from "/app/Inbox Pilot Logo.png";
@@ -18,6 +18,11 @@ const items = [
     title: "User Profile",
     url: "/profile",
     icon: User,
+  },
+  {
+    title: "Chat Bot",  // New tab
+    url: "/chat",
+    icon: BotMessageSquare ,  // Use a valid icon
   },
 ];
 
