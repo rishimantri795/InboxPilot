@@ -511,7 +511,10 @@ async function getOrCreatePriorityLabel(accessToken, name) {
       },
     });
 
-    const existingLabel = listResponse.data.labels.find((label) => label.name === name);
+    // const existingLabel = listResponse.data.labels.find((label) => label.name === name);
+    const existingLabel = listResponse.data.labels.find(
+      (label) => label.name.toLowerCase() === name.toLowerCase()
+    );
     if (existingLabel) {
       console.log(`Label ${name} exists with ID: ${existingLabel.id}`);
       return existingLabel.id;
