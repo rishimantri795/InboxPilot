@@ -17,7 +17,7 @@ const app = express();
 const users = require("./routes/users");
 
 const { fetchEmailHistory, getOrCreatePriorityLabel, applyLabelToEmail, fetchEmailHistoryWithRetry, fetchEmailHistoryAndApplyLabel, getMessageDetails, archiveEmail, forwardEmail, favoriteEmail, getOriginalEmailDetails, createDraft, getLatestHistoryId, fetchLatestEmail } = require("./utils/gmailService.js");
-const { fetchOutlookEmails, subscribeToOutlookEmails, getAccessTokenFromRefreshTokenOutlook, getRefreshTokenOutlook, applyCategoryToOutlookEmail, storeLatestMessageId, getLatestMessageId } = require("./utils/outlookService.js");
+const { archiveOutlookEmail, favoriteOutlookEmail, forwardOutlookEmail, fetchOutlookEmails, subscribeToOutlookEmails, getAccessTokenFromRefreshTokenOutlook, getRefreshTokenOutlook, applyCategoryToOutlookEmail, storeLatestMessageId, getLatestMessageId } = require("./utils/outlookService.js");
 
 const { classifyEmail, createDraftEmail } = require("./utils/openai.js");
 
@@ -88,80 +88,81 @@ app.get("/outlook/webhook", (req, res) => {
 });
 
 app.post("/outlook/webhook", async (req, res) => {
-  if (req.query && req.query.validationToken) {
-    console.log("🔹 Responding to validation request...");
+  if (req.query.validationToken) {
     return res.status(200).send(req.query.validationToken);
   }
-
-  console.log("📩 Received email notification");
 
   try {
     const notification = req.body.value && req.body.value[0];
     if (!notification || !notification.resourceData || !notification.resourceData.id) {
-      console.error("❌ No message ID found in webhook notification.");
       return res.status(400).send("Invalid webhook notification.");
     }
 
     const messageId = notification.resourceData.id;
-    console.log(`📧 New Email Received! Fetching content for Message ID: ${messageId}`);
-
-    const resourceParts = notification.resource.split("/");
-    const userId = resourceParts.length > 1 ? resourceParts[1] : null;
+    const userId = notification.resource.split("/")[1];
 
     if (!userId) {
-      console.error("❌ User ID not found in resource.");
       return res.status(400).send("User ID missing.");
     }
 
     const lastProcessedMessageId = await getLatestMessageId(userId);
     if (lastProcessedMessageId === messageId) {
-      console.log("🚫 Duplicate email detected, skipping processing.");
       return res.status(202).send();
     }
     await storeLatestMessageId(userId, messageId);
 
-    console.log("USER ID:", userId);
-
     const refreshToken = await getRefreshTokenOutlook(userId);
     const accessToken = await getAccessTokenFromRefreshTokenOutlook(refreshToken);
 
-    const emailResponse = await axios.get(`https://graph.microsoft.com/v1.0/me/messages/${messageId}`, {
+    const emailRelssponse = await axios.get(`https://graph.microsoft.com/v1.0/me/messages/${messageId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-
-    const email = emailResponse.data;
-    console.log("📨 Email Details:", email.body.content);
+    const emailContent = emailResponse.data.body.content;
 
     const userDoc = await db.collection("Users").doc(userId).get();
     if (!userDoc.exists) {
-      console.error("❌ User not found.");
       return res.status(404).send("User not found.");
     }
 
-    const userData = userDoc.data();
-    const rules = userData.rules || {};
-
-    const ruleKey = await classifyEmail(email.body.content, rules);
+    const rules = userDoc.data().rules || {};
+    const ruleKey = await classifyEmail(emailContent, rules);
     if (ruleKey === "Null") {
-      console.log("No matching rule found, skipping.");
       return res.status(204).send();
-    } else {
-      console.log("HIGH PRIORITY");
     }
 
     const rule = rules[parseInt(ruleKey)];
-
     for (const action of rule.type) {
-      if (action.type === "label") {
-        const category = action.config.labelName;
-        await applyCategoryToOutlookEmail(messageId, accessToken, category);
+      switch (action.type) {
+        case "label":
+          await applyCategoryToOutlookEmail(messageId, accessToken, action.config.labelName);
+          break;
+        case "archive":
+          await archiveOutlookEmail(messageId, accessToken);
+          break;
+        case "favorite":
+          await favoriteOutlookEmail(messageId, accessToken);
+          break;
+        // case "forward":
+        //   console.log("📩 Forwarding email - Recipients:", action.config.forwardTo);
+
+        //   let recipients = action.config.forwardTo;
+        //   if (!Array.isArray(recipients)) {
+        //     recipients = [recipients]; // Convert to array if it's a single string
+        //   }
+
+        //   if (recipients.length > 0) {
+        //     await forwardOutlookEmail(messageId, accessToken, recipients);
+        //   } else {
+        //     console.error("❌ Error: Missing or invalid toRecipients array.");
+        //   }
+        //   break;
       }
     }
 
     return res.status(202).send("Accepted");
   } catch (error) {
-    console.error("❌ Error processing webhook:", error.response ? error.response.data : error.message);
-    res.status(500).send("Error processing webhook");
+    console.error("❌ Error processing webhook:", error);
+    return res.status(500).send("Error processing webhook");
   }
 });
 

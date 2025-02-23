@@ -117,6 +117,44 @@ async function applyCategoryToOutlookEmail(emailId, accessToken, category) {
   }
 }
 
+async function archiveOutlookEmail(emailId, accessToken) {
+  try {
+    const archiveFolderResponse = await axios.get("https://graph.microsoft.com/v1.0/me/mailFolders/Archive", { headers: { Authorization: `Bearer ${accessToken}` } });
+    const archiveFolderId = archiveFolderResponse.data.id;
+
+    const moveResponse = await axios.post(`https://graph.microsoft.com/v1.0/me/messages/${emailId}/move`, { destinationId: archiveFolderId }, { headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" } });
+    return moveResponse.data;
+  } catch (error) {
+    console.error("Error archiving email:", error.response ? error.response.data : error.message);
+    throw error;
+  }
+}
+
+async function favoriteOutlookEmail(emailId, accessToken) {
+  try {
+    const patchResponse = await axios.patch(`https://graph.microsoft.com/v1.0/me/messages/${emailId}`, { flag: { flagStatus: "flagged" } }, { headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" } });
+    return patchResponse.data;
+  } catch (error) {
+    console.error("Error favoriting email:", error.response ? error.response.data : error.message);
+    throw error;
+  }
+}
+
+async function forwardOutlookEmail(emailId, accessToken, toRecipients, comment = "") {
+  console.log("HIIII", toRecipients);
+  if (!toRecipients || !Array.isArray(toRecipients) || toRecipients.length === 0) {
+    throw new Error("Missing or invalid toRecipients array.");
+  }
+  try {
+    const formattedRecipients = toRecipients.map((email) => ({ emailAddress: { address: email } }));
+
+    await axios.post(`https://graph.microsoft.com/v1.0/me/messages/${emailId}/forward`, { comment, toRecipients: formattedRecipients }, { headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" } });
+  } catch (error) {
+    console.error("Error forwarding email:", error.response ? error.response.data : error.message);
+    throw error;
+  }
+}
+
 async function storeLatestMessageId(userId, messageId) {
   await db.collection("Users").doc(userId).update({ latestProcessedMessageId: messageId });
 }
@@ -126,4 +164,4 @@ async function getLatestMessageId(userId) {
   return userDoc.exists ? userDoc.data().latestProcessedMessageId : null;
 }
 
-module.exports = { subscribeToOutlookEmails, getEmailById, getAccessTokenFromRefreshTokenOutlook, getRefreshTokenOutlook, applyCategoryToOutlookEmail, storeLatestMessageId, getLatestMessageId };
+module.exports = { archiveOutlookEmail, favoriteOutlookEmail, forwardOutlookEmail, subscribeToOutlookEmails, getEmailById, getAccessTokenFromRefreshTokenOutlook, getRefreshTokenOutlook, applyCategoryToOutlookEmail, storeLatestMessageId, getLatestMessageId };
