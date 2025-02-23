@@ -91,9 +91,9 @@ export function UserProfile({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>About Me</CardTitle>
+        <CardTitle>About</CardTitle>
         <CardDescription>
-          Tell us more about yourself to improve your experience!
+          Give us some general context to improve your experience!
         </CardDescription>
       </CardHeader>
       <CardContent>
