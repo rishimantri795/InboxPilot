@@ -75,7 +75,7 @@ passport.use(
       clientID: process.env.MICROSOFT_CLIENT_ID,
       clientSecret: process.env.MICROSOFT_CLIENT_SECRET,
       callbackURL: process.env.MICROSOFT_REDIRECT_URL,
-      scope: ["user.read", "mail.read", "mail.send", "offline_access"],
+      scope: ["user.read", "mail.readwrite", "mail.send", "offline_access"],
       passReqToCallback: true,
     },
     async (req, accessToken, refreshToken, profile, done) => {
