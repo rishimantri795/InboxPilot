@@ -30,10 +30,10 @@ Here is the user's profile:
 
 ${profile == undefined ? "None" : profile.join("\n")}
 
-Given the following email, identify if any rule strongly correlates to the email content. If none of the rules apply strongly, return "Null":
+Given the following email, identify which rules strongly apply to the email content. If none of the rules apply strongly, return "Null":
 "${emailContent}"
 
-Pay attention to the wording in the rule conditions to see if a rule best applies. If a rule applies, return only the key (as a number starting from 0) of the rule which applies. Return "Null" if no rule applies.`;
+Be strict about whether a rule applies, especially when the email is promotional. Pay attention to the wording in the rule conditions to see if the rule applies. If one rule applies, return only the key (as a number starting from 0) of the rule which applies. If multiple rules apply, return the keys (as numbers starting from 0) of the rules which apply (ex. "0,3"). Return "Null" if no rule applies.`;
 
   console.log("Prompt:", prompt);
 

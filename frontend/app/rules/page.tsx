@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PlusIcon, TagIcon, SendIcon, ArchiveIcon, StarIcon, PencilIcon, TrashIcon, LogOutIcon, MailXIcon, TramFront } from "lucide-react";
 import useCurrentUser from "@/hooks/useCurrentUser";
@@ -503,6 +504,7 @@ export default function RulesPage() {
   };
 
   const toggleListener = async () => {
+    console.log("Toggling listener");
     try {
       const newStatus = listenerStatus === 1 ? 0 : 1;
       const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/toggle-listener`, { status: newStatus });
@@ -584,19 +586,26 @@ export default function RulesPage() {
           </div>
 
           {/* Add Rule Button */}
-          <div className="flex mb-6 space-x-4">
+          <div className="flex mb-6 space-x-4 items-center">
             <Button id="add-rule-button" onClick={() => setIsAddRuleOpen(true)} className="mb-2">
               Add Rule <PlusIcon className="mr-2 h-4 w-4" />
             </Button>
 
-            <Button onClick={toggleListener} className="mb-2" variant={listenerStatus === 1 ? "destructive" : "default"}>
+            {/* <Button onClick={toggleListener} className="mb-2" variant={listenerStatus === 1 ? "destructive" : "default"}>
               <MailXIcon className="mr-2 h-4 w-4" />
               {listenerStatus === 1 ? "Stop Applying Rules" : "Apply Rules"}
-            </Button>
+            </Button> */}
+            <div className="flex items-center space-x-2 mb-2 ml-4">
+            <Switch checked={listenerStatus === 1} onClick={toggleListener}/>
+            <Label htmlFor="listenerStatus"> 
+              {listenerStatus === 1 ? "Applying Rules" : "Not Applying Rules"}
+            </Label>
+            </div>
+
           </div>
 
           {/* Rules Table */}
-          <Table>
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Rule Name</TableHead>
@@ -670,6 +679,8 @@ export default function RulesPage() {
           {/* Configure Rule Dialog */}
           <ConfigureRuleDialog isOpen={isConfigureRuleOpen} onOpenChange={setIsConfigureRuleOpen} prebuiltRule={selectedPrebuiltRule} currentRule={currentRule} onSave={handleSaveRule} setCurrentRule={setCurrentRule} setRules={setRules} />
         </div>
+
+        
       </SidebarProvider>
     );
   }
