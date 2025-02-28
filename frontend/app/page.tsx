@@ -225,7 +225,12 @@ export default function Component() {
                     placeholder="Enter your email"
                     type="email"
                   /> */}
-                <Button type="submit">Join the Waitlist</Button>
+                  <Button 
+                    onClick={() => window.open('https://docs.google.com/forms/d/e/1FAIpQLSdL48BJmTlv6GBFAG2RozbgpOK0EYB0uyMa6mEfl5oc5xo0xA/viewform?usp=dialog', '_blank')}
+                    type="button"
+                  >
+                    Join the Waitlist
+                  </Button>
                 {/* </form> */}
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   By signing up, you agree to our{" "}

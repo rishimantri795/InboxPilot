@@ -271,59 +271,68 @@ app.post("/notifications", async (req, res) => {
                 return res.status(204).send(); // No valid rule match
               }
 
-              const rule = user.rules[parseInt(ruleKey)];
-              console.log("Rule:", rule);
+              //rule key could be "Null" or "0" or "0,1" etc
+              const ruleKeys = ruleKey.split(",");
+              console.log("Rule keys:", ruleKeys);
+              for (const key of ruleKeys) {
+                
+                const rule = user.rules[parseInt(key)];
+                console.log("Rule:", rule);
 
-              for (const action of rule.type) {
-                switch (action.type) {
-                  case "label":
-                    const labelId = await getOrCreatePriorityLabel(accessToken, action.config.labelName);
-                    await applyLabelToEmail(accessToken, latestMessage.id, labelId);
-                    break;
-                  case "archive":
-                    await archiveEmail(accessToken, latestMessage.id);
-                    break;
-                  case "forward":
-                    await forwardEmail(accessToken, latestMessage.id, action.config.forwardTo);
-                    break;
-                  case "favorite":
-                    await favoriteEmail(accessToken, latestMessage.id);
-                    break;
-                  case "draft":
-                    const fromEmail = await getOriginalEmailDetails(accessToken, latestMessage.id);
-
-                    async function fetchFileFromS3(s3Key) {
-                      const params = {
-                        Bucket: "inboxpilotbucket",
-                        Key: s3Key,
-                      };
-                      const data = await s3.getObject(params).promise();
-                      return data.Body; // This is a Buffer
-                    }
-
-                    const parsedFiles = await Promise.all(
-                      action.config.contextFiles.map(async (file) => {
-                        try {
-                          // Use AWS SDK to get the file buffer
-                          const buffer = await fetchFileFromS3(file.s3Key);
-                          const data = await pdf(buffer);
-                          return {
-                            ...file,
-                            fileName: file.fileName,
-                            extractedText: data.text,
-                          };
-                        } catch (error) {
-                          console.error(`Error processing file ${file.fileName}:`, error);
-                          throw error;
-                        }
-                      })
-                    );
-                    const calendarEvents = action.config.calendarEvents;
-                    const reply = await createDraftEmail(emailContent, action.config.draftTemplate, parsedFiles, calendarEvents, accessToken);
-                    await createDraft(accessToken, latestMessage.threadId, reply, latestMessage.id, fromEmail);
-                    break;
-                }
+                for (const action of rule.type) {
+                  switch (action.type) {
+                    case "label":
+                      const labelId = await getOrCreatePriorityLabel(accessToken, action.config.labelName);
+                      await applyLabelToEmail(accessToken, latestMessage.id, labelId);
+                      break;
+                    case "archive":
+                      await archiveEmail(accessToken, latestMessage.id);
+                      break;
+                    case "forward":
+                      await forwardEmail(accessToken, latestMessage.id, action.config.forwardTo);
+                      break;
+                    case "favorite":
+                      await favoriteEmail(accessToken, latestMessage.id);
+                      break;
+                    case "draft":
+                      const fromEmail = await getOriginalEmailDetails(accessToken, latestMessage.id);
+                      
+                      async function fetchFileFromS3(s3Key) {
+                        const params = {
+                          Bucket: 'inboxpilotbucket',
+                          Key: s3Key,
+                        };
+                        const data = await s3.getObject(params).promise();
+                        return data.Body; // This is a Buffer
+                      }
+                      
+                      const parsedFiles = await Promise.all(
+                        action.config.contextFiles.map(async (file) => {
+                          try {
+                            // Use AWS SDK to get the file buffer
+                            const buffer = await fetchFileFromS3(file.s3Key);
+                            const data = await pdf(buffer);
+                            return {
+                              ...file,
+                              fileName: file.fileName,
+                              extractedText: data.text,
+                            };
+                          } catch (error) {
+                            console.error(`Error processing file ${file.fileName}:`, error);
+                            throw error;
+                          }
+                        })
+                      );
+                      const calendarEvents = action.config.calendarEvents;
+                      const reply = await createDraftEmail(emailContent, action.config.draftTemplate, parsedFiles, calendarEvents, accessToken);
+                      await createDraft(accessToken, latestMessage.threadId, reply, latestMessage.id, fromEmail);
+                      break;
+                  }
+                }     
+              
               }
+
+              
 
               // Store the latest processed messageId
 
