@@ -10,6 +10,7 @@ require("dotenv").config();
 require("./middleware/passport.js");
 const { saveEmailChunks, retrieveFullEmail } = require("./utils/RAGService.js");
 const RAG = require("./routes/RAG.js");
+const chat = require("./routes/chat")
 const pdf = require("pdf-parse");
 const AWS = require("aws-sdk");
 const {
@@ -45,7 +46,7 @@ const allowedOrigins = `http://localhost:5173,http://localhost:3000`;
 app.use(
   cors({
     origin: function (origin, callback) {
-      console.log("CORS request origin:", origin); // Debugging
+      // console.log("CORS request origin:", origin); // Debugging
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, origin);
       } else {
@@ -306,6 +307,7 @@ app.post("/notifications", async (req, res) => {
 });
 
 app.get("/", (req, res) => {
+  console.log("Hello World");
   res.send("Hello World!");
 });
 
@@ -321,6 +323,7 @@ app.get("/getCookie", (req, res) => {
   res.send("Cookie has been set!");
 });
 
+app.use("/api/chat", chat);
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);

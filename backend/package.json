@@ -31,7 +31,7 @@
     "nodemailer": "^6.9.15",
     "nodemon": "^3.1.9",
     "openai": "^4.77.3",
-    "p-limit": "^6.2.0",
+    "p-limit": "^3.1.0",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "path": "^0.12.7",

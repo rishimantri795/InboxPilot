@@ -3,7 +3,8 @@ const axios = require("axios");
 const cors = require("cors");
 const { Pinecone } = require("@pinecone-database/pinecone");
 const natural = require("natural");
-const pLimit = require("p-limit").default;
+// const pLimit = require("p-limit").default;
+const pLimit = require("p-limit");
 require("dotenv").config();
 
 const app = express();

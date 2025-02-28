@@ -25,11 +25,11 @@ export default function ChatBotPage() {
   const [input, setInput] = useState("")
   const { user, loading, error } = useCurrentUser()
   const router = useRouter()
-  const messagesEndRef = useRef(null)
+  const messagesEndRef = useRef<HTMLDivElement | null>(null)
 
   // Use our custom chatbot hook
-  const { messages, sendMessage, isTyping } = useChatBot(ragEnabled)
-
+  const { messages, sendMessage} = useChatBot(ragEnabled)
+  
   useEffect(() => {
     const ragPermission = localStorage.getItem("ragPermission")
     if (ragPermission) {
@@ -39,6 +39,7 @@ export default function ChatBotPage() {
   }, [])
 
   useEffect(() => {
+    // const messagesEndRef = useRef<HTMLDivElement | null>(null);
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages]) //Corrected dependency
 
@@ -154,11 +155,11 @@ export default function ChatBotPage() {
                 </span>
               </div>
             ))}
-            {isTyping && (
+            {/* {(
               <div className="text-left">
                 <span className="inline-block p-2 rounded-lg bg-gray-200 text-black">AI is typing...</span>
               </div>
-            )}
+            )} */}
             <div ref={messagesEndRef} />
           </CardContent>
           <CardFooter>
@@ -169,7 +170,7 @@ export default function ChatBotPage() {
                 placeholder="Type your message..."
                 className="flex-grow"
               />
-              <Button type="submit" disabled={isTyping}>
+              <Button type="submit">
                 Send
               </Button>
             </form>
