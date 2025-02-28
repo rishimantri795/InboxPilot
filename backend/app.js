@@ -10,8 +10,9 @@ require("dotenv").config();
 require("./middleware/passport.js");
 const pdf = require("pdf-parse");
 const axios = require("axios");
+const { htmlToText } = require('html-to-text');
 
-const axios = require("axios");
+// const axios = require("axios");
 
 const AWS = require("aws-sdk");
 
@@ -19,7 +20,7 @@ const app = express();
 const users = require("./routes/users");
 
 const { fetchEmailHistory, getOrCreatePriorityLabel, applyLabelToEmail, fetchEmailHistoryWithRetry, fetchEmailHistoryAndApplyLabel, getMessageDetails, archiveEmail, forwardEmail, favoriteEmail, getOriginalEmailDetails, createDraft, getLatestHistoryId, fetchLatestEmail } = require("./utils/gmailService.js");
-const { archiveOutlookEmail, favoriteOutlookEmail, forwardOutlookEmail, fetchOutlookEmails, subscribeToOutlookEmails, getAccessTokenFromRefreshTokenOutlook, getRefreshTokenOutlook, applyCategoryToOutlookEmail, storeLatestMessageId, getLatestMessageId } = require("./utils/outlookService.js");
+const { archiveOutlookEmail, favoriteOutlookEmail, forwardOutlookEmail, createOutlookDraft, fetchOutlookEmails, subscribeToOutlookEmails, getAccessTokenFromRefreshTokenOutlook, getRefreshTokenOutlook, applyCategoryToOutlookEmail, storeLatestMessageId, getLatestMessageId } = require("./utils/outlookService.js");
 
 const { classifyEmail, createDraftEmail } = require("./utils/openai.js");
 
@@ -116,10 +117,10 @@ app.post("/outlook/webhook", async (req, res) => {
     const refreshToken = await getRefreshTokenOutlook(userId);
     const accessToken = await getAccessTokenFromRefreshTokenOutlook(refreshToken);
 
-    const emailRelssponse = await axios.get(`https://graph.microsoft.com/v1.0/me/messages/${messageId}`, {
+    const emailResponse = await axios.get(`https://graph.microsoft.com/v1.0/me/messages/${messageId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    const emailContent = emailResponse.data.body.content;
+    const emailContent = htmlToText(emailResponse.data.body.content, { wordwrap: false });
 
     const userDoc = await db.collection("Users").doc(userId).get();
     if (!userDoc.exists) {
@@ -143,6 +144,40 @@ app.post("/outlook/webhook", async (req, res) => {
           break;
         case "favorite":
           await favoriteOutlookEmail(messageId, accessToken);
+          break;
+        case "draft":
+          async function fetchFileFromS3(s3Key) {
+            const params = {
+              Bucket: "inboxpilotbucket",
+              Key: s3Key,
+            };
+            const data = await s3.getObject(params).promise();
+            return data.Body; // This is a Buffer
+          }
+
+          const parsedFiles = await Promise.all(
+            action.config.contextFiles.map(async (file) => {
+              try {
+                // Use AWS SDK to get the file buffer
+                const buffer = await fetchFileFromS3(file.s3Key);
+                const data = await pdf(buffer);
+                return {
+                  ...file,
+                  fileName: file.fileName,
+                  extractedText: data.text,
+                };
+              } catch (error) {
+                console.error(`Error processing file ${file.fileName}:`, error);
+                throw error;
+              }
+            })
+          );
+          // const calendarEvents = action.config.calendarEvents;
+          const calendarEvents = false;
+          console.log("Creating draft");
+          const reply = await createDraftEmail(emailContent, action.config.draftTemplate, parsedFiles, calendarEvents, accessToken);
+          console.log("Sending draft");
+          await createOutlookDraft(messageId, reply, accessToken);
           break;
         // case "forward":
         //   console.log("📩 Forwarding email - Recipients:", action.config.forwardTo);

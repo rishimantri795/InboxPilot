@@ -155,6 +155,43 @@ async function forwardOutlookEmail(emailId, accessToken, toRecipients, comment =
   }
 }
 
+async function createOutlookDraft(emailId, draftText, accessToken) {
+  try {
+    // Create a draft reply for the given email
+    const createDraftResponse = await axios.post(
+      `https://graph.microsoft.com/v1.0/me/messages/${emailId}/createReply`,
+      null,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    const replyDraft = createDraftResponse.data;
+    
+    // Update the draft reply with the provided text
+    const updateDraftResponse = await axios.patch(
+      `https://graph.microsoft.com/v1.0/me/messages/${replyDraft.id}`,
+      {
+        body: {
+          contentType: "Text",
+          content: draftText,
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    
+    return updateDraftResponse.data;
+  } catch (error) {
+    console.error(
+      "Error creating draft reply email:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+}
+
 async function storeLatestMessageId(userId, messageId) {
   await db.collection("Users").doc(userId).update({ latestProcessedMessageId: messageId });
 }
@@ -164,4 +201,4 @@ async function getLatestMessageId(userId) {
   return userDoc.exists ? userDoc.data().latestProcessedMessageId : null;
 }
 
-module.exports = { archiveOutlookEmail, favoriteOutlookEmail, forwardOutlookEmail, subscribeToOutlookEmails, getEmailById, getAccessTokenFromRefreshTokenOutlook, getRefreshTokenOutlook, applyCategoryToOutlookEmail, storeLatestMessageId, getLatestMessageId };
+module.exports = { archiveOutlookEmail, favoriteOutlookEmail, forwardOutlookEmail, createOutlookDraft, subscribeToOutlookEmails, getEmailById, getAccessTokenFromRefreshTokenOutlook, getRefreshTokenOutlook, applyCategoryToOutlookEmail, storeLatestMessageId, getLatestMessageId };

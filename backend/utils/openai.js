@@ -91,12 +91,13 @@ async function createDraftEmail(emailContent, promptDescription, files, calendar
     return null;
   }
   let calendarToggle = false;
-
+  let events = "";
   if (calendarEvents != undefined && calendarEvents != false) {
     calendarToggle = true;
+    const events = await getCalendarEvents(accessToken);
   }
 
-  const events = await getCalendarEvents(accessToken);
+  // const events = await getCalendarEvents(accessToken);
     
   let filesDetails = '';
   if (files && files.length > 0) {
