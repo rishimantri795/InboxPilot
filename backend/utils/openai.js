@@ -1,6 +1,8 @@
 const OpenAI = require("openai");
 const path = require("path");
 const dotenv = require("dotenv");
+const { getCalendarEvents } = require("./gmailService");
+
 
 const result = dotenv.config({
   path: path.resolve(__dirname, ".env"),
@@ -83,7 +85,7 @@ Return only the key (as a number starting from 0) of the rule that best applies 
 //   }
 // });
 
-async function createDraftEmail(emailContent, promptDescription, files, calanderEvents, accessTokens) {
+async function createDraftEmail(emailContent, promptDescription, files, calendarEvents, accessToken) {
   console.log("calendarEvents:", calendarEvents);
   if ((!emailContent, !promptDescription)) {
     return null;
@@ -107,7 +109,7 @@ async function createDraftEmail(emailContent, promptDescription, files, calander
   if (filesDetails === '') {
     filesDetails = "No files provided for context"
   }
-  const prompt = `Here is an email for which we need to draft a response: ${emailContent}. Please complete the email draft with a suitable response based on this instruction: ${promptDescription}. The response should be concise and should address the main points of the email. ${
+  const prompt = `Here is an email for which we need to draft a response: ${emailContent}. Please complete the email draft with a suitable response based on this instruction: ${promptDescription}. Attached are the extracted contents of any pdf files the user may have uploaded as context: ${filesDetails}. The response should be concise and should address the main points of the email. ${
     calendarToggle
       ? `This is the user's events that they have on the calendar to use as context: ${events}.`
       : ""
