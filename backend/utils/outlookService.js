@@ -5,18 +5,12 @@ const db = admin.firestore();
 
 async function subscribeToOutlookEmails(accessToken) {
   try {
-    const existingSubscriptions = await axios.get("https://graph.microsoft.com/v1.0/subscriptions", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
     const response = await axios.post(
       "https://graph.microsoft.com/v1.0/subscriptions",
       {
         changeType: "created",
         notificationUrl: process.env.NOTIFICATION_URL, // Ensure this URL is correct
-        resource: "me/messages",
+        resource: "me/mailFolders('inbox')/messages", // This targets only the inbox folder
         expirationDateTime: new Date(Date.now() + 3600 * 1000).toISOString(), // 1 hour expiry
         clientState: "random_secret_value",
       },
@@ -35,6 +29,50 @@ async function subscribeToOutlookEmails(accessToken) {
     return response.data; // Return the response to be used elsewhere if needed
   } catch (error) {
     console.error("❌ Error creating subscription:", error.response ? error.response.data : error.message);
+  }
+}
+
+async function unsubscribeToOutlookEmails(accessToken) {
+  try {
+    // Get all current subscriptions
+    const subscriptionsResponse = await axios.get("https://graph.microsoft.com/v1.0/subscriptions", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    const subscriptions = subscriptionsResponse.data.value || [];
+    console.log(`Found ${subscriptions.length} active Outlook subscriptions`);
+
+    if (subscriptions.length === 0) {
+      return { success: true, message: "No active subscriptions to remove" };
+    }
+
+    // Delete each subscription
+    const results = await Promise.allSettled(
+      subscriptions.map((subscription) =>
+        axios.delete(`https://graph.microsoft.com/v1.0/subscriptions/${subscription.id}`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        })
+      )
+    );
+
+    // Count successful deletions
+    const successful = results.filter((r) => r.status === "fulfilled").length;
+
+    return {
+      success: true,
+      message: `Unsubscribed from ${successful} of ${subscriptions.length} subscriptions`,
+    };
+  } catch (error) {
+    console.error("❌ Error unsubscribing from Outlook:", error.response ? error.response.data : error.message);
+    // Return a structured error instead of throwing
+    return {
+      success: false,
+      error: error.message,
+      details: error.response?.data || {},
+    };
   }
 }
 
@@ -129,42 +167,12 @@ async function archiveOutlookEmail(emailId, accessToken) {
     throw error;
   }
 }
-
-async function favoriteOutlookEmail(emailId, accessToken) {
-  try {
-    const patchResponse = await axios.patch(`https://graph.microsoft.com/v1.0/me/messages/${emailId}`, { flag: { flagStatus: "flagged" } }, { headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" } });
-    return patchResponse.data;
-  } catch (error) {
-    console.error("Error favoriting email:", error.response ? error.response.data : error.message);
-    throw error;
-  }
-}
-
-async function forwardOutlookEmail(emailId, accessToken, toRecipients, comment = "") {
-  console.log("HIIII", toRecipients);
-  if (!toRecipients || !Array.isArray(toRecipients) || toRecipients.length === 0) {
-    throw new Error("Missing or invalid toRecipients array.");
-  }
-  try {
-    const formattedRecipients = toRecipients.map((email) => ({ emailAddress: { address: email } }));
-
-    await axios.post(`https://graph.microsoft.com/v1.0/me/messages/${emailId}/forward`, { comment, toRecipients: formattedRecipients }, { headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" } });
-  } catch (error) {
-    console.error("Error forwarding email:", error.response ? error.response.data : error.message);
-    throw error;
-  }
-}
-
 async function createOutlookDraft(emailId, draftText, accessToken) {
   try {
     // Create a draft reply for the given email
-    const createDraftResponse = await axios.post(
-      `https://graph.microsoft.com/v1.0/me/messages/${emailId}/createReply`,
-      null,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    );
+    const createDraftResponse = await axios.post(`https://graph.microsoft.com/v1.0/me/messages/${emailId}/createReply`, null, { headers: { Authorization: `Bearer ${accessToken}` } });
     const replyDraft = createDraftResponse.data;
-    
+
     // Update the draft reply with the provided text
     const updateDraftResponse = await axios.patch(
       `https://graph.microsoft.com/v1.0/me/messages/${replyDraft.id}`,
@@ -181,13 +189,56 @@ async function createOutlookDraft(emailId, draftText, accessToken) {
         },
       }
     );
-    
+
     return updateDraftResponse.data;
   } catch (error) {
-    console.error(
-      "Error creating draft reply email:",
-      error.response ? error.response.data : error.message
-    );
+    console.error("Error archiving email:", error.response ? error.response.data : error.message);
+    throw error;
+  }
+}
+
+async function favoriteOutlookEmail(emailId, accessToken) {
+  try {
+    const patchResponse = await axios.patch(`https://graph.microsoft.com/v1.0/me/messages/${emailId}`, { flag: { flagStatus: "flagged" } }, { headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" } });
+    return patchResponse.data;
+  } catch (error) {
+    console.error("Error favoriting email:", error.response ? error.response.data : error.message);
+    throw error;
+  }
+}
+
+async function forwardOutlookEmail(emailId, accessToken, toRecipients) {
+  console.log("HIIII", toRecipients);
+  if (!toRecipients || !Array.isArray(toRecipients) || toRecipients.length === 0) {
+    throw new Error("Missing or invalid toRecipients array.");
+  }
+  try {
+    const formattedRecipients = toRecipients.map((email) => ({ emailAddress: { address: email } }));
+    console.log("FORMATTED RECIPEINTS", formattedRecipients);
+
+    const response = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${emailId}/forward`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        toRecipients: formattedRecipients,
+        // Optional comment field
+        comment: "Forwarding this email as requested.",
+      }),
+    });
+
+    if (!response.ok) {
+      // If the response isn't in the 2xx range, throw an error
+      const errorData = await response.json();
+      throw new Error(`Error forwarding email: ${response.status} - ${JSON.stringify(errorData)}`);
+    }
+
+    console.log("Email forwarded successfully.");
+    return await response.text(); // or response.json() if Graph returns JSON
+  } catch (error) {
+    console.error("Error forwarding email:", error.response ? error.response.data : error.message);
     throw error;
   }
 }
@@ -201,4 +252,17 @@ async function getLatestMessageId(userId) {
   return userDoc.exists ? userDoc.data().latestProcessedMessageId : null;
 }
 
-module.exports = { archiveOutlookEmail, favoriteOutlookEmail, forwardOutlookEmail, createOutlookDraft, subscribeToOutlookEmails, getEmailById, getAccessTokenFromRefreshTokenOutlook, getRefreshTokenOutlook, applyCategoryToOutlookEmail, storeLatestMessageId, getLatestMessageId };
+module.exports = {
+  createOutlookDraft,
+  unsubscribeToOutlookEmails,
+  archiveOutlookEmail,
+  favoriteOutlookEmail,
+  forwardOutlookEmail,
+  subscribeToOutlookEmails,
+  getEmailById,
+  getAccessTokenFromRefreshTokenOutlook,
+  getRefreshTokenOutlook,
+  applyCategoryToOutlookEmail,
+  storeLatestMessageId,
+  getLatestMessageId,
+};

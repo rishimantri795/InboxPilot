@@ -16,7 +16,7 @@ const cookieParser = require("cookie-parser");
 router.use(cookieParser()); // enables us to use cookies in the router
 const { watchGmailInbox, startDevWatch } = require("../utils/gmailService.js");
 const { getAccessTokenFromRefreshToken } = require("../utils/tokenService.js");
-const { fetchOutlookEmails, subscribeToOutlookEmails, getAccessTokenFromRefreshTokenOutlook, getRefreshTokenOutlook } = require("../utils/outlookService.js");
+const { fetchOutlookEmails, unsubscribeToOutlookEmails, subscribeToOutlookEmails, getAccessTokenFromRefreshTokenOutlook, getRefreshTokenOutlook } = require("../utils/outlookService.js");
 
 // initiates the google OAuth authentication process
 router.get("/google/auth", (req, res) => {
@@ -65,11 +65,9 @@ router.get("/outlook/auth", passport.authenticate("microsoft"));
 
 router.get("/outlook/auth/callback", passport.authenticate("microsoft", { failureRedirect: `${process.env.FRONTEND_URL}/` }), async (req, res) => {
   console.log("✅ Microsoft OAuth Callback triggered.");
-
   // Start Outlook Email Listener
   try {
     const accessToken = await getAccessTokenFromRefreshTokenOutlook(req.user.refreshToken);
-    await subscribeToOutlookEmails(accessToken);
   } catch (error) {
     console.error("❌ Error setting up email listener:", error);
   }
@@ -688,26 +686,7 @@ router.post("/:id/delete_from_profile", async (req, res) => {
   }
 });
 
-router.get("/:id/listener-status", async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const userRef = db.collection("Users").doc(id);
-    const userDoc = await userRef.get();
-
-    if (!userDoc.exists) {
-      return res.status(404).json({ error: "User not found." });
-    }
-
-    const userData = userDoc.data();
-    const status = userData.listenerStatus || 0; // Default to 0 if not set
-
-    return res.status(200).json({ status });
-  } catch (error) {
-    console.error("Error fetching listener status:", error);
-    return res.status(500).json({ error: "Internal Server Error" });
-  }
-});
+// Fix for the error in the toggle-listener route
 
 router.post("/:id/toggle-listener", async (req, res) => {
   const { id } = req.params;
@@ -727,44 +706,104 @@ router.post("/:id/toggle-listener", async (req, res) => {
 
     const userData = userDoc.data();
     const refreshToken = userData.refreshToken; // Get refresh token from Firestore
+    const provider = userData.provider || "google"; // Default to "google" if not specified
 
     if (!refreshToken) {
       return res.status(400).json({ error: "No refresh token found." });
     }
 
-    // Fetch a new access token from the refresh token
-    const accessToken = await getAccessTokenFromRefreshToken(refreshToken);
+    let result;
 
-    if (status === 0) {
-      // If detaching, call stopGmailWatch()
-      console.log("Detaching Gmail Listener...");
-      const stopResult = await stopGmailWatch(accessToken);
-      if (!stopResult.success) {
-        return res.status(500).json({ error: "Failed to stop Gmail watch", details: stopResult.error });
-      }
-    } else {
-      // If attaching, determine which function to call
-      if (process.env.DEV_TARGET_EMAILS === "true") {
-        console.log("Attaching Dev Watch...");
-        const watchResult = await startDevWatch(accessToken);
-        if (!watchResult) {
-          return res.status(500).json({ error: "Failed to start Dev Gmail watch" });
+    // Handle based on the provider
+    if (provider === "google" || provider === "gmail") {
+      // Gmail Provider
+      const accessToken = await getAccessTokenFromRefreshToken(refreshToken);
+
+      if (status === 0) {
+        // Detach Gmail listener
+        console.log("Detaching Gmail Listener...");
+        result = await stopGmailWatch(accessToken);
+        if (!result.success) {
+          return res.status(500).json({ error: "Failed to stop Gmail watch", details: result.error });
         }
       } else {
-        console.log("Attaching Production Watch...");
-        const watchResult = await watchGmailInbox(accessToken);
-        if (!watchResult) {
-          return res.status(500).json({ error: "Failed to start Production Gmail watch" });
+        // Attach Gmail listener - choose between dev and prod
+        if (process.env.DEV_TARGET_EMAILS === "true") {
+          console.log("Attaching Gmail Dev Watch...");
+          result = await startDevWatch(accessToken);
+        } else {
+          console.log("Attaching Gmail Production Watch...");
+          result = await watchGmailInbox(accessToken);
+        }
+
+        if (!result) {
+          return res.status(500).json({
+            error: `Failed to start ${process.env.DEV_TARGET_EMAILS === "true" ? "Dev" : "Production"} Gmail watch`,
+          });
         }
       }
+    } else if (provider === "microsoft" || provider === "outlook") {
+      // Outlook Provider
+      const accessToken = await getAccessTokenFromRefreshTokenOutlook(refreshToken);
+
+      if (status === 0) {
+        // Detach Outlook listener
+        console.log("Detaching Outlook Listener...");
+        // Get the subscription ID from user data
+        const subscriptionId = userData.outlookSubscriptionId;
+        if (!subscriptionId) {
+          return res.status(400).json({ error: "No Outlook subscription ID found." });
+        }
+
+        result = await unsubscribeToOutlookEmails(accessToken, subscriptionId); // Fixed: added missing subscriptionId
+      } else {
+        // Attach Outlook listener
+        console.log("Attaching Outlook Listener...");
+
+        result = await subscribeToOutlookEmails(accessToken);
+
+        // Store the subscription ID for future unsubscription
+        if (result && result.id) {
+          await userRef.update({ outlookSubscriptionId: result.id });
+        }
+      }
+    } else {
+      return res.status(400).json({ error: `Unsupported provider: ${provider}` });
     }
 
     // Update Firestore with the new status
     await userRef.update({ listenerStatus: status });
 
-    return res.status(200).json({ message: `Listener ${status === 1 ? "attached" : "detached"} successfully.` });
+    return res.status(200).json({
+      message: `${provider.charAt(0).toUpperCase() + provider.slice(1)} listener ${status === 1 ? "attached" : "detached"} successfully.`,
+    });
   } catch (error) {
-    console.error("Error toggling listener status:", error);
+    // Fixed this line to use provider from within try block if available
+    console.error(`Error toggling listener status:`, error);
+    return res.status(500).json({
+      error: "Internal Server Error",
+      details: error.message,
+    });
+  }
+});
+
+router.get("/:id/listener-status", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const userRef = db.collection("Users").doc(id);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    const userData = userDoc.data();
+    const status = userData.listenerStatus !== undefined ? userData.listenerStatus : 0; // Default to 0 if not set
+
+    return res.status(200).json({ status });
+  } catch (error) {
+    console.error("Error fetching listener status:", error);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });

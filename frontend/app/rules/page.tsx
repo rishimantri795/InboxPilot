@@ -106,6 +106,15 @@ export default function RulesPage() {
   const { user, loading, error } = useCurrentUser();
   const [listenerStatus, setListenerStatus] = useState<number | null>(null);
 
+  const fetchListenerStatus = async () => {
+    try {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/listener-status`);
+      setListenerStatus(response.data.status); // Should be 0 or 1
+    } catch (error) {
+      console.error("Failed to fetch listener status:", error);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       fetchListenerStatus();
@@ -228,7 +237,7 @@ export default function RulesPage() {
       console.log("Transformed rules:", transformedRules);
       setRules(transformedRules);
     }
-  }, [user]);  
+  }, [user]);
 
   useEffect(() => {
     if (isAddRuleOpen && tour.isActive()) {
@@ -300,17 +309,16 @@ export default function RulesPage() {
       }
       return action;
     });
-    
-  
+
     // Create a serialized rule with actions stored as a JSON string.
     const serializedRule = {
       action: configuredRule.name,
       prompt: configuredRule.description,
       type: actionsForStorage,
     };
-  
+
     let savedRuleId: string | null = null;
-  
+
     if (currentRule) {
       // Update existing rule
       setRules(
@@ -326,11 +334,7 @@ export default function RulesPage() {
         )
       );
       try {
-        await axios.put(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/rules/${currentRule.id}`,
-          serializedRule,
-          { withCredentials: true }
-        );
+        await axios.put(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/rules/${currentRule.id}`, serializedRule, { withCredentials: true });
         savedRuleId = currentRule.id;
       } catch (error) {
         console.error("Failed to update rule:", error);
@@ -338,11 +342,7 @@ export default function RulesPage() {
     } else {
       // Add new rule
       try {
-        const response = await axios.post(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}`,
-          serializedRule,
-          { withCredentials: true }
-        );
+        const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}`, serializedRule, { withCredentials: true });
         const newRule = {
           id: response.data.id, // assuming the backend returns the new rule's ID
           name: configuredRule.name,
@@ -355,16 +355,12 @@ export default function RulesPage() {
         console.error("Failed to add rule:", error);
       }
     }
-  
+
     // After saving the rule, loop through draft actions and upload any new files.
     // This step replaces raw File objects with the enriched file objects from the backend.
     for (let i = 0; i < configuredRule.actions.length; i++) {
       const action = configuredRule.actions[i];
-      if (
-        action.type === "draft" &&
-        action.config.contextFiles &&
-        action.config.contextFiles.some((file) => file instanceof File)
-      ) {
+      if (action.type === "draft" && action.config.contextFiles && action.config.contextFiles.some((file) => file instanceof File)) {
         const formData = new FormData();
         // Append only the raw File objects
         const rawFiles = action.config.contextFiles.filter((file) => file instanceof File);
@@ -373,22 +369,16 @@ export default function RulesPage() {
         });
         // Pass along the rule identifier. In this example, we use the saved rule ID.
         formData.append("ruleIndex", savedRuleId);
-        
+
         try {
-          const uploadResponse = await axios.post(
-            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/upload-rule-files`,
-            formData,
-            {
-              withCredentials: true,
-              headers: { "Content-Type": "multipart/form-data" },
-            }
-          );
+          const uploadResponse = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/upload-rule-files`, formData, {
+            withCredentials: true,
+            headers: { "Content-Type": "multipart/form-data" },
+          });
           // Assume that the backend returns the enriched file objects in uploadResponse.data.files.
           const enrichedFiles = uploadResponse.data.files;
           // Filter out raw file entries: those that are instances of File or don't have s3Url.
-          const existingEnriched = action.config.contextFiles.filter(
-            file => !(file instanceof File) && file.s3Url !== undefined
-          );
+          const existingEnriched = action.config.contextFiles.filter((file) => !(file instanceof File) && file.s3Url !== undefined);
           // Merge the new enriched files with the existing enriched ones
           const updatedFiles = [...existingEnriched, ...enrichedFiles];
           action.config.contextFiles = updatedFiles;
@@ -399,11 +389,10 @@ export default function RulesPage() {
         }
       }
     }
-  
+
     setIsConfigureRuleOpen(false);
     setCurrentRule(null);
-  };  
-  
+  };
 
   // Handle editing a rule
   const handleEditRule = (rule: Rule) => {
@@ -491,15 +480,6 @@ export default function RulesPage() {
     } catch (error) {
       console.error("Error detaching Gmail listener:", error);
       toast.error("Error detaching Gmail listener");
-    }
-  };
-
-  const fetchListenerStatus = async () => {
-    try {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/listener-status`);
-      setListenerStatus(response.data.status); // Should be 0 or 1
-    } catch (error) {
-      console.error("Failed to fetch listener status:", error);
     }
   };
 
@@ -724,12 +704,9 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
 
   const handleCancel = async () => {
     try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/rules`,
-        { withCredentials: true }
-      );
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/rules`, { withCredentials: true });
       const rawRules = response.data;
-      const transformedRules = rawRules.map(rule => ({
+      const transformedRules = rawRules.map((rule) => ({
         id: rule.ruleIndex,
         ruleIndex: rule.ruleIndex,
         name: rule.action,
@@ -737,16 +714,14 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
         actions: rule.type || [],
       }));
       setRules(transformedRules);
-      const updatedRule = transformedRules.find(
-        rule => String(rule.ruleIndex) === String(currentRule.ruleIndex)
-      );
+      const updatedRule = transformedRules.find((rule) => String(rule.ruleIndex) === String(currentRule.ruleIndex));
       if (updatedRule) {
         setCurrentRule(updatedRule);
         setActions(updatedRule.actions);
       }
     } catch (error) {}
     onOpenChange(false);
-  };  
+  };
 
   // Add a new action to the rule
   const handleAddAction = (type: string) => {
@@ -797,64 +772,64 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
   return (
     <>
       <Toaster />
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-          <DialogContent data-configure-content className="max-w-3xl max-h-[90vh] flex flex-col">
-            <DialogHeader>
-              <DialogTitle>{currentRule ? "Edit Rule" : "Configure Rule"}</DialogTitle>
-              <DialogDescription>{currentRule ? "Modify your existing rule" : "Customize your rule and add actions."}</DialogDescription>
-            </DialogHeader>
-            <div className="flex 1 overflow-y-auto grid gap-4 p-4">
-              {/* Rule Name */}
-              <div>
-                <Label htmlFor="ruleName">Rule Name</Label>
-                <Input id="ruleName" value={ruleName} onChange={(e) => setRuleName(e.target.value)} placeholder="ex. Job search rule" />
-              </div>
-
-              {/* Rule Description */}
-              <div>
-                <Label htmlFor="ruleDescription">Email Condition</Label>
-                <Input id="ruleDescription" value={ruleDescription} onChange={(e) => setRuleDescription(e.target.value)} placeholder="ex. Emails about my job and internship search" />
-              </div>
-
-              {/* Action Types */}
-              <div>
-                <Label>Actions</Label>
-                <div className="flex gap-2 mt-2">
-                  {actionTypes.map((actionType) => (
-                    <Button key={actionType.value} variant="outline" onClick={() => handleAddAction(actionType.value)} className="flex-1 px-2 py-2 whitespace-nowrap">
-                      <actionType.icon className="h-4 w-4" />
-                      {actionType.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* List of Actions */}
-              {actions.map((action, index) => (
-                <div key={index} className="border rounded-lg p-4 relative">
-                  <Button variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => handleRemoveAction(index)}>
-                    <TrashIcon className="h-4 w-4" />
-                  </Button>
-                  <ActionConfig action={action} onConfigChange={(config) => handleActionConfigChange(index, config)} ruleIndex={currentRule?.ruleIndex || prebuiltRule?.ruleIndex} />
-                </div>
-              ))}
+      <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <DialogContent data-configure-content className="max-w-3xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>{currentRule ? "Edit Rule" : "Configure Rule"}</DialogTitle>
+            <DialogDescription>{currentRule ? "Modify your existing rule" : "Customize your rule and add actions."}</DialogDescription>
+          </DialogHeader>
+          <div className="flex 1 overflow-y-auto grid gap-4 p-4">
+            {/* Rule Name */}
+            <div>
+              <Label htmlFor="ruleName">Rule Name</Label>
+              <Input id="ruleName" value={ruleName} onChange={(e) => setRuleName(e.target.value)} placeholder="ex. Job search rule" />
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={handleCancel}>
-                Cancel
-              </Button>
-              <Button onClick={handleSave} disabled={!canSaveRule()}>
-                {currentRule ? "Update Rule" : "Save Rule"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+
+            {/* Rule Description */}
+            <div>
+              <Label htmlFor="ruleDescription">Email Condition</Label>
+              <Input id="ruleDescription" value={ruleDescription} onChange={(e) => setRuleDescription(e.target.value)} placeholder="ex. Emails about my job and internship search" />
+            </div>
+
+            {/* Action Types */}
+            <div>
+              <Label>Actions</Label>
+              <div className="flex gap-2 mt-2">
+                {actionTypes.map((actionType) => (
+                  <Button key={actionType.value} variant="outline" onClick={() => handleAddAction(actionType.value)} className="flex-1 px-2 py-2 whitespace-nowrap">
+                    <actionType.icon className="h-4 w-4" />
+                    {actionType.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* List of Actions */}
+            {actions.map((action, index) => (
+              <div key={index} className="border rounded-lg p-4 relative">
+                <Button variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => handleRemoveAction(index)}>
+                  <TrashIcon className="h-4 w-4" />
+                </Button>
+                <ActionConfig action={action} onConfigChange={(config) => handleActionConfigChange(index, config)} ruleIndex={currentRule?.ruleIndex || prebuiltRule?.ruleIndex} />
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancel}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={!canSaveRule()}>
+              {currentRule ? "Update Rule" : "Save Rule"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
 
 // Component to configure individual actions
-function ActionConfig({ action, onConfigChange, ruleIndex, }: { action: Action; onConfigChange: (config: Record<string, any>) => void; ruleIndex?: string }) {
+function ActionConfig({ action, onConfigChange, ruleIndex }: { action: Action; onConfigChange: (config: Record<string, any>) => void; ruleIndex?: string }) {
   switch (action.type) {
     case "label":
       return (
@@ -871,7 +846,7 @@ function ActionConfig({ action, onConfigChange, ruleIndex, }: { action: Action; 
         </div>
       );
     case "draft":
-      return <DraftActionConfig action={action} onConfigChange={onConfigChange} ruleIndex={ruleIndex}/>;
+      return <DraftActionConfig action={action} onConfigChange={onConfigChange} ruleIndex={ruleIndex} />;
     case "archive":
       return (
         <div>

@@ -10,7 +10,7 @@ require("dotenv").config();
 require("./middleware/passport.js");
 const pdf = require("pdf-parse");
 const axios = require("axios");
-const { htmlToText } = require('html-to-text');
+const { htmlToText } = require("html-to-text");
 
 // const axios = require("axios");
 
@@ -80,60 +80,105 @@ app.get("/outlook/webhook", (req, res) => {
   console.log("🔹 Microsoft Graph validation request received");
 
   // Microsoft sends a "validationToken" query parameter during subscription
-  const validationToken = req.query.validationToken;
+  if (req.query.validationToken) {
+    console.log("Received validation request");
+    console.log("Validating webhook: " + req.query.validationToken);
 
-  if (validationToken) {
-    console.log("✅ Sending back validation token:", validationToken);
-    return res.status(200).send(validationToken);
+    // IMPORTANT: Set the content type to text/plain
+    res.set("Content-Type", "text/plain");
+    // Return the validation token as plain text
+    return res.status(200).send(req.query.validationToken);
   }
 
   res.status(400).send("Missing validation token");
 });
 
 app.post("/outlook/webhook", async (req, res) => {
-  if (req.query.validationToken) {
+  if (req.query && req.query.validationToken) {
+    console.log("🔹 Responding to validation request...");
     return res.status(200).send(req.query.validationToken);
   }
+
+  console.log("📩 Received email notification");
 
   try {
     const notification = req.body.value && req.body.value[0];
     if (!notification || !notification.resourceData || !notification.resourceData.id) {
+      console.error("❌ No message ID found in webhook notification.");
       return res.status(400).send("Invalid webhook notification.");
     }
 
     const messageId = notification.resourceData.id;
-    const userId = notification.resource.split("/")[1];
+    console.log(`📧 New Email Received! Fetching content for Message ID: ${messageId}`);
+
+    const resourceParts = notification.resource.split("/");
+    const userId = resourceParts.length > 1 ? resourceParts[1] : null;
 
     if (!userId) {
+      console.error("❌ User ID not found in resource.");
       return res.status(400).send("User ID missing.");
     }
 
     const lastProcessedMessageId = await getLatestMessageId(userId);
     if (lastProcessedMessageId === messageId) {
+      console.log("🚫 Duplicate email detected, skipping processing.");
       return res.status(202).send();
     }
     await storeLatestMessageId(userId, messageId);
 
+    console.log("USER ID:", userId);
+
     const refreshToken = await getRefreshTokenOutlook(userId);
     const accessToken = await getAccessTokenFromRefreshTokenOutlook(refreshToken);
 
-    const emailResponse = await axios.get(`https://graph.microsoft.com/v1.0/me/messages/${messageId}`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    const emailContent = htmlToText(emailResponse.data.body.content, { wordwrap: false });
+    async function getEmailById(messageId, accessToken) {
+      try {
+        const response = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${messageId}`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
 
+        if (!response.ok) {
+          // Convert error response to JSON or text for better error details
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(`Failed to fetch email. Status: ${response.status}. Details: ${JSON.stringify(errorData)}`);
+        }
+
+        // Parse the response as JSON
+        const emailData = await response.json();
+        return emailData;
+      } catch (error) {
+        console.error("Error fetching email details:", error.message);
+        throw error;
+      }
+    }
+
+    const emailResponse = await getEmailById(messageId, accessToken);
+
+    const emailContent = htmlToText(emailResponse.body.content);
+    const emailSubject = emailResponse.subject || "";
+    //
     const userDoc = await db.collection("Users").doc(userId).get();
     if (!userDoc.exists) {
+      console.error("❌ User not found.");
       return res.status(404).send("User not found.");
     }
 
-    const rules = userDoc.data().rules || {};
-    const ruleKey = await classifyEmail(emailContent, rules);
+    const userData = userDoc.data();
+    const rules = userData.rules || {};
+
+    const ruleKey = await classifyEmail(email.body.content, rules);
     if (ruleKey === "Null") {
+      console.log("No matching rule found, skipping.");
       return res.status(204).send();
+    } else {
+      console.log("HIGH PRIORITY");
     }
 
     const rule = rules[parseInt(ruleKey)];
+
     for (const action of rule.type) {
       switch (action.type) {
         case "label":
@@ -144,6 +189,7 @@ app.post("/outlook/webhook", async (req, res) => {
           break;
         case "favorite":
           await favoriteOutlookEmail(messageId, accessToken);
+
           break;
         case "draft":
           async function fetchFileFromS3(s3Key) {
@@ -181,25 +227,37 @@ app.post("/outlook/webhook", async (req, res) => {
           break;
         // case "forward":
         //   console.log("📩 Forwarding email - Recipients:", action.config.forwardTo);
+        case "forward":
+          // Check if email is already forwarded to prevent infinite loop.
+          if (emailSubject.trim().toLowerCase().startsWith("fw:") || emailSubject.trim().toLowerCase().startsWith("fwd:")) {
+            console.log("Email already forwarded, skipping forward action.");
+            break;
+          }
 
-        //   let recipients = action.config.forwardTo;
-        //   if (!Array.isArray(recipients)) {
-        //     recipients = [recipients]; // Convert to array if it's a single string
-        //   }
+          console.log("📩 Forwarding email - Recipients:", action.config.forwardTo);
+          let recipients = action.config.forwardTo;
+          console.log("RECIPIENTSSS", recipients);
+          if (!Array.isArray(recipients)) {
+            recipients = [recipients]; // Convert to array if it's a single string
+          }
 
-        //   if (recipients.length > 0) {
-        //     await forwardOutlookEmail(messageId, accessToken, recipients);
-        //   } else {
-        //     console.error("❌ Error: Missing or invalid toRecipients array.");
-        //   }
-        //   break;
+          console.log("RECIPIENTSS AFTER:", recipients);
+          console.log("MESSAGE ID:", messageId);
+
+          if (recipients.length > 0) {
+            await forwardOutlookEmail(messageId, accessToken, recipients);
+            return res.status(202).send();
+          } else {
+            console.error("❌ Error: Missing or invalid toRecipients array.");
+          }
+          break;
       }
     }
 
     return res.status(202).send("Accepted");
   } catch (error) {
-    console.error("❌ Error processing webhook:", error);
-    return res.status(500).send("Error processing webhook");
+    console.error("❌ Error processing webhook:", error.response ? error.response.data : error.message);
+    res.status(500).send("Error processing webhook");
   }
 });
 
@@ -275,7 +333,6 @@ app.post("/notifications", async (req, res) => {
               const ruleKeys = ruleKey.split(",");
               console.log("Rule keys:", ruleKeys);
               for (const key of ruleKeys) {
-                
                 const rule = user.rules[parseInt(key)];
                 console.log("Rule:", rule);
 
@@ -296,16 +353,16 @@ app.post("/notifications", async (req, res) => {
                       break;
                     case "draft":
                       const fromEmail = await getOriginalEmailDetails(accessToken, latestMessage.id);
-                      
+
                       async function fetchFileFromS3(s3Key) {
                         const params = {
-                          Bucket: 'inboxpilotbucket',
+                          Bucket: "inboxpilotbucket",
                           Key: s3Key,
                         };
                         const data = await s3.getObject(params).promise();
                         return data.Body; // This is a Buffer
                       }
-                      
+
                       const parsedFiles = await Promise.all(
                         action.config.contextFiles.map(async (file) => {
                           try {
@@ -328,11 +385,8 @@ app.post("/notifications", async (req, res) => {
                       await createDraft(accessToken, latestMessage.threadId, reply, latestMessage.id, fromEmail);
                       break;
                   }
-                }     
-              
+                }
               }
-
-              
 
               // Store the latest processed messageId
 

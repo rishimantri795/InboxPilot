@@ -48,6 +48,8 @@ passport.use(
           const newUser = {
             id: profile.id,
             email: profile.emails[0].value,
+            provider: "google",
+            listenerStatus: 0,
             refreshToken: refreshToken,
             createdAt: new Date(),
           };
@@ -90,6 +92,7 @@ passport.use(
             id: profile.id,
             email: profile.emails[0].value,
             provider: "microsoft",
+            listenerStatus: 0,
             createdAt: new Date(),
             refreshToken,
           };
