@@ -17,27 +17,42 @@ async function getCalendarEvents(refreshToken) {
     oauth2Client.setCredentials({ refresh_token: refreshToken });
     const accessToken = await oauth2Client.getAccessToken();
 
+    // const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+
+    // const now = new Date();
+    // const firstDayOfMonth = new Date(
+    //   now.getFullYear(),
+    //   now.getMonth(),
+    //   1
+    // ).toISOString();
+    // const lastDayOfMonth = new Date(
+    //   now.getFullYear(),
+    //   now.getMonth() + 1,
+    //   0,
+    //   23,
+    //   59,
+    //   59
+    // ).toISOString();
+
+    // const response = await calendar.events.list({
+    //   calendarId: "primary",
+    //   timeMin: firstDayOfMonth,
+    //   timeMax: lastDayOfMonth,
+    //   singleEvents: true,
+    //   orderBy: "startTime",
+    // });
+
     const calendar = google.calendar({ version: "v3", auth: oauth2Client });
 
     const now = new Date();
-    const firstDayOfMonth = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      1
-    ).toISOString();
-    const lastDayOfMonth = new Date(
-      now.getFullYear(),
-      now.getMonth() + 1,
-      0,
-      23,
-      59,
-      59
-    ).toISOString();
+    const endOfWeek = new Date(now);
+    endOfWeek.setDate(now.getDate() + (7 - now.getDay()));
+    endOfWeek.setHours(23, 59, 59);
 
     const response = await calendar.events.list({
       calendarId: "primary",
-      timeMin: firstDayOfMonth,
-      timeMax: lastDayOfMonth,
+      timeMin: now.toISOString(),
+      timeMax: endOfWeek.toISOString(),
       singleEvents: true,
       orderBy: "startTime",
     });
@@ -572,8 +587,9 @@ async function getOrCreatePriorityLabel(accessToken, name) {
       },
     });
 
+    // const existingLabel = listResponse.data.labels.find((label) => label.name === name);
     const existingLabel = listResponse.data.labels.find(
-      (label) => label.name === name
+      (label) => label.name.toLowerCase() === name.toLowerCase()
     );
     if (existingLabel) {
       console.log(`Label ${name} exists with ID: ${existingLabel.id}`);

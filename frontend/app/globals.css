@@ -160,3 +160,14 @@ body {
   background: #333 !important;
   transform: translateY(-1px) !important;
 }
+
+
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

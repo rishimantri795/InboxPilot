@@ -83,6 +83,10 @@ export function AppSidebar({ currentTab }) {
     }
   };
 
+  const handleClick = () => {
+    window.location.href = "/";
+  };
+
   if (loading) return null;
   if (error) return <p className="text-red-500">Error loading user.</p>;
 
@@ -92,15 +96,8 @@ export function AppSidebar({ currentTab }) {
         <SidebarGroup>
           <SidebarGroupContent>
             <div className="flex items-center px-4 py-3">
-              <Image
-                src={logo || "/placeholder.svg"}
-                width={24}
-                height={24}
-                alt="InboxPilot"
-              />
-              <span className="ml-2 text-2xl font-bold transition-opacity duration-300 color-black">
-                InboxPilot
-              </span>
+              <Image src={logo || "/placeholder.svg"} width={24} height={24} alt="InboxPilot" />
+                <span className="ml-2 text-2xl font-bold transition-opacity duration-300 color-black cursor-pointer" onClick={handleClick}>InboxPilot</span>
             </div>
             <SidebarMenu>
               {items.map((item) => (
