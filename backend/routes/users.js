@@ -78,7 +78,10 @@ async function stopGmailWatch(accessToken) {
     // Return success along with the response data
     return { success: true, data: response.data };
   } catch (error) {
-    console.error("Error stopping Gmail watch:", error.response?.data || error.message);
+    console.error(
+      "Error stopping Gmail watch:",
+      error.response?.data || error.message
+    );
 
     // Return failure along with error details
     return { success: false, error: error.response?.data || error.message };
@@ -106,7 +109,9 @@ router.post("/detach-gmail-listener", async (req, res) => {
         data: result.data,
       });
     } else {
-      return res.status(500).json({ error: "Failed to stop Gmail watch", details: result.error });
+      return res
+        .status(500)
+        .json({ error: "Failed to stop Gmail watch", details: result.error });
     }
   } catch (error) {
     console.error("Error detaching Gmail listener:", error);
@@ -136,7 +141,10 @@ router.post("/attach-dev-listener", async (req, res) => {
         data: result.data,
       });
     } else {
-      return res.status(500).json({ error: "Failed to attach Dev listener", details: result.error });
+      return res.status(500).json({
+        error: "Failed to attach Dev listener",
+        details: result.error,
+      });
     }
   } catch (error) {
     console.error("Error detaching Dev listener:", error);
@@ -166,7 +174,10 @@ router.post("/attach-prod-listener", async (req, res) => {
         data: result.data,
       });
     } else {
-      return res.status(500).json({ error: "Failed to attach Prod listener", details: result.error });
+      return res.status(500).json({
+        error: "Failed to attach Prod listener",
+        details: result.error,
+      });
     }
   } catch (error) {
     console.error("Error detaching Gmail listener:", error);
@@ -214,7 +225,9 @@ router.post("/verifyToken", async (req, res) => {
     });
 
     // Send a success response
-    res.status(200).send({ id: newUserRef.id, message: "User created successfully!" });
+    res
+      .status(200)
+      .send({ id: newUserRef.id, message: "User created successfully!" });
   } catch (error) {
     res.status(401).send("Unauthorized");
   }
@@ -252,7 +265,9 @@ router.post("/verifyRefreshToken", async (req, res) => {
       res.status(400).json({ valid: false, message: "Invalid refresh token." });
     } else {
       console.error("Error verifying token:", error);
-      res.status(500).json({ valid: false, message: "Token verification failed." });
+      res
+        .status(500)
+        .json({ valid: false, message: "Token verification failed." });
     }
   }
 });
@@ -380,7 +395,8 @@ router.post("/:id", async (req, res) => {
     const existingIndices = Object.keys(existingRules)
       .map(Number)
       .filter((num) => !isNaN(num));
-    const nextIndex = existingIndices.length > 0 ? Math.max(...existingIndices) + 1 : 0;
+    const nextIndex =
+      existingIndices.length > 0 ? Math.max(...existingIndices) + 1 : 0;
 
     await userRef.update({
       [`rules.${nextIndex}`]: {
@@ -541,7 +557,6 @@ router.get("/:id/rules", async (req, res) => {
     return res.status(500).json({ error: "Internal Server Error." });
   }
 });
-
 
 router.delete("/", (req, res) => {});
 
@@ -716,7 +731,10 @@ router.post("/:id/toggle-listener", async (req, res) => {
       console.log("Detaching Gmail Listener...");
       const stopResult = await stopGmailWatch(accessToken);
       if (!stopResult.success) {
-        return res.status(500).json({ error: "Failed to stop Gmail watch", details: stopResult.error });
+        return res.status(500).json({
+          error: "Failed to stop Gmail watch",
+          details: stopResult.error,
+        });
       }
     } else {
       // If attaching, determine which function to call
@@ -724,13 +742,17 @@ router.post("/:id/toggle-listener", async (req, res) => {
         console.log("Attaching Dev Watch...");
         const watchResult = await startDevWatch(accessToken);
         if (!watchResult) {
-          return res.status(500).json({ error: "Failed to start Dev Gmail watch" });
+          return res
+            .status(500)
+            .json({ error: "Failed to start Dev Gmail watch" });
         }
       } else {
         console.log("Attaching Production Watch...");
         const watchResult = await watchGmailInbox(accessToken);
         if (!watchResult) {
-          return res.status(500).json({ error: "Failed to start Production Gmail watch" });
+          return res
+            .status(500)
+            .json({ error: "Failed to start Production Gmail watch" });
         }
       }
     }
@@ -738,96 +760,114 @@ router.post("/:id/toggle-listener", async (req, res) => {
     // Update Firestore with the new status
     await userRef.update({ listenerStatus: status });
 
-    return res.status(200).json({ message: `Listener ${status === 1 ? "attached" : "detached"} successfully.` });
+    return res.status(200).json({
+      message: `Listener ${
+        status === 1 ? "attached" : "detached"
+      } successfully.`,
+    });
   } catch (error) {
     console.error("Error toggling listener status:", error);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-router.post("/:id/upload-rule-files", upload.array("files"), async (req, res) => {
-  const { id } = req.params;
-  const { ruleIndex } = req.body; // Expect the client to pass which rule these files belong to
+router.post(
+  "/:id/upload-rule-files",
+  upload.array("files"),
+  async (req, res) => {
+    const { id } = req.params;
+    const { ruleIndex } = req.body; // Expect the client to pass which rule these files belong to
 
-  if (!id || ruleIndex === undefined) {
-    return res.status(400).json({ error: "User ID and rule index are required." });
+    if (!id || ruleIndex === undefined) {
+      return res
+        .status(400)
+        .json({ error: "User ID and rule index are required." });
+    }
+
+    try {
+      const userRef = db.collection("Users").doc(id);
+      const userDoc = await userRef.get();
+      if (!userDoc.exists) {
+        return res.status(404).json({ error: "User not found." });
+      }
+
+      // Get the specific rule from the user's rules.
+      const userData = userDoc.data();
+      const ruleData = userData.rules ? userData.rules[ruleIndex] : null;
+      if (!ruleData) {
+        return res.status(404).json({ error: "Rule not found." });
+      }
+
+      // Parse the actions array from the stored JSON string.
+      const actions = ruleData.type || [];
+
+      // Find the draft action in the actions array.
+      const draftActionIndex = actions.findIndex(
+        (action) => action.type === "draft"
+      );
+      if (draftActionIndex === -1) {
+        return res
+          .status(400)
+          .json({ error: "Draft action not found in the rule." });
+      }
+
+      // Upload each file to S3.
+      const bucketName = process.env.S3_BUCKET;
+      const newFilesPromises = req.files.map(async (file) => {
+        // Generate a unique key for the file in S3
+        const s3Key = `uploads/${Date.now()}-${file.originalname}`;
+
+        // Prepare the upload parameters
+        const uploadParams = {
+          Bucket: bucketName,
+          Key: s3Key,
+          Body: file.buffer,
+          ContentType: file.mimetype,
+        };
+
+        // Upload the file to S3
+        const data = await s3.upload(uploadParams).promise();
+
+        // Return an enriched file object.
+        return {
+          fileName: file.originalname,
+          mimeType: file.mimetype,
+          s3Key, // optionally store the S3 key for future reference
+          s3Url: data.Location, // S3 returns the public URL if your bucket policy allows it
+          uploadedAt: new Date().toISOString(),
+        };
+      });
+
+      // Wait for all files to upload.
+      const newFiles = await Promise.all(newFilesPromises);
+
+      // Get any existing files from the draft action.
+      const existingFiles = actions[draftActionIndex].config.contextFiles || [];
+
+      // Filter out raw or minimal entries (that don't have s3Url)
+      const existingEnriched = existingFiles.filter(
+        (file) => file && file.s3Url
+      );
+
+      // Merge the already enriched files with the new enriched files.
+      const mergedFiles = [...existingEnriched, ...newFiles];
+
+      actions[draftActionIndex].config.contextFiles = mergedFiles;
+
+      // Update the rule document with the merged files.
+      await userRef.update({
+        [`rules.${ruleIndex}.type`]: actions,
+      });
+
+      return res
+        .status(200)
+        .json({ message: "Files added successfully.", files: newFiles });
+    } catch (error) {
+      console.error("Error updating rule file data:", error);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
   }
-
-  try {
-    const userRef = db.collection("Users").doc(id);
-    const userDoc = await userRef.get();
-    if (!userDoc.exists) {
-      return res.status(404).json({ error: "User not found." });
-    }
-    
-    // Get the specific rule from the user's rules.
-    const userData = userDoc.data();
-    const ruleData = userData.rules ? userData.rules[ruleIndex] : null;
-    if (!ruleData) {
-      return res.status(404).json({ error: "Rule not found." });
-    }
-    
-    // Parse the actions array from the stored JSON string.
-    const actions = ruleData.type || [];
-    
-    // Find the draft action in the actions array.
-    const draftActionIndex = actions.findIndex((action) => action.type === "draft");
-    if (draftActionIndex === -1) {
-      return res.status(400).json({ error: "Draft action not found in the rule." });
-    }
-
-    // Upload each file to S3.
-    const bucketName = process.env.S3_BUCKET;
-    const newFilesPromises = req.files.map(async (file) => {
-      // Generate a unique key for the file in S3
-      const s3Key = `uploads/${Date.now()}-${file.originalname}`;
-      
-      // Prepare the upload parameters
-      const uploadParams = {
-        Bucket: bucketName,
-        Key: s3Key,
-        Body: file.buffer,
-        ContentType: file.mimetype,
-      };
-
-      // Upload the file to S3
-      const data = await s3.upload(uploadParams).promise();
-
-      // Return an enriched file object.
-      return {
-        fileName: file.originalname,
-        mimeType: file.mimetype,
-        s3Key, // optionally store the S3 key for future reference
-        s3Url: data.Location, // S3 returns the public URL if your bucket policy allows it
-        uploadedAt: new Date().toISOString(),
-      };
-    });
-
-    // Wait for all files to upload.
-    const newFiles = await Promise.all(newFilesPromises);
-    
-    // Get any existing files from the draft action.
-  const existingFiles = actions[draftActionIndex].config.contextFiles || [];
-
-  // Filter out raw or minimal entries (that don't have s3Url)
-  const existingEnriched = existingFiles.filter(file => file && file.s3Url);
-
-  // Merge the already enriched files with the new enriched files.
-  const mergedFiles = [...existingEnriched, ...newFiles];
-
-  actions[draftActionIndex].config.contextFiles = mergedFiles;
-
-  // Update the rule document with the merged files.
-  await userRef.update({
-    [`rules.${ruleIndex}.type`]: actions
-  });
-    
-    return res.status(200).json({ message: "Files added successfully.", files: newFiles });
-  } catch (error) {
-    console.error("Error updating rule file data:", error);
-    return res.status(500).json({ error: "Internal Server Error" });
-  }
-});
+);
 
 router.delete("/:id/delete-rule-file", async (req, res) => {
   const { id } = req.params;
@@ -835,7 +875,9 @@ router.delete("/:id/delete-rule-file", async (req, res) => {
   const { ruleIndex, fileS3Key } = req.body;
 
   if (!id || ruleIndex === undefined || !fileS3Key) {
-    return res.status(400).json({ error: "User ID, rule index, and file s3Key are required." });
+    return res
+      .status(400)
+      .json({ error: "User ID, rule index, and file s3Key are required." });
   }
 
   try {
@@ -845,40 +887,46 @@ router.delete("/:id/delete-rule-file", async (req, res) => {
     if (!userDoc.exists) {
       return res.status(404).json({ error: "User not found." });
     }
-    
+
     // Get the specific rule
     const userData = userDoc.data();
     const ruleData = userData.rules ? userData.rules[ruleIndex] : null;
     if (!ruleData) {
       return res.status(404).json({ error: "Rule not found." });
     }
-    
+
     // Get the actions array (stored directly, not as a JSON string)
     const actions = ruleData.type || [];
-    
+
     // Find the draft action (where the contextFiles are stored)
-    const draftActionIndex = actions.findIndex((action) => action.type === "draft");
+    const draftActionIndex = actions.findIndex(
+      (action) => action.type === "draft"
+    );
     if (draftActionIndex === -1) {
-      return res.status(400).json({ error: "Draft action not found in the rule." });
+      return res
+        .status(400)
+        .json({ error: "Draft action not found in the rule." });
     }
-    
+
     // Delete the file from S3
     const deleteParams = {
       Bucket: process.env.S3_BUCKET,
       Key: fileS3Key,
     };
     await s3.deleteObject(deleteParams).promise();
-    
+
     // Remove the file from the contextFiles array in Firestore
     const existingFiles = actions[draftActionIndex].config.contextFiles || [];
-    const updatedFiles = existingFiles.filter(file => file.s3Key !== fileS3Key);
+    const updatedFiles = existingFiles.filter(
+      (file) => file.s3Key !== fileS3Key
+    );
     actions[draftActionIndex].config.contextFiles = updatedFiles;
-    
+
     // Update the Firestore document with the new actions array
     await userRef.update({
-      [`rules.${ruleIndex}.type`]: actions
+      [`rules.${ruleIndex}.type`]: actions,
     });
-    
+
     return res.status(200).json({ message: "File deleted successfully." });
   } catch (error) {
     console.error("Error deleting rule file:", error);

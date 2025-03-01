@@ -8,7 +8,6 @@ const passport = require("passport");
 const session = require("express-session");
 require("dotenv").config();
 require("./middleware/passport.js");
-const { saveEmailChunks, retrieveFullEmail } = require("./utils/RAGService.js");
 const RAG = require("./routes/RAG.js");
 const chat = require("./routes/chat")
 const pdf = require("pdf-parse");
@@ -166,18 +165,21 @@ app.post("/notifications", async (req, res) => {
                 latestMessage.id
               );
               console.log(emailContent);
-              console.log(
-                "RAG STARTED --------------------------------------------"
-              );
-              await enqueueEmbeddingTask(
-                user.id,
-                latestMessage.id,
-                emailContent
-              );
 
-              console.log(
-                "RAG ENDED ----------------------------------------------"
-              );
+              if (user.RAG == "enabled") {
+                console.log(
+                  "RAG STARTED --------------------------------------------"
+                );
+                await enqueueEmbeddingTask(
+                  user.id,
+                  latestMessage.id,
+                  emailContent
+                );
+
+                console.log(
+                  "RAG ENDED ----------------------------------------------"
+                );
+              }
 
               const ruleKey = await classifyEmail(
                 emailContent,

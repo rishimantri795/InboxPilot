@@ -1,5 +1,19 @@
-import { Workflow, User, LogOut, MailXIcon, BotMessageSquare  } from "lucide-react";
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
+import {
+  Workflow,
+  User,
+  LogOut,
+  MailXIcon,
+  BotMessageSquare,
+} from "lucide-react";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@/components/ui/sidebar";
 import Image from "next/image";
 import logo from "/app/Inbox Pilot Logo.png";
 import { useState, useEffect } from "react";
@@ -20,9 +34,9 @@ const items = [
     icon: User,
   },
   {
-    title: "Chat Bot",  // New tab
+    title: "Recall+", // New tab
     url: "/chat",
-    icon: BotMessageSquare ,  // Use a valid icon
+    icon: BotMessageSquare, // Use a valid icon
   },
 ];
 
@@ -38,7 +52,9 @@ export function AppSidebar({ currentTab }) {
 
   const fetchListenerStatus = async () => {
     try {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/listener-status`);
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/listener-status`
+      );
       setListenerStatus(response.data.status); // Should be 0 or 1
     } catch (error) {
       console.error("Failed to fetch listener status:", error);
@@ -48,11 +64,16 @@ export function AppSidebar({ currentTab }) {
   const toggleListener = async () => {
     try {
       const newStatus = listenerStatus === 1 ? 0 : 1;
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/toggle-listener`, { status: newStatus });
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/toggle-listener`,
+        { status: newStatus }
+      );
 
       if (response.status === 200) {
         setListenerStatus(newStatus);
-        toast.success(`Listener ${newStatus === 1 ? "Attached" : "Detached"} Successfully`);
+        toast.success(
+          `Listener ${newStatus === 1 ? "Attached" : "Detached"} Successfully`
+        );
       } else {
         toast.error("Failed to update listener status.");
       }
@@ -71,13 +92,26 @@ export function AppSidebar({ currentTab }) {
         <SidebarGroup>
           <SidebarGroupContent>
             <div className="flex items-center px-4 py-3">
-              <Image src={logo || "/placeholder.svg"} width={24} height={24} alt="InboxPilot" />
-              <span className="ml-2 text-2xl font-bold transition-opacity duration-300 color-black">InboxPilot</span>
+              <Image
+                src={logo || "/placeholder.svg"}
+                width={24}
+                height={24}
+                alt="InboxPilot"
+              />
+              <span className="ml-2 text-2xl font-bold transition-opacity duration-300 color-black">
+                InboxPilot
+              </span>
             </div>
             <SidebarMenu>
               {items.map((item) => (
-                <SidebarMenuItem key={item.title} active={currentTab === item.title}>
-                  <SidebarMenuButton asChild className="flex items-center gap-4 px-4 py-3">
+                <SidebarMenuItem
+                  key={item.title}
+                  active={currentTab === item.title}
+                >
+                  <SidebarMenuButton
+                    asChild
+                    className="flex items-center gap-4 px-4 py-3"
+                  >
                     <a href={item.url}>
                       <item.icon />
                       <span>{item.title}</span>

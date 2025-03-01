@@ -4,8 +4,6 @@ const admin = require("../api/firebase");
 const db = admin.firestore();
 const { watchGmailInbox } = require("../utils/gmailService");
 const { google } = require("googleapis");
-const { saveEmailChunks } = require("../utils/RAGService");
-const { getMessageDetails } = require("../utils/gmailService");
 
 // Delay function
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -63,6 +61,7 @@ passport.use(
             email: profile.emails[0].value,
             refreshToken: refreshToken,
             createdAt: new Date(),
+            RAG: "FirstTime",
           };
 
           // actually creates the user in db

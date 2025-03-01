@@ -27,8 +27,23 @@ async function enqueueEmbeddingTask(userId, emailId, emailContent) {
   console.log(`Embedding task enqueued for user ${userId}`);
 }
 
+async function disableRAG(userId) {
+  await taskQueue.add(
+    "disableRAG",
+    { userId: userId },
+    { attempts: 3, backoff: 5000 }
+  );
+
+  console.log(
+    "disabling RAG for user: enqued task to delete emails from vector database"
+  );
+}
+
+//when rag is disabled we need to also stop embedding the emails as we recieve them.
+
 module.exports = {
   taskQueue,
   enqueueOnboardingTask,
   enqueueEmbeddingTask,
+  disableRAG,
 };
