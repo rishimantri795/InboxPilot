@@ -9,15 +9,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { PlusIcon, TagIcon, SendIcon, ArchiveIcon, StarIcon, PencilIcon, TrashIcon, LogOutIcon, MailXIcon, TramFront } from "lucide-react";
+import { PlusIcon, TagIcon, SendIcon, ArchiveIcon, StarIcon, PencilIcon, TrashIcon, } from "lucide-react";
 import useCurrentUser from "@/hooks/useCurrentUser";
 import { addRule, deleteRule } from "@/lib/api";
 import { Toaster, toast } from "sonner";
 import "react-toastify/dist/ReactToastify.css";
 import DraftActionConfig from "./DraftActionConfig";
+import UserProfileDropdown from "@/components/UserProfileDropdown";
 
 import "shepherd.js/dist/css/shepherd.css";
 import Shepherd from "shepherd.js";
@@ -443,57 +442,6 @@ export default function RulesPage() {
     }
   };
 
-  //!new
-
-  //! new
-  const detachGmailListener = async () => {
-    try {
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/detach-gmail-listener`, {}, { withCredentials: true });
-      if (response.status === 200) {
-        console.log("Gmail listener detached successfully");
-        toast.success("Gmail listener detached successfully");
-      } else {
-        console.error("Failed to detach Gmail listener", response.data);
-        toast.error("Failed to detach Gmail listener");
-      }
-    } catch (error) {
-      console.error("Error detaching Gmail listener:", error);
-      toast.error("Error detaching Gmail listener");
-    }
-  };
-
-  const activateProduction = async () => {
-    try {
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/attach-prod-listener`, {}, { withCredentials: true });
-      if (response.status === 200) {
-        console.log("Gmail listener detached successfully");
-        toast.success("Gmail listener detached successfully");
-      } else {
-        console.error("Failed to detach Gmail listener", response.data);
-        toast.error("Failed to detach Gmail listener");
-      }
-    } catch (error) {
-      console.error("Error detaching Gmail listener:", error);
-      toast.error("Error detaching Gmail listener");
-    }
-  };
-
-  const activateDev = async () => {
-    try {
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/attach-dev-listener`, {}, { withCredentials: true });
-      if (response.status === 200) {
-        console.log("Gmail listener detached successfully");
-        toast.success("Gmail listener detached successfully");
-      } else {
-        console.error("Failed to detach Gmail listener", response.data);
-        toast.error("Failed to detach Gmail listener");
-      }
-    } catch (error) {
-      console.error("Error detaching Gmail listener:", error);
-      toast.error("Error detaching Gmail listener");
-    }
-  };
-
   const fetchListenerStatus = async () => {
     try {
       const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/listener-status`);
@@ -543,45 +491,7 @@ export default function RulesPage() {
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold">Email Rules</h1>
             <div className="flex items-center space-x-4" id="tour-finish">
-              <div className="text-right">
-                <p className="font-medium">{user.name ? user.name : "John Doe"}</p>
-                <p className="text-sm text-gray-500">{user.email}</p>
-              </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Avatar className="cursor-pointer bg-black text-white">
-                    <AvatarImage src="" alt="User avatar" />
-                    <AvatarFallback className="bg-black text-white">{user.email ? user.email.charAt(0).toUpperCase() : "U"}</AvatarFallback>
-                  </Avatar>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
-                    <LogOutIcon className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
-                  </DropdownMenuItem>
-                  {/* 
-                  <DropdownMenuItem onClick={toggleListener} className="cursor-pointer">
-                    <MailXIcon className="mr-2 h-4 w-4" />
-                    <span>{listenerStatus === 1 ? "Detach Listener" : "Attach Listener"}</span>
-                  </DropdownMenuItem> */}
-                  {process.env.NEXT_PUBLIC_BACKEND_URL === "http://localhost:3010" && (
-                    <div>
-                      <DropdownMenuItem onClick={activateProduction} className="cursor-pointer">
-                        <MailXIcon className="mr-2 h-4 w-4" />
-                        <span>Activate Production P/S</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={activateDev} className="cursor-pointer">
-                        <MailXIcon className="mr-2 h-4 w-4" />
-                        <span>Activate Dev P/S</span>
-                      </DropdownMenuItem>
-                    </div>
-                  )}
-                  <DropdownMenuItem onClick={() => tour.start()} className="cursor-pointer">
-                    <TramFront className="mr-2 h-4 w-4" />
-                    <span>Start Tour</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <UserProfileDropdown name={user.name || "John Doe"} email={user.email} tour={tour} />
             </div>
           </div>
 
@@ -590,11 +500,6 @@ export default function RulesPage() {
             <Button id="add-rule-button" onClick={() => setIsAddRuleOpen(true)} className="mb-2">
               Add Rule <PlusIcon className="mr-2 h-4 w-4" />
             </Button>
-
-            {/* <Button onClick={toggleListener} className="mb-2" variant={listenerStatus === 1 ? "destructive" : "default"}>
-              <MailXIcon className="mr-2 h-4 w-4" />
-              {listenerStatus === 1 ? "Stop Applying Rules" : "Apply Rules"}
-            </Button> */}
             <div className="flex items-center space-x-2 mb-2 ml-4">
             <Switch checked={listenerStatus === 1} onClick={toggleListener}/>
             <Label htmlFor="listenerStatus"> 

@@ -1,4 +1,4 @@
-import { Workflow, User, LogOut, MailXIcon } from "lucide-react";
+import { Workflow, User, LogOut, MailXIcon, Settings } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import Image from "next/image";
 import logo from "/app/Inbox Pilot Logo.png";
@@ -19,6 +19,11 @@ const items = [
     url: "/profile",
     icon: User,
   },
+  // {
+  //   title: "Settings",
+  //   url: "/settings",
+  //   icon: Settings,
+  // },
 ];
 
 export function AppSidebar({ currentTab }) {
