@@ -252,7 +252,50 @@ async function getLatestMessageId(userId) {
   return userDoc.exists ? userDoc.data().latestProcessedMessageId : null;
 }
 
+async function getOutlookCalendarEvents(accessToken) {
+  try {
+    // Set up date range (Today to end of the week)
+    const now = new Date();
+    const endOfWeek = new Date();
+    endOfWeek.setDate(now.getDate() + (7 - now.getDay()));
+    endOfWeek.setHours(23, 59, 59);
+
+    // Format dates for Microsoft Graph API
+    const timeMin = now.toISOString();
+    const timeMax = endOfWeek.toISOString();
+
+    // Fetch Outlook Calendar events
+    const response = await axios.get(`https://graph.microsoft.com/v1.0/me/calendar/events`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      params: {
+        startDateTime: timeMin,
+        endDateTime: timeMax,
+        $orderby: "start/dateTime",
+        $top: 50, // Limit to 50 events
+      },
+    });
+
+    // Process and format events
+    const events = response.data.value.map((event) => ({
+      id: event.id,
+      title: event.subject || "No Title",
+      startTime: event.start?.dateTime,
+      endTime: event.end?.dateTime,
+      location: event.location?.displayName || "No Location",
+      organizer: event.organizer?.emailAddress?.name || "Unknown Organizer",
+    }));
+
+    console.log(events);
+
+    return JSON.stringify(events, null, 2); // Pretty-print JSON
+  } catch (error) {
+    console.error("❌ Error fetching Outlook calendar events:", error.response?.data || error.message);
+    throw error;
+  }
+}
+
 module.exports = {
+  getOutlookCalendarEvents,
   createOutlookDraft,
   unsubscribeToOutlookEmails,
   archiveOutlookEmail,

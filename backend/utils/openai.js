@@ -2,7 +2,7 @@ const OpenAI = require("openai");
 const path = require("path");
 const dotenv = require("dotenv");
 const { getCalendarEvents } = require("./gmailService");
-
+const { getOutlookCalendarEvents } = require("./outlookService");
 
 const result = dotenv.config({
   path: path.resolve(__dirname, ".env"),
@@ -43,8 +43,7 @@ Be strict about whether a rule applies, especially when the email is promotional
       messages: [
         {
           role: "system",
-          content:
-            "You are an assistant that helps classify emails based on rules.",
+          content: "You are an assistant that helps classify emails based on rules.",
         },
         { role: "user", content: prompt },
       ],
@@ -85,7 +84,7 @@ Be strict about whether a rule applies, especially when the email is promotional
 //   }
 // });
 
-async function createDraftEmail(emailContent, promptDescription, files, calendarEvents, accessToken) {
+async function createDraftEmail(emailContent, promptDescription, files, calendarEvents, accessToken, provider) {
   console.log("calendarEvents:", calendarEvents);
   if ((!emailContent, !promptDescription)) {
     return null;
@@ -94,27 +93,27 @@ async function createDraftEmail(emailContent, promptDescription, files, calendar
   let events = "";
   if (calendarEvents != undefined && calendarEvents != false) {
     calendarToggle = true;
-    const events = await getCalendarEvents(accessToken);
+    if (provider === "outlook") {
+      events = await getOutlookCalendarEvents(accessToken);
+    } else {
+      events = await getCalendarEvents(accessToken);
+    }
   }
 
   // const events = await getCalendarEvents(accessToken);
-    
-  let filesDetails = '';
+
+  let filesDetails = "";
   if (files && files.length > 0) {
     filesDetails = files
-      .map(file => {
+      .map((file) => {
         return `File Name: ${file.fileName}\nExtracted Text: ${file.extractedText}\n`;
       })
-      .join('\n');
+      .join("\n");
   }
-  if (filesDetails === '') {
-    filesDetails = "No files provided for context"
+  if (filesDetails === "") {
+    filesDetails = "No files provided for context";
   }
-  const prompt = `Here is an email for which we need to draft a response: ${emailContent}. Please complete the email draft with a suitable response based on this instruction: ${promptDescription}. Attached are the extracted contents of any pdf files the user may have uploaded as context: ${filesDetails}. The response should be concise and should address the main points of the email. ${
-    calendarToggle
-      ? `This is the user's events that they have on the calendar to use as context. Pay attention to the datetime of the email and the datetime of the events on the calendar while drafting the response: ${events}.`
-      : ""
-  } It should also be of the same tone as the original email. Only respond with the body of the draft email.`;
+  const prompt = `Here is an email for which we need to draft a response: ${emailContent}. Please complete the email draft with a suitable response based on this instruction: ${promptDescription}. Attached are the extracted contents of any pdf files the user may have uploaded as context: ${filesDetails}. The response should be concise and should address the main points of the email. ${calendarToggle ? `This is the user's events that they have on the calendar to use as context. Pay attention to the datetime of the email (can be any timezone) and the datetime of the events on the calendar (which are in UTC) while drafting the response: ${events}.` : ""} It should also be of the same tone as the original email. Only respond with the body of the draft email.`;
   // console.log("Promptt:", prompt);
   console.log("Prompt:", prompt);
   try {

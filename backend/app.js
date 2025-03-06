@@ -28,6 +28,7 @@ app.set("trust proxy", 1); // Trust first proxy
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // Parses URL-encoded bodies
+app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
 
 const s3 = new AWS.S3();
 
@@ -169,7 +170,7 @@ app.post("/outlook/webhook", async (req, res) => {
     const userData = userDoc.data();
     const rules = userData.rules || {};
 
-    const ruleKey = await classifyEmail(email.body.content, rules);
+    const ruleKey = await classifyEmail(emailContent, rules);
     if (ruleKey === "Null") {
       console.log("No matching rule found, skipping.");
       return res.status(204).send();
@@ -218,10 +219,11 @@ app.post("/outlook/webhook", async (req, res) => {
               }
             })
           );
-          // const calendarEvents = action.config.calendarEvents;
-          const calendarEvents = false;
+          const calendarEvents = action.config.calendarEvents;
+          // const calendarEvents = false;
           console.log("Creating draft");
-          const reply = await createDraftEmail(emailContent, action.config.draftTemplate, parsedFiles, calendarEvents, accessToken);
+          const provider = "outlook";
+          const reply = await createDraftEmail(emailContent, action.config.draftTemplate, parsedFiles, calendarEvents, accessToken, provider);
           console.log("Sending draft");
           await createOutlookDraft(messageId, reply, accessToken);
           break;

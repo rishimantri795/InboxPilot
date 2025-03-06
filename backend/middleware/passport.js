@@ -79,6 +79,7 @@ passport.use(
       callbackURL: process.env.MICROSOFT_REDIRECT_URL,
       scope: ["user.read", "mail.readwrite", "mail.send", "offline_access"],
       passReqToCallback: true,
+      tenant: "common",
     },
     async (req, accessToken, refreshToken, profile, done) => {
       try {
