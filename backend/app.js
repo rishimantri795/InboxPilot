@@ -9,7 +9,7 @@ const session = require("express-session");
 require("dotenv").config();
 require("./middleware/passport.js");
 const RAG = require("./routes/RAG.js");
-const chat = require("./routes/chat")
+const chat = require("./routes/chat");
 const pdf = require("pdf-parse");
 const AWS = require("aws-sdk");
 const {
@@ -18,6 +18,7 @@ const {
 } = require("./utils/worker.js");
 const app = express();
 const users = require("./routes/users");
+const emails = require("./routes/emails");
 
 const {
   fetchEmailHistory,
@@ -85,7 +86,7 @@ app.use(passport.session());
 
 // Routes
 app.use("/api/users", users);
-
+app.use("/api/emails", emails);
 app.use("/api/onboardingRAG", RAG);
 
 app.post("/notifications", async (req, res) => {

@@ -6,22 +6,11 @@ interface Message {
   content: string;
 }
 
-// gets links for the emails
-function getEmailLinks(emailIds: string | string[]): string | string[] {
-  const baseUrl = "https://mail.google.com/mail/u/0/#inbox/";
-  
-  if (Array.isArray(emailIds)) {
-      return emailIds.map(id => `${baseUrl}${id}`);
-  } else {
-      return `${baseUrl}${emailIds}`;
-  }
-}
-
-
 export function useChatBot(ragEnabled: boolean) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const { user, loading, error } = useCurrentUser();
+  const [emailIds, setEmailIds] = useState<string[]>([]);
 
   // Fetch chat history when component mounts or user changes
   useEffect(() => {
@@ -103,6 +92,7 @@ export function useChatBot(ragEnabled: boolean) {
       setIsTyping(true);
 
       try {
+        setEmailIds([]);
         // Send message to chatbot API
         const response = await fetch(`${process.env.NEXT_PUBLIC_RAG_URL}`, {
           method: "POST",
@@ -115,17 +105,23 @@ export function useChatBot(ragEnabled: boolean) {
         }
 
         const data = await response.json();
-        console.log(data);
+        console.log(data.completion);
 
         // Add AI response to the chat
         const botMessage: Message = {
           role: "bot",
-          content: data.completion,
+          content: data.completion.response,
         };
         setMessages((prev) => [...prev, botMessage]);
 
         // Save bot message to Firebase
-        await saveMessageToFirebase("assistant", data.completion);
+        await saveMessageToFirebase("bot", data.completion.response);
+        console.log(
+          `Message sent to chatbot API. Response Ids: ${data.completion.emailIds.join(
+            ", "
+          )}`
+        );
+        setEmailIds(data.completion.emailIds);
       } catch (error) {
         console.error("Error sending message:", error);
         // Add error message
@@ -145,5 +141,5 @@ export function useChatBot(ragEnabled: boolean) {
     [ragEnabled, user, loading, error]
   );
 
-  return { messages, sendMessage, isTyping };
+  return { messages, sendMessage, isTyping, emailIds };
 }

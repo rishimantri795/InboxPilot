@@ -11,15 +11,18 @@ const db = admin.firestore();
 const saveMessage = async (userId, sender, message) => {
   try {
     // Reference to the user's chats subcollection
-    const chatCollection = db.collection('Users').doc(userId).collection('chats');
-    
+    const chatCollection = db
+      .collection("Users")
+      .doc(userId)
+      .collection("chats");
+
     // Add message to the chats subcollection
     const messageRef = await chatCollection.add({
       sender,
       message,
-      timestamp: admin.firestore.FieldValue.serverTimestamp()
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
     });
-    
+
     console.log(`Message saved for user ${userId} with ID: ${messageRef.id}`);
     return messageRef.id;
   } catch (error) {
@@ -37,25 +40,25 @@ const saveMessage = async (userId, sender, message) => {
 const getChatHistory = async (userId, limit = 50) => {
   try {
     const messagesRef = db
-      .collection('Users')
+      .collection("Users")
       .doc(userId)
-      .collection('chats')
-      .orderBy('timestamp', 'asc')
+      .collection("chats")
+      .orderBy("timestamp", "asc")
       .limit(limit);
-    
+
     const snapshot = await messagesRef.get();
-    
+
     const messages = [];
-    snapshot.forEach(doc => {
+    snapshot.forEach((doc) => {
       const data = doc.data();
       messages.push({
         id: doc.id,
         sender: data.sender,
         message: data.message,
-        timestamp: data.timestamp ? data.timestamp.toDate() : null
+        timestamp: data.timestamp ? data.timestamp.toDate() : null,
       });
     });
-    
+
     return messages;
   } catch (error) {
     console.error("Error retrieving chat history:", error);
@@ -70,19 +73,16 @@ const getChatHistory = async (userId, limit = 50) => {
  */
 const deleteChatHistory = async (userId) => {
   try {
-    const messagesRef = db
-      .collection('Users')
-      .doc(userId)
-      .collection('chats');
-    
+    const messagesRef = db.collection("Users").doc(userId).collection("chats");
+
     const snapshot = await messagesRef.get();
-    
+
     // Delete each document in a batch
     const batch = db.batch();
-    snapshot.forEach(doc => {
+    snapshot.forEach((doc) => {
       batch.delete(doc.ref);
     });
-    
+
     await batch.commit();
     console.log(`Chat history deleted for user ${userId}`);
   } catch (error) {
@@ -94,5 +94,5 @@ const deleteChatHistory = async (userId) => {
 module.exports = {
   saveMessage,
   getChatHistory,
-  deleteChatHistory
+  deleteChatHistory,
 };
