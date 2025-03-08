@@ -60,4 +60,19 @@ router.post("/disableRAG", async (req, res) => {
   }
 });
 
+router.post("/getEmailDetails", async (req, res) => {
+  const { emailIds, refreshToken } = req.body;
+});
+
+// interface EmailMetadata {
+//     id: string;
+//     subject?: string;
+//     sender?: string;
+//     date?: string;
+//     snippet?: string;
+//     hasAttachments?: boolean;
+//     labels?: string[];
+//     threadId?: string;
+//     receivedTime?: Date;
+//   }
 module.exports = router;
