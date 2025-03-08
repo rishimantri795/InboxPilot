@@ -256,22 +256,21 @@ async function getOutlookCalendarEvents(accessToken) {
   try {
     // Set up date range (Today to end of the week)
     const now = new Date();
-    const endOfWeek = new Date();
-    endOfWeek.setDate(now.getDate() + (7 - now.getDay()));
-    endOfWeek.setHours(23, 59, 59);
+    const sevenDaysLater = new Date();
+    sevenDaysLater.setDate(now.getDate() + 7);
+    sevenDaysLater.setHours(23, 59, 59); // Ensure it's the end of the last day
 
-    // Format dates for Microsoft Graph API
-    const timeMin = now.toISOString();
-    const timeMax = endOfWeek.toISOString();
+    const timeMin = now.toISOString(); // Start time (now)
+    const timeMax = sevenDaysLater.toISOString(); // End time (7 days from now)
 
-    // Fetch Outlook Calendar events
-    const response = await axios.get(`https://graph.microsoft.com/v1.0/me/calendar/events`, {
+    // Microsoft Graph API request
+    const response = await axios.get(`https://graph.microsoft.com/v1.0/me/calendar/calendarView`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       params: {
-        startDateTime: timeMin,
-        endDateTime: timeMax,
+        startDateTime: timeMin, // From now
+        endDateTime: timeMax, // Until 7 days later
         $orderby: "start/dateTime",
-        $top: 50, // Limit to 50 events
+        $top: 50,
       },
     });
 

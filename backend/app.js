@@ -223,7 +223,11 @@ app.post("/outlook/webhook", async (req, res) => {
           // const calendarEvents = false;
           console.log("Creating draft");
           const provider = "outlook";
-          const reply = await createDraftEmail(emailContent, action.config.draftTemplate, parsedFiles, calendarEvents, accessToken, provider);
+          console.log("SUPPPP", emailContent);
+          const emailTime = emailResponse.receivedDateTime || new Date().toISOString();
+          console.log("Email Received Time:", emailTime);
+
+          const reply = await createDraftEmail(emailContent, action.config.draftTemplate, parsedFiles, calendarEvents, accessToken, provider, emailTime);
           console.log("Sending draft");
           await createOutlookDraft(messageId, reply, accessToken);
           break;
