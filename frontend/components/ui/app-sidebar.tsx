@@ -1,7 +1,7 @@
 import { Workflow, User, LogOut, MailXIcon, Settings } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import Image from "next/image";
-import logo from "/app/Inbox Pilot Logo.png";
+import logo from "@/images/Inbox Pilot Logo.png";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "sonner";

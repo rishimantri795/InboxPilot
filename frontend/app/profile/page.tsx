@@ -10,12 +10,13 @@ import UserProfileDropdown from "@/components/UserProfileDropdown";
 import { useRouter } from "next/navigation";
 
 import useCurrentUser from "@/hooks/useCurrentUser";
+import { useUserContext } from "@/contexts/UserContext";
 
 import axios from "axios";
 import { useEffect, useState } from "react";
 
 export default function ProfilePage() {
-  const { user, loading, error, clearUser } = useCurrentUser();
+  const { user, loading, error } = useUserContext();
   const [userInfo, setUserInfo] = useState(null);
 
   // const userInfo = [];

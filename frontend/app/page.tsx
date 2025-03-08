@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {Inbox,Mail,Tag, Archive, MessageSquare, Zap, LogIn, Sun, Moon} from "lucide-react";
 import useCurrentUser from "@/hooks/useCurrentUser";
+import { useUserContext } from "@/contexts/UserContext";
 import {Dialog,DialogContent,DialogHeader,DialogTitle,  DialogDescription,} from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import logo from "./Inbox Pilot Logo.png" // Import required for static images
+import logo from "@/images/Inbox Pilot Logo.png" // Import required for static images
 import { useTheme } from "next-themes";
 
 
@@ -16,36 +17,18 @@ export default function Component() {
   const router = useRouter();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const { user, loading, error } = useCurrentUser();
-  const { theme, setTheme } = useTheme();
+  const { user, loading, error } = useUserContext();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
   if (!mounted) return null;
+  const activeTheme = theme === "system" ? resolvedTheme : theme;
   const handleToggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
+    setTheme(activeTheme === "dark" ? "light" : "dark");
   };
-
-  // useEffect(() => {
-  //   const fetchCookie = async () => {
-  //     try {
-  //       let response = await fetch("https://api.theinboxpilot.com/getCookie", {
-  //         method: "GET",
-  //         credentials: "include",
-  //       });
-
-  //       if (response.ok) {
-  //         response = await response.json();
-  //         console.log("gotCookie");
-  //       }
-  //     } catch (error) {
-  //       console.log(error);
-  //     }
-  //   };
-  //   fetchCookie();
-  // }, []);
 
   const passPortAuth = async () => {
     try {
@@ -70,7 +53,7 @@ export default function Component() {
             className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
             aria-label="Toggle Theme"
           >
-            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            {activeTheme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </button>
         </div>
         <nav className="hidden sm:flex items-center gap-4 sm:gap-6">

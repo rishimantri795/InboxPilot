@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTheme } from "next-themes";
 import { LogOutIcon, MailXIcon, TramFront, Sun, Moon} from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Toaster, toast } from "sonner";
+import { toast } from "sonner";
 import axios from "axios";
 
 interface Tour {
@@ -99,7 +99,6 @@ export default function UserProfileDropdown({
   };
   return (
     <>
-    <Toaster />
       <div className="text-right">
         <p className="font-medium">{name ? name : "John Doe"}</p>
         <p className="text-sm text-gray-500">{email}</p>
