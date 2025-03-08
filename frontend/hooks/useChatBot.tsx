@@ -2,9 +2,21 @@ import { useState, useEffect, useCallback } from "react";
 import useCurrentUser from "./useCurrentUser";
 
 interface Message {
-  role: "user" | "assistant";
+  role: "user" | "bot";
   content: string;
 }
+
+// gets links for the emails
+function getEmailLinks(emailIds: string | string[]): string | string[] {
+  const baseUrl = "https://mail.google.com/mail/u/0/#inbox/";
+  
+  if (Array.isArray(emailIds)) {
+      return emailIds.map(id => `${baseUrl}${id}`);
+  } else {
+      return `${baseUrl}${emailIds}`;
+  }
+}
+
 
 export function useChatBot(ragEnabled: boolean) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -107,7 +119,7 @@ export function useChatBot(ragEnabled: boolean) {
 
         // Add AI response to the chat
         const botMessage: Message = {
-          role: "assistant",
+          role: "bot",
           content: data.completion,
         };
         setMessages((prev) => [...prev, botMessage]);
@@ -118,14 +130,14 @@ export function useChatBot(ragEnabled: boolean) {
         console.error("Error sending message:", error);
         // Add error message
         const errorMessage: Message = {
-          role: "assistant",
+          role: "bot",
           content:
             "Sorry, I couldn't process your request. Please try again later.",
         };
         setMessages((prev) => [...prev, errorMessage]);
 
         // Save error message to Firebase
-        await saveMessageToFirebase("assistant", errorMessage.content);
+        await saveMessageToFirebase("bot", errorMessage.content);
       } finally {
         setIsTyping(false);
       }
