@@ -12,9 +12,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { PlusIcon, TagIcon, SendIcon, ArchiveIcon, StarIcon, PencilIcon, TrashIcon, } from "lucide-react";
 import useCurrentUser from "@/hooks/useCurrentUser";
+import { useUserContext } from "@/contexts/UserContext";
 import { addRule, deleteRule } from "@/lib/api";
-import { Toaster, toast } from "sonner";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "sonner";
 import DraftActionConfig from "./DraftActionConfig";
 import UserProfileDropdown from "@/components/UserProfileDropdown";
 
@@ -98,11 +98,10 @@ export default function RulesPage() {
   const [isConfigureRuleOpen, setIsConfigureRuleOpen] = useState(false);
   const [selectedPrebuiltRule, setSelectedPrebuiltRule] = useState<Rule | null>(null);
   const [currentRule, setCurrentRule] = useState<Rule | null>(null);
-  const { clearUser } = useCurrentUser();
   const [logoutSuccess, setLogoutSuccess] = useState(false);
   const [tour, setTour] = useState<Shepherd.Tour | null>(null);
 
-  const { user, loading, error } = useCurrentUser();
+  const { user, loading, error } = useUserContext();
   const [listenerStatus, setListenerStatus] = useState<number | null>(null);
 
   useEffect(() => {
@@ -593,7 +592,7 @@ export default function RulesPage() {
 
 // Dialog component for configuring rules
 function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, onSave, setCurrentRule, setRules }) {
-  const { user } = useCurrentUser();
+  const { user } = useUserContext();
   const [ruleName, setRuleName] = useState(currentRule?.name || prebuiltRule?.name || "");
   const [ruleDescription, setRuleDescription] = useState(currentRule?.description || prebuiltRule?.description || "");
   const [actions, setActions] = useState<Action[]>([]);
@@ -700,61 +699,58 @@ function ConfigureRuleDialog({ isOpen, onOpenChange, prebuiltRule, currentRule, 
   };
 
   return (
-    <>
-      <Toaster />
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-          <DialogContent data-configure-content className="max-w-3xl max-h-[90vh] flex flex-col">
-            <DialogHeader>
-              <DialogTitle>{currentRule ? "Edit Rule" : "Configure Rule"}</DialogTitle>
-              <DialogDescription>{currentRule ? "Modify your existing rule" : "Customize your rule and add actions."}</DialogDescription>
-            </DialogHeader>
-            <div className="flex 1 overflow-y-auto grid gap-4 p-4">
-              {/* Rule Name */}
-              <div>
-                <Label htmlFor="ruleName">Rule Name</Label>
-                <Input id="ruleName" value={ruleName} onChange={(e) => setRuleName(e.target.value)} placeholder="ex. Job search rule" />
-              </div>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent data-configure-content className="max-w-3xl max-h-[90vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle>{currentRule ? "Edit Rule" : "Configure Rule"}</DialogTitle>
+          <DialogDescription>{currentRule ? "Modify your existing rule" : "Customize your rule and add actions."}</DialogDescription>
+        </DialogHeader>
+        <div className="flex 1 overflow-y-auto grid gap-4 p-4">
+          {/* Rule Name */}
+          <div>
+            <Label htmlFor="ruleName">Rule Name</Label>
+            <Input id="ruleName" value={ruleName} onChange={(e) => setRuleName(e.target.value)} placeholder="ex. Job search rule" />
+          </div>
 
-              {/* Rule Description */}
-              <div>
-                <Label htmlFor="ruleDescription">Email Condition</Label>
-                <Input id="ruleDescription" value={ruleDescription} onChange={(e) => setRuleDescription(e.target.value)} placeholder="ex. Emails about my job and internship search" />
-              </div>
+          {/* Rule Description */}
+          <div>
+            <Label htmlFor="ruleDescription">Email Condition</Label>
+            <Input id="ruleDescription" value={ruleDescription} onChange={(e) => setRuleDescription(e.target.value)} placeholder="ex. Emails about my job and internship search" />
+          </div>
 
-              {/* Action Types */}
-              <div>
-                <Label>Actions</Label>
-                <div className="flex gap-2 mt-2">
-                  {actionTypes.map((actionType) => (
-                    <Button key={actionType.value} variant="outline" onClick={() => handleAddAction(actionType.value)} className="flex-1 px-2 py-2 whitespace-nowrap">
-                      <actionType.icon className="h-4 w-4" />
-                      {actionType.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* List of Actions */}
-              {actions.map((action, index) => (
-                <div key={index} className="border rounded-lg p-4 relative">
-                  <Button variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => handleRemoveAction(index)}>
-                    <TrashIcon className="h-4 w-4" />
-                  </Button>
-                  <ActionConfig action={action} onConfigChange={(config) => handleActionConfigChange(index, config)} ruleIndex={currentRule?.ruleIndex || prebuiltRule?.ruleIndex} />
-                </div>
+          {/* Action Types */}
+          <div>
+            <Label>Actions</Label>
+            <div className="flex gap-2 mt-2">
+              {actionTypes.map((actionType) => (
+                <Button key={actionType.value} variant="outline" onClick={() => handleAddAction(actionType.value)} className="flex-1 px-2 py-2 whitespace-nowrap">
+                  <actionType.icon className="h-4 w-4" />
+                  {actionType.label}
+                </Button>
               ))}
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={handleCancel}>
-                Cancel
+          </div>
+
+          {/* List of Actions */}
+          {actions.map((action, index) => (
+            <div key={index} className="border rounded-lg p-4 relative">
+              <Button variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => handleRemoveAction(index)}>
+                <TrashIcon className="h-4 w-4" />
               </Button>
-              <Button onClick={handleSave} disabled={!canSaveRule()}>
-                {currentRule ? "Update Rule" : "Save Rule"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-    </>
+              <ActionConfig action={action} onConfigChange={(config) => handleActionConfigChange(index, config)} ruleIndex={currentRule?.ruleIndex || prebuiltRule?.ruleIndex} />
+            </div>
+          ))}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={handleCancel}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={!canSaveRule()}>
+            {currentRule ? "Update Rule" : "Save Rule"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
