@@ -15,7 +15,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import Image from "next/image";
-import logo from "/app/Inbox Pilot Logo.png";
+import logo from "@/images/Inbox Pilot Logo.png";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "sonner";
@@ -96,8 +96,18 @@ export function AppSidebar({ currentTab }) {
         <SidebarGroup>
           <SidebarGroupContent>
             <div className="flex items-center px-4 py-3">
-              <Image src={logo || "/placeholder.svg"} width={24} height={24} alt="InboxPilot" />
-                <span className="ml-2 text-2xl font-bold transition-opacity duration-300 color-black cursor-pointer" onClick={handleClick}>InboxPilot</span>
+              <Image
+                src={logo || "/placeholder.svg"}
+                width={24}
+                height={24}
+                alt="InboxPilot"
+              />
+              <span
+                className="ml-2 text-2xl font-bold transition-opacity duration-300 color-black cursor-pointer"
+                onClick={handleClick}
+              >
+                InboxPilot
+              </span>
             </div>
             <SidebarMenu>
               {items.map((item) => (

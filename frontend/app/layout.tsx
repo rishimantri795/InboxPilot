@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { ThemeProvider } from "next-themes";
 import "./globals.css";
+import { Toaster } from "sonner";
+import "react-toastify/dist/ReactToastify.css";
+import { SWRConfig } from "swr";
+import { UserProvider } from "@/contexts/UserContext";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -30,7 +35,18 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <SWRConfig
+          value={{
+            revalidateOnFocus: false,
+          }}
+        >
+        <UserProvider>
+          <Toaster />
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            {children}
+          </ThemeProvider>
+        </UserProvider>
+          </SWRConfig>
       </body>
     </html>
   );

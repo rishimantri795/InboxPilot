@@ -85,7 +85,7 @@ Be strict about whether a rule applies, especially when the email is promotional
 //   }
 // });
 
-async function createDraftEmail(emailContent, promptDescription, files, calendarEvents, accessToken) {
+async function createDraftEmail(emailContent, promptDescription, files, calendarEvents, profile, accessToken) {
   console.log("calendarEvents:", calendarEvents);
   if ((!emailContent, !promptDescription)) {
     return null;
@@ -109,7 +109,7 @@ async function createDraftEmail(emailContent, promptDescription, files, calendar
   if (filesDetails === '') {
     filesDetails = "No files provided for context"
   }
-  const prompt = `Here is an email for which we need to draft a response: ${emailContent}. Please complete the email draft with a suitable response based on this instruction: ${promptDescription}. Attached are the extracted contents of any pdf files the user may have uploaded as context: ${filesDetails}. The response should be concise and should address the main points of the email. ${
+  const prompt = `Here is an email for which we need to draft a response: ${emailContent}. Please complete the email draft with a suitable response based on this instruction: ${promptDescription}. Attached are the extracted contents of any pdf files the user may have uploaded as context: ${filesDetails}. Here is the user's profile: ${profile == undefined ? "None" : profile.join("\n")} The response should be concise and should address the main points of the email. ${
     calendarToggle
       ? `This is the user's events that they have on the calendar to use as context. Pay attention to the datetime of the email and the datetime of the events on the calendar while drafting the response: ${events}.`
       : ""

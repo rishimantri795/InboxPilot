@@ -3,38 +3,32 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {Inbox,Mail,Tag, Archive, MessageSquare, Zap, LogIn,} from "lucide-react";
+import {Inbox,Mail,Tag, Archive, MessageSquare, Zap, LogIn, Sun, Moon} from "lucide-react";
 import useCurrentUser from "@/hooks/useCurrentUser";
+import { useUserContext } from "@/contexts/UserContext";
 import {Dialog,DialogContent,DialogHeader,DialogTitle,  DialogDescription,} from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import logo from "./Inbox Pilot Logo.png" // Import required for static images
+import logo from "@/images/Inbox Pilot Logo.png" // Import required for static images
+import { useTheme } from "next-themes";
 
 
 export default function Component() {
   const router = useRouter();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const { user, loading, error } = useCurrentUser();
+  const { user, loading, error } = useUserContext();
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
-  // useEffect(() => {
-  //   const fetchCookie = async () => {
-  //     try {
-  //       let response = await fetch("https://api.theinboxpilot.com/getCookie", {
-  //         method: "GET",
-  //         credentials: "include",
-  //       });
-
-  //       if (response.ok) {
-  //         response = await response.json();
-  //         console.log("gotCookie");
-  //       }
-  //     } catch (error) {
-  //       console.log(error);
-  //     }
-  //   };
-  //   fetchCookie();
-  // }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  if (!mounted) return null;
+  const activeTheme = theme === "system" ? resolvedTheme : theme;
+  const handleToggleTheme = () => {
+    setTheme(activeTheme === "dark" ? "light" : "dark");
+  };
 
   const passPortAuth = async () => {
     try {
@@ -49,10 +43,19 @@ export default function Component() {
   return (
     <div className="flex flex-col min-h-screen overflow-x-hidden scrollbar-hide">
       <header className="px-4 lg:px-6 h-14 flex items-center justify-between">
-      <a className="flex items-center justify-center" href="#">
-          <Image src={logo || "/placeholder.svg"} width={24} height={24} alt="InboxPilot" />
-          <span className="ml-2 text-2xl font-bold hidden sm:inline">InboxPilot</span>
-        </a>
+      <div className="flex items-center gap-4">
+          <a className="flex items-center justify-center" href="#">
+            <Image src={logo || "/placeholder.svg"} width={24} height={24} alt="InboxPilot" />
+            <span className="ml-2 text-2xl font-bold hidden sm:inline">InboxPilot</span>
+          </a>
+          <button
+            onClick={handleToggleTheme}
+            className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+            aria-label="Toggle Theme"
+          >
+            {activeTheme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </button>
+        </div>
         <nav className="hidden sm:flex items-center gap-4 sm:gap-6">
           <a className="text-sm font-medium hover:underline underline-offset-4" href="#features">
             Features
