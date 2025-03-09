@@ -45,7 +45,7 @@ const allowedOrigins = [
   "http://localhost:3000",
   "https://theinboxpilot.com",
   "http://localhost:5173",
-  "http://www.theinboxpilot.com",
+  "https://www.theinboxpilot.com",
 ];
 
 app.use(
