@@ -482,7 +482,7 @@ export default function ChatBotPage() {
     console.log("Fetching progress...");
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/progress?userId=${user?.id}`
+        `${process.env.NEXT_PUBLIC_RAG_URL}/progress?userId=${user?.id}`
       );
       const data = await response.json();
       setOnboardingStatus(data);
