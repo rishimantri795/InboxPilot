@@ -41,10 +41,12 @@ app.set("trust proxy", 1); // Trust first proxy
 
 app.use(express.json());
 
-const allowedOrigins =
-  process.env.DEV_TARGET_EMAILS === "true"
-    ? "http://localhost:3000"
-    : "https://theinboxpilot.com";
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://theinboxpilot.com",
+  "http://localhost:5173",
+  "http://www.theinboxpilot.com",
+];
 
 app.use(
   cors({
