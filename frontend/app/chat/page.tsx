@@ -108,7 +108,7 @@ const getTimeDifference = (date: Date | string): string => {
 
 // Helper function to open Gmail with a specific email
 const openGmailWithEmail = (threadId: string) => {
-  window.open(`https://mail.google.com/mail/u/1/#all/${threadId}`, "_blank");
+  window.open(`https://mail.google.com/mail/u/0/#all/${threadId}`, "_blank");
 };
 
 // Function to truncate text with ellipsis

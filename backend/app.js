@@ -167,20 +167,20 @@ app.post("/notifications", async (req, res) => {
               );
               console.log(emailContent);
 
-              if (user.RAG == "enabled") {
-                console.log(
-                  "RAG STARTED --------------------------------------------"
-                );
-                await enqueueEmbeddingTask(
-                  user.id,
-                  latestMessage.id,
-                  emailContent
-                );
+              // if (user.RAG == "enabled") {
+              //   console.log(
+              //     "RAG STARTED --------------------------------------------"
+              //   );
+              //   await enqueueEmbeddingTask(
+              //     user.id,
+              //     latestMessage.id,
+              //     emailContent
+              //   );
 
-                console.log(
-                  "RAG ENDED ----------------------------------------------"
-                );
-              }
+              //   console.log(
+              //     "RAG ENDED ----------------------------------------------"
+              //   );
+              // }
 
               const ruleKey = await classifyEmail(
                 emailContent,
