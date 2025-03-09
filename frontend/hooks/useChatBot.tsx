@@ -94,11 +94,14 @@ export function useChatBot(ragEnabled: boolean) {
       try {
         setEmailIds([]);
         // Send message to chatbot API
-        const response = await fetch(`${process.env.NEXT_PUBLIC_RAG_URL}/augmentedEmailSearch`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: user.id, query: content }),
-        });
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_RAG_URL}/augmentedEmailSearch`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: user.id, query: content }),
+          }
+        );
 
         if (!response.ok) {
           throw new Error("Failed to send message");

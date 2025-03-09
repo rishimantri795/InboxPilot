@@ -126,16 +126,19 @@ const fetchEmailDetails = async (
     console.log(`Fetching details for ${emailIds.length} emails:`, emailIds);
 
     // Make API call to backend
-    const response = await fetch("http://localhost:3010/api/emails/details", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        emailIds,
-        refreshToken,
-      }),
-    });
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/emails/details`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          emailIds,
+          refreshToken,
+        }),
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
