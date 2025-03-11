@@ -115,11 +115,10 @@ export default function Component() {
               <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-2">
                   <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
-                    Automate Your Inbox with InboxPilot
+                    Fly through email with InboxPilot
                   </h1>
                   <p className="max-w-[600px] text-gray-500 md:text-xl dark:text-gray-400">
-                    Manage your emails effortlessly with AI-powered automation. Group, label, draft responses, and more
-                    with natural language instructions.
+                    Manage your inbox at the speed of thought with an AI Agent capable of handling your emails as you do.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
@@ -147,35 +146,8 @@ export default function Component() {
             <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-center mb-12">
               Key Features
             </h2>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
-              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
-                <Mail className="h-12 w-12 mb-4 text-black-500" />
-                <h3 className="text-xl font-bold mb-2">Smart Email Grouping</h3>
-                <p className="text-gray-500 dark:text-gray-400">
-                  Automatically organize your emails into logical groups.
-                </p>
-              </div>
-              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
-                <Tag className="h-12 w-12 mb-4 text-black-500" />
-                <h3 className="text-xl font-bold mb-2">Intelligent Labeling</h3>
-                <p className="text-gray-500 dark:text-gray-400">
-                  Apply labels to your emails based on content and context.
-                </p>
-              </div>
-              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
-                <MessageSquare className="h-12 w-12 mb-4 text-black-500" />
-                <h3 className="text-xl font-bold mb-2">Auto-Draft Responses</h3>
-                <p className="text-gray-500 dark:text-gray-400">
-                  Generate draft responses for common email types.
-                </p>
-              </div>
-              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
-                <Archive className="h-12 w-12 mb-4 text-black-500" />
-                <h3 className="text-xl font-bold mb-2">Smart Archiving</h3>
-                <p className="text-gray-500 dark:text-gray-400">
-                  Automatically archive emails based on your rules.
-                </p>
-              </div>
               <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
                 <Zap className="h-12 w-12 mb-4 text-black-500" />
                 <h3 className="text-xl font-bold mb-2">
@@ -186,10 +158,40 @@ export default function Component() {
                 </p>
               </div>
               <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
-                <Inbox className="h-12 w-12 mb-4 text-black-500" />
-                <h3 className="text-xl font-bold mb-2">Gmail Integration</h3>
+                <MessageSquare className="h-12 w-12 mb-4 text-black-500" />
+                <h3 className="text-xl font-bold mb-2">Smart Draft Responses</h3>
                 <p className="text-gray-500 dark:text-gray-400">
-                  Seamlessly integrates with your Gmail account.
+                  Generate draft responses for routine emails using uploaded context.
+                </p>
+              </div>
+              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
+                <Mail className="h-12 w-12 mb-4 text-black-500" />
+                <h3 className="text-xl font-bold mb-2">Semantic Search</h3>
+                <p className="text-gray-500 dark:text-gray-400">
+                  Search and summarize any information from your inbox using RAG
+                </p>
+              </div>
+              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
+                <Tag className="h-12 w-12 mb-4 text-black-500" />
+                <h3 className="text-xl font-bold mb-2">Intelligent Labeling</h3>
+                <p className="text-gray-500 dark:text-gray-400">
+                  Apply labels to your emails based on content and context.
+                </p>
+              </div>
+              
+              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
+                <Archive className="h-12 w-12 mb-4 text-black-500" />
+                <h3 className="text-xl font-bold mb-2">Smart Archiving</h3>
+                <p className="text-gray-500 dark:text-gray-400">
+                  Automatically archive emails based on your rules.
+                </p>
+              </div>
+              
+              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
+                <Inbox className="h-12 w-12 mb-4 text-black-500" />
+                <h3 className="text-xl font-bold mb-2">Email Integration</h3>
+                <p className="text-gray-500 dark:text-gray-400">
+                  Seamlessly integrate with your Gmail & Outlook accounts.
                 </p>
               </div>
             </div>
@@ -231,7 +233,7 @@ export default function Component() {
             </ol>
           </div>
         </section>
-        <section
+        {/* <section
           id="benefits"
           className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 dark:bg-gray-800"
         >
@@ -280,8 +282,8 @@ export default function Component() {
               </div>
             </div>
           </div>
-        </section>
-        <section className="w-full py-12 md:py-24 lg:py-32">
+        </section> */}
+        <section className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 dark:bg-gray-800">
           <div className="container px-4 md:px-6 mx-auto">
             <div className="flex flex-col items-center space-y-4 text-center">
               <div className="space-y-2">
