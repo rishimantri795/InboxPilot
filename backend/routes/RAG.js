@@ -26,6 +26,7 @@ router.post("/enableRAG", async (req, res) => {
 
     await userRef.update({
       RAG: "enabled",
+      RagQueued: "inTaskQueue",
     });
 
     res.status(200).json({ message: "Onboarding task enqueued successfully" });
@@ -62,6 +63,16 @@ router.post("/disableRAG", async (req, res) => {
 
 router.post("/getEmailDetails", async (req, res) => {
   const { emailIds, refreshToken } = req.body;
+});
+
+router.post("/optimisticRemove", async (req, res) => {
+  const { userId } = req.body;
+
+  const userRef = db.collection("Users").doc(userId);
+
+  await userRef.update({
+    RagQueued: "processing/completed",
+  });
 });
 
 // interface EmailMetadata {

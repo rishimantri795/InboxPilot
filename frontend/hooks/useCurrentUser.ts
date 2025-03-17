@@ -59,6 +59,7 @@ interface User {
   createdAt?: string;
   RAG?: string;
   profile?: string;
+  RagQueued?: string;
 }
 
 interface ResponseData {
@@ -90,6 +91,7 @@ const useCurrentUser = () => {
             createdAt: response.data.user.createdAt,
             profile: response.data.user.profile,
             RAG: response.data.user.RAG,
+            RagQueued: response.data.user.RagQueued,
           };
           setUser(mappedUser);
           console.log("Authenticated user:", mappedUser);

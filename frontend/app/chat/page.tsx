@@ -107,7 +107,11 @@ const getTimeDifference = (date: Date | string): string => {
 };
 
 // Helper function to open Gmail with a specific email
-const openGmailWithEmail = (threadId: string) => {
+const openGmailWithEmail = (threadId: string | undefined) => {
+  if (!threadId) {
+    console.error("Cannot open email: threadId is undefined");
+    return;
+  }
   window.open(`https://mail.google.com/mail/u/0/#all/${threadId}`, "_blank");
 };
 
@@ -426,6 +430,18 @@ export default function ChatBotPage() {
   // Use our custom chatbot hook
   const { messages, sendMessage, isTyping, emailIds } = useChatBot(ragEnabled);
 
+  // Use an effect hook to update onboarding status based on user.RagQueued
+  useEffect(() => {
+    if (user?.RagQueued === "inTaskQueue") {
+      setOnboardingStatus({
+        phase: "initializing",
+        fetch: 0,
+        save: 0,
+        total: 0,
+      });
+    }
+  }, [user?.RagQueued]);
+
   // Update email IDs when new messages arrive
   useEffect(() => {
     const fetchEmailsData = async () => {
@@ -483,12 +499,35 @@ export default function ChatBotPage() {
   // Fetch onboarding progress
   const fetchOnboardingProgress = useCallback(async () => {
     console.log("Fetching progress...");
+
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_RAG_URL}/progress?userId=${user?.id}`
       );
       const data = await response.json();
-      setOnboardingStatus(data);
+      // have a if statement where if phase is "waiting" dont do anything.
+
+      if (!(data.phase === "waiting")) {
+        setOnboardingStatus(data);
+        let response = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/onboardingRAG/optimisticRemove`,
+          {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: user?.id }),
+          }
+        );
+
+        console.log(data);
+
+        if (response.ok) {
+          console.log("Optimistic update successful");
+        } else {
+          console.error("Optimistic update failed");
+        }
+      }
+
       console.log("Onboarding progress:", data);
 
       if (data.phase === "complete") {
@@ -520,6 +559,8 @@ export default function ChatBotPage() {
   }, [user, fetchOnboardingProgress]);
 
   // Poll progress when onboarding or disabling is in progress
+  //when user toggles rag on ----> we do a optimistic update on the frontend which immeidly tells teh user their onboarding has started
+  // then we update this field on the backend which then just says "Rag is on".
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined;
     const shouldPoll =
@@ -579,12 +620,10 @@ export default function ChatBotPage() {
     setRagEnabled(newRagState);
     setIsEnablingRag(newRagState);
 
-    setOnboardingStatus({
-      phase: "waiting",
-      fetch: 0,
-      save: 0,
-      total: 0,
-    });
+    //set onboarding status to intiailized and set field in backend to rag is beign rpocessed in quaue.
+    //the minute we receive intiailized from teh worker, we must immeidily change the rag processing to off.
+    //  set up a if statment to set the onboarding status to intiatilzied if the current user field is enabled
+    //other than that we have a constant fetching logic that polls the backend every 2 seconds, which will automaticaly update that backend.
 
     try {
       if (newRagState) {
@@ -616,6 +655,15 @@ export default function ChatBotPage() {
           refreshToken: user.refreshToken,
         }),
       });
+
+      if (newRagState) {
+        setOnboardingStatus({
+          phase: "initialized",
+          fetch: 0,
+          save: 0,
+          total: 0,
+        });
+      }
 
       fetchOnboardingProgress();
     } catch (error) {
