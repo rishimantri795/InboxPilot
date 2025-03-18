@@ -73,6 +73,8 @@ router.post("/optimisticRemove", async (req, res) => {
   await userRef.update({
     RagQueued: "processing/completed",
   });
+
+  return res.status(200).json({ message: "email is bieng processed now" });
 });
 
 // interface EmailMetadata {

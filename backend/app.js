@@ -176,6 +176,15 @@ app.post("/notifications", async (req, res) => {
                 console.log(
                   "RAG STARTED --------------------------------------------"
                 );
+
+                console.log(
+                  "emailContent:",
+                  emailContent,
+                  "userId:",
+                  user.id,
+                  "emailId:",
+                  latestMessage.id
+                );
                 await enqueueEmbeddingTask(
                   user.id,
                   latestMessage.id,

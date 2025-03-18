@@ -443,6 +443,8 @@ export default function ChatBotPage() {
     }
   }, [user?.RagQueued]);
 
+  let count = 0;
+
   // Update email IDs when new messages arrive
   useEffect(() => {
     const fetchEmailsData = async () => {
@@ -510,22 +512,27 @@ export default function ChatBotPage() {
 
       if (!(data.phase === "waiting")) {
         setOnboardingStatus(data);
-        let response = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/onboardingRAG/optimisticRemove`,
-          {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId: user?.id }),
+
+        if ((count = 0)) {
+          count++;
+
+          let response = await fetch(
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/onboardingRAG/optimisticRemove`,
+            {
+              method: "POST",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId: user?.id }),
+            }
+          );
+
+          console.log(data);
+
+          if (response.ok) {
+            console.log("Optimistic update successful");
+          } else {
+            console.error("Optimistic update failed");
           }
-        );
-
-        console.log(data);
-
-        if (response.ok) {
-          console.log("Optimistic update successful");
-        } else {
-          console.error("Optimistic update failed");
         }
       }
 
@@ -814,7 +821,7 @@ export default function ChatBotPage() {
       <AppSidebar currentTab="Recall+" />
       <SidebarTrigger />
 
-      <div className="container mx-auto px-4 py-8 max-w-7xl">  
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header Section with Glass Effect */}
         <div className="backdrop-blur-md bg-white/80 rounded-2xl p-6 mb-8 border border-gray-200/50">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6">
@@ -960,7 +967,10 @@ export default function ChatBotPage() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu> */}
-                <UserProfileDropdown name={user?.name || "John Doe"} email={user?.email || "john.doe@example.com"} />
+                <UserProfileDropdown
+                  name={user?.name || "John Doe"}
+                  email={user?.email || "john.doe@example.com"}
+                />
               </div>
             </div>
           </div>
