@@ -17,7 +17,7 @@ export default function Component() {
   const router = useRouter();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const { user, loading, error } = useUserContext();
+  const { user, loading, error, clearUser } = useUserContext();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -39,6 +39,22 @@ export default function Component() {
     }
   };
    
+  const handleRulesClick = () => {
+    if (user) {
+      router.push('/rules');
+    } else {
+      setIsLoginOpen(true);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await clearUser();
+      router.push('/');
+    } catch (err) {
+      console.error('Error logging out:', err);
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen overflow-x-hidden scrollbar-hide">
@@ -67,9 +83,12 @@ export default function Component() {
             Benefits
           </a>
         </nav>
-        <Button variant="outline" onClick={!user ? () => setIsLoginOpen(true) : () => router.push("/rules")}>
-          {!user ? "Log In": "Rules"}
-          </Button>
+        <Button 
+          variant="outline" 
+          onClick={handleRulesClick}
+        >
+          {!user ? "Log In" : "Rules"}
+        </Button>
         <button className="sm:hidden p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -124,7 +143,7 @@ export default function Component() {
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
                   <Button
                     size="lg"
-                    onClick={!user ? () => setIsLoginOpen(true) : () => router.push("/rules")}
+                    onClick={handleRulesClick}
                     className="bg-gray-900 hover:bg-gray-800 text-white"
                   >
                     Take Flight

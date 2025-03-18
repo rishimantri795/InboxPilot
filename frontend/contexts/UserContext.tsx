@@ -2,6 +2,7 @@
 
 import { createContext, useContext, ReactNode, useMemo } from "react";
 import useCurrentUser from "@/hooks/useCurrentUser";
+import { KeyedMutator } from "swr";
 
 export interface User {
   id: string;
@@ -12,12 +13,16 @@ export interface User {
   createdAt?: string;
 }
 
+interface ResponseData {
+  user?: User;
+}
+
 interface UserContextType {
   user: User | null;
   loading: boolean;
   error: any;
   clearUser: () => Promise<void>;
-  mutate: any;
+  mutate: KeyedMutator<ResponseData>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -30,9 +35,16 @@ export function UserProvider({
   initialUserData?: User;
 }) {
   const { user, loading, error, clearUser, mutate } = useCurrentUser(initialUserData);
-  const value = useMemo(() => ({
-    user, loading, error, clearUser, mutate
-  }), [user, loading, error, clearUser, mutate]);
+  const value = useMemo(
+    () => ({
+      user,
+      loading,
+      error,
+      clearUser,
+      mutate,
+    }),
+    [user, loading, error, clearUser, mutate]
+  );
 
   return (
     <UserContext.Provider value={value}>
