@@ -55,6 +55,7 @@ import useCurrentUser from "@/hooks/useCurrentUser";
 import { useRouter } from "next/navigation";
 import { useChatBot } from "@/hooks/useChatBot";
 import ReactMarkdown from "react-markdown"; // Import react-markdown
+import UserProfileDropdown from "@/components/UserProfileDropdown";
 
 // First, let's fix the TypeScript errors
 interface HTMLElementWithScrollIntoView extends HTMLElement {
@@ -813,16 +814,16 @@ export default function ChatBotPage() {
       <AppSidebar currentTab="Recall+" />
       <SidebarTrigger />
 
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="container mx-auto px-4 py-8 max-w-7xl">  
         {/* Header Section with Glass Effect */}
-        <div className="backdrop-blur-md bg-white/80 rounded-2xl p-6 mb-8 shadow-lg border border-gray-200/50">
+        <div className="backdrop-blur-md bg-white/80 rounded-2xl p-6 mb-8 border border-gray-200/50">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6">
             <div className="flex items-center">
               <div className="bg-gradient-to-tr from-black to-gray-800 rounded-2xl p-3 mr-4 shadow-lg transform hover:scale-105 transition-all">
                 <Mail className="h-8 w-8 text-white" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-700 to-gray-900 bg-clip-text text-transparent">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-gray-700 to-gray-900 bg-clip-text text-transparent">
                   Recall+
                 </h1>
                 <p className="text-gray-500 text-sm mt-1">
@@ -922,14 +923,14 @@ export default function ChatBotPage() {
               </div>
 
               {/* User Profile with Glass Effect */}
-              <div className="flex items-center space-x-4 backdrop-blur-md bg-white/80 px-6 py-3 rounded-xl border border-gray-200/50 shadow-lg">
-                <div className="text-right">
+              <div className="flex items-center space-x-4 backdrop-blur-md bg-white/80 px-6 py-3 rounded-xl border border-gray-200/50">
+                {/* <div className="text-right">
                   <p className="font-semibold text-gray-900">
                     {user?.name || "John Doe"}
                   </p>
                   <p className="text-xs text-gray-500">{user?.email}</p>
-                </div>
-                <DropdownMenu>
+                </div> */}
+                {/* <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Avatar className="cursor-pointer bg-gradient-to-br from-gray-900 to-black text-white hover:opacity-90 transition-all duration-200 border-2 border-white shadow-lg transform hover:scale-105">
                       <AvatarImage src="" alt="User avatar" />
@@ -958,7 +959,8 @@ export default function ChatBotPage() {
                       <span>Log out</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
-                </DropdownMenu>
+                </DropdownMenu> */}
+                <UserProfileDropdown name={user?.name || "John Doe"} email={user?.email || "john.doe@example.com"} />
               </div>
             </div>
           </div>
@@ -966,7 +968,7 @@ export default function ChatBotPage() {
 
         {/* Main Chat Card with Glass Effect */}
         <Card className="w-full max-w-6xl mx-auto backdrop-blur-md bg-white/80 shadow-xl border-gray-200/50 rounded-2xl overflow-hidden">
-          <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100/50 border-b border-gray-200/50 py-4">
+          {/* <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100/50 border-b border-gray-200/50 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="bg-black rounded-xl p-2">
@@ -993,7 +995,7 @@ export default function ChatBotPage() {
                 </div>
               )}
             </div>
-          </CardHeader>
+          </CardHeader> */}
 
           {/* Chat Content with Scroll Indicator */}
           <div className="relative">
@@ -1182,13 +1184,13 @@ export default function ChatBotPage() {
                   placeholder="Type your message..."
                   className="w-full bg-white/80 border-gray-200 focus:border-black focus:ring-black rounded-xl py-3 px-4 shadow-sm pr-12"
                 />
-                <button
+                {/* <button
                   type="button"
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   <span className="text-xl">😊</span>
-                </button>
+                </button> */}
               </div>
               <Button
                 type="submit"
