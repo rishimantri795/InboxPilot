@@ -20,6 +20,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import useCurrentUser from "@/hooks/useCurrentUser";
+import { useTheme } from "next-themes";
 
 // Menu items.
 const items = [
@@ -43,7 +44,7 @@ const items = [
 export function AppSidebar({ currentTab }) {
   const { user, loading, error } = useCurrentUser();
   const [listenerStatus, setListenerStatus] = useState<number | null>(null);
-
+  const { theme } = useTheme();
   useEffect(() => {
     if (user) {
       fetchListenerStatus();
@@ -115,9 +116,15 @@ export function AppSidebar({ currentTab }) {
                   key={item.title}
                   active={currentTab === item.title}
                 >
+                  
                   <SidebarMenuButton
                     asChild
-                    className="flex items-center gap-4 px-4 py-3"
+                    className={`flex items-center gap-4 px-4 py-3 ${
+                      theme === "dark" ? "text-white" : "text-black"
+                    } ${
+                      currentTab === item.title ? theme === "dark" ? "bg-gray-700" : "bg-gray-300"
+                     : ""
+                    }`} 
                   >
                     <a href={item.url}>
                       <item.icon />
