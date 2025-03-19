@@ -108,7 +108,7 @@ export function useChatBot(ragEnabled: boolean) {
         }
 
         const data = await response.json();
-        console.log(data.completion);
+        console.log(data);
 
         // Add AI response to the chat
         const botMessage: Message = {

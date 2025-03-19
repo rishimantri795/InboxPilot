@@ -66,7 +66,11 @@ router.post("/getEmailDetails", async (req, res) => {
 });
 
 router.post("/optimisticRemove", async (req, res) => {
-  const { userId } = req.body;
+  const { userId, count } = req.body;
+
+  if (count < 0) {
+    return res.status(200);
+  }
 
   const userRef = db.collection("Users").doc(userId);
 

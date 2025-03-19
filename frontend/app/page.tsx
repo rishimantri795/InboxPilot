@@ -3,20 +3,36 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {Inbox,Mail,Tag, Archive, MessageSquare, Zap, LogIn, Sun, Moon} from "lucide-react";
+import {
+  Inbox,
+  Mail,
+  Tag,
+  Archive,
+  MessageSquare,
+  Zap,
+  LogIn,
+  Sun,
+  Moon,
+} from "lucide-react";
 import useCurrentUser from "@/hooks/useCurrentUser";
 import { useUserContext } from "@/contexts/UserContext";
-import {Dialog,DialogContent,DialogHeader,DialogTitle,  DialogDescription,} from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import logo from "@/images/Inbox Pilot Logo.png" // Import required for static images
+import logo from "@/images/Inbox Pilot Logo.png"; // Import required for static images
 import { useTheme } from "next-themes";
-
+//////TESSSST
 
 export default function Component() {
   const router = useRouter();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, loading, error, clearUser } = useUserContext();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -38,10 +54,10 @@ export default function Component() {
       console.error("Error during Passport authentication:", e);
     }
   };
-   
+
   const handleRulesClick = () => {
     if (user) {
-      router.push('/rules');
+      router.push("/rules");
     } else {
       setIsLoginOpen(true);
     }
@@ -50,70 +66,110 @@ export default function Component() {
   const handleLogout = async () => {
     try {
       await clearUser();
-      router.push('/');
+      router.push("/");
     } catch (err) {
-      console.error('Error logging out:', err);
+      console.error("Error logging out:", err);
     }
   };
 
   return (
     <div className="flex flex-col min-h-screen overflow-x-hidden scrollbar-hide">
       <header className="px-4 lg:px-6 h-14 flex items-center justify-between">
-      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4">
           <a className="flex items-center justify-center" href="#">
-            <Image src={logo || "/placeholder.svg"} width={24} height={24} alt="InboxPilot" />
-            <span className="ml-2 text-2xl font-bold hidden sm:inline">InboxPilot</span>
+            <Image
+              src={logo || "/placeholder.svg"}
+              width={24}
+              height={24}
+              alt="InboxPilot"
+            />
+            <span className="ml-2 text-2xl font-bold hidden sm:inline">
+              InboxPilot
+            </span>
           </a>
           <button
             onClick={handleToggleTheme}
             className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
             aria-label="Toggle Theme"
           >
-            {activeTheme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            {activeTheme === "dark" ? (
+              <Sun className="h-5 w-5" />
+            ) : (
+              <Moon className="h-5 w-5" />
+            )}
           </button>
         </div>
         <nav className="hidden sm:flex items-center gap-4 sm:gap-6">
-          <a className="text-sm font-medium hover:underline underline-offset-4" href="#features">
+          <a
+            className="text-sm font-medium hover:underline underline-offset-4"
+            href="#features"
+          >
             Features
           </a>
-          <a className="text-sm font-medium hover:underline underline-offset-4" href="#how-it-works">
+          <a
+            className="text-sm font-medium hover:underline underline-offset-4"
+            href="#how-it-works"
+          >
             How It Works
           </a>
-          <a className="text-sm font-medium hover:underline underline-offset-4" href="#benefits">
+          <a
+            className="text-sm font-medium hover:underline underline-offset-4"
+            href="#benefits"
+          >
             Benefits
           </a>
         </nav>
-        <Button 
-          variant="outline" 
-          onClick={handleRulesClick}
-        >
+        <Button variant="outline" onClick={handleRulesClick}>
           {!user ? "Log In" : "Rules"}
         </Button>
-        <button className="sm:hidden p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          className="w-6 h-6"
+        <button
+          className="sm:hidden p-2"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
-        </svg>
-      </button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            className="w-6 h-6"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 6h16M4 12h16m-7 6h7"
+            />
+          </svg>
+        </button>
       </header>
       {mobileMenuOpen && (
         <div className="sm:hidden fixed inset-0 z-50 bg-white dark:bg-gray-900">
           <div className="flex flex-col items-center justify-center h-full">
-            <a className="text-lg font-medium py-2" href="#features" onClick={() => setMobileMenuOpen(false)}>
+            <a
+              className="text-lg font-medium py-2"
+              href="#features"
+              onClick={() => setMobileMenuOpen(false)}
+            >
               Features
             </a>
-            <a className="text-lg font-medium py-2" href="#how-it-works" onClick={() => setMobileMenuOpen(false)}>
+            <a
+              className="text-lg font-medium py-2"
+              href="#how-it-works"
+              onClick={() => setMobileMenuOpen(false)}
+            >
               How It Works
             </a>
-            <a className="text-lg font-medium py-2" href="#benefits" onClick={() => setMobileMenuOpen(false)}>
+            <a
+              className="text-lg font-medium py-2"
+              href="#benefits"
+              onClick={() => setMobileMenuOpen(false)}
+            >
               Benefits
             </a>
-            <button className="mt-4 p-2" onClick={() => setMobileMenuOpen(false)}>
+            <button
+              className="mt-4 p-2"
+              onClick={() => setMobileMenuOpen(false)}
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
@@ -121,14 +177,19 @@ export default function Component() {
                 stroke="currentColor"
                 className="w-6 h-6"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
         </div>
       )}
       <main className="flex-1">
-      <section className="w-full py-8 md:py-16 lg:py-24 xl:py-32">
+        <section className="w-full py-8 md:py-16 lg:py-24 xl:py-32">
           <div className="container px-4 md:px-6 mx-auto">
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-12 items-center">
               <div className="flex flex-col justify-center space-y-4">
@@ -137,7 +198,8 @@ export default function Component() {
                     Fly through email with InboxPilot
                   </h1>
                   <p className="max-w-[600px] text-gray-500 md:text-xl dark:text-gray-400">
-                    Manage your inbox at the speed of thought with an AI Agent capable of handling your emails as you do.
+                    Manage your inbox at the speed of thought with an AI Agent
+                    capable of handling your emails as you do.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
@@ -152,7 +214,11 @@ export default function Component() {
                 </div>
               </div>
               <div className="flex justify-center ">
-                <Image src={logo || "/placeholder.svg"} width={300} alt="InboxPilot" />
+                <Image
+                  src={logo || "/placeholder.svg"}
+                  width={300}
+                  alt="InboxPilot"
+                />
               </div>
             </div>
           </div>
@@ -165,7 +231,7 @@ export default function Component() {
             <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-center mb-12">
               Key Features
             </h2>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
               <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
                 <Zap className="h-12 w-12 mb-4 text-black-500" />
@@ -178,9 +244,12 @@ export default function Component() {
               </div>
               <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
                 <MessageSquare className="h-12 w-12 mb-4 text-black-500" />
-                <h3 className="text-xl font-bold mb-2">Smart Draft Responses</h3>
+                <h3 className="text-xl font-bold mb-2">
+                  Smart Draft Responses
+                </h3>
                 <p className="text-gray-500 dark:text-gray-400">
-                  Generate draft responses for routine emails using uploaded context.
+                  Generate draft responses for routine emails using uploaded
+                  context.
                 </p>
               </div>
               <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
@@ -197,7 +266,7 @@ export default function Component() {
                   Apply labels to your emails based on content and context.
                 </p>
               </div>
-              
+
               <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
                 <Archive className="h-12 w-12 mb-4 text-black-500" />
                 <h3 className="text-xl font-bold mb-2">Smart Archiving</h3>
@@ -205,7 +274,7 @@ export default function Component() {
                   Automatically archive emails based on your rules.
                 </p>
               </div>
-              
+
               <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
                 <Inbox className="h-12 w-12 mb-4 text-black-500" />
                 <h3 className="text-xl font-bold mb-2">Email Integration</h3>
@@ -316,17 +385,22 @@ export default function Component() {
               </div>
               <div className="w-full max-w-sm space-y-2 ">
                 {/* <form className="flex space-x-2"> */}
-                  {/* <Input
+                {/* <Input
                     className="max-w-lg flex-1"
                     placeholder="Enter your email"
                     type="email"
                   /> */}
-                  <Button 
-                    onClick={() => window.open('https://docs.google.com/forms/d/e/1FAIpQLSdL48BJmTlv6GBFAG2RozbgpOK0EYB0uyMa6mEfl5oc5xo0xA/viewform?usp=dialog', '_blank')}
-                    type="button"
-                  >
-                    Join the Waitlist
-                  </Button>
+                <Button
+                  onClick={() =>
+                    window.open(
+                      "https://docs.google.com/forms/d/e/1FAIpQLSdL48BJmTlv6GBFAG2RozbgpOK0EYB0uyMa6mEfl5oc5xo0xA/viewform?usp=dialog",
+                      "_blank"
+                    )
+                  }
+                  type="button"
+                >
+                  Join the Waitlist
+                </Button>
                 {/* </form> */}
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   By signing up, you agree to our{" "}
@@ -339,8 +413,8 @@ export default function Component() {
           </div>
         </section>
       </main>
-      
-      <Dialog  open={isLoginOpen} onOpenChange={setIsLoginOpen}>
+
+      <Dialog open={isLoginOpen} onOpenChange={setIsLoginOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Log in to Inbox Pilot</DialogTitle>
@@ -381,7 +455,7 @@ export default function Component() {
           </div>
         </DialogContent>
       </Dialog>
-    
+
       <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
         <p className="text-xs text-gray-500 dark:text-gray-400">
           © 2024 InboxPilot. All rights reserved.

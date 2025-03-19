@@ -513,8 +513,9 @@ export default function ChatBotPage() {
       if (!(data.phase === "waiting")) {
         setOnboardingStatus(data);
 
-        if ((count = 0)) {
+        if (count == 0) {
           count++;
+          console.log(count + "COUUUUUUUUUUUUUNT");
 
           let response = await fetch(
             `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/onboardingRAG/optimisticRemove`,
@@ -522,7 +523,7 @@ export default function ChatBotPage() {
               method: "POST",
               credentials: "include",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ userId: user?.id }),
+              body: JSON.stringify({ userId: user?.id, count: count }),
             }
           );
 
