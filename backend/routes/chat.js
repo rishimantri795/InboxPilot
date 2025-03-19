@@ -37,7 +37,7 @@ router.post("/message", isAuthenticated, async (req, res) => {
 router.get("/history", isAuthenticated, async (req, res) => {
   try {
     const userId = req.user.id;
-    const limit = req.query.limit ? parseInt(req.query.limit) : 50;
+    const limit = req.query.limit ? parseInt(req.query.limit) : 1500;
     
     const messages = await getChatHistory(userId, limit);
     res.json({ messages });

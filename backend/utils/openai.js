@@ -39,7 +39,7 @@ Be strict about whether a rule applies, especially when the email is promotional
 
   try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
@@ -118,7 +118,7 @@ async function createDraftEmail(emailContent, promptDescription, files, calendar
   console.log("Prompt:", prompt);
   try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
