@@ -5,6 +5,10 @@ const MicrosoftStrategy = require("passport-microsoft").Strategy;
 
 const db = admin.firestore();
 const { watchGmailInbox } = require("../utils/gmailService");
+const { google } = require("googleapis");
+
+// Delay function
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // passport google strategy
 passport.use(
@@ -15,12 +19,24 @@ passport.use(
       callbackURL: process.env.GOOGLE_CALLBACK_URL,
       accessType: "offline", // ensure you get a refresh token
       prompt: "consent", // force re-consent to get new permissions
-      scope: ["profile", "email", "https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.modify"],
+      scope: [
+        "profile",
+        "email",
+        "https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/gmail.modify",
+        "https://www.googleapis.com/auth/calendar.readonly",
+        "https://www.googleapis.com/auth/calendar.events.readonly",
+        "https://www.googleapis.com/auth/calendar",
+      ],
     },
     async function (accessToken, refreshToken, profile, done) {
       try {
         // check if user exists in db matching the email passed in
-        const userSnapshot = await db.collection("Users").where("email", "==", profile.emails[0].value).limit(1).get(); // limit(1) limits to 1 doc and .get() returns querySnapshot
+        const userSnapshot = await db
+          .collection("Users")
+          .where("email", "==", profile.emails[0].value)
+          .limit(1)
+          .get(); // limit(1) limits to 1 doc and .get() returns querySnapshot
 
         // why we can't do userSnapshot? ---> bc firestore always returns a QuerySnapshot object, even if not docs match
         if (!userSnapshot.empty) {
@@ -52,14 +68,15 @@ passport.use(
             listenerStatus: 0,
             refreshToken: refreshToken,
             createdAt: new Date(),
+            RAG: "FirstTime",
           };
 
           // actually creates the user in db
           await db.collection("Users").doc(profile.id).set(newUser);
 
           // puts a gmail listener to user
-          userData.historyId = historyId; // Add historyId
-          await userDocRef.update(userData);
+          // newUser.historyId = historyId; // Add historyId
+          // await userDocRef.update(newUser);
 
           return done(null, newUser);
         }

@@ -8,7 +8,6 @@ const passport = require("passport");
 const session = require("express-session");
 require("dotenv").config();
 require("./middleware/passport.js");
-const pdf = require("pdf-parse");
 const axios = require("axios");
 const { htmlToText } = require("html-to-text");
 
@@ -16,12 +15,18 @@ const { htmlToText } = require("html-to-text");
 
 const AWS = require("aws-sdk");
 
+const RAG = require("./routes/RAG.js");
+const chat = require("./routes/chat");
+const pdf = require("pdf-parse");
+const AWS = require("aws-sdk");
+const { enqueueOnboardingTask, enqueueEmbeddingTask } = require("./utils/worker.js");
 const app = express();
 const users = require("./routes/users");
+const emails = require("./routes/emails");
 
-const { fetchEmailHistory, getOrCreatePriorityLabel, applyLabelToEmail, fetchEmailHistoryWithRetry, fetchEmailHistoryAndApplyLabel, getMessageDetails, archiveEmail, forwardEmail, favoriteEmail, getOriginalEmailDetails, createDraft, getLatestHistoryId, fetchLatestEmail } = require("./utils/gmailService.js");
 const { archiveOutlookEmail, favoriteOutlookEmail, forwardOutlookEmail, createOutlookDraft, fetchOutlookEmails, subscribeToOutlookEmails, getAccessTokenFromRefreshTokenOutlook, getRefreshTokenOutlook, applyCategoryToOutlookEmail, storeLatestMessageId, getLatestMessageId } = require("./utils/outlookService.js");
 
+const { fetchEmailHistory, getOrCreatePriorityLabel, applyLabelToEmail, fetchEmailHistoryWithRetry, fetchEmailHistoryAndApplyLabel, getMessageDetails, archiveEmail, forwardEmail, favoriteEmail, getOriginalEmailDetails, createDraft, getLatestHistoryId, fetchLatestEmail } = require("./utils/gmailService.js");
 const { classifyEmail, createDraftEmail } = require("./utils/openai.js");
 
 app.set("trust proxy", 1); // Trust first proxy
@@ -30,14 +35,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // Parses URL-encoded bodies
 app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
 
-const s3 = new AWS.S3();
-
-const allowedOrigins = `${process.env.FRONTEND_URL}`;
+const allowedOrigins = ["http://localhost:3000", "https://theinboxpilot.com", "http://localhost:5173", "https://www.theinboxpilot.com"];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      console.log("CORS request origin:", origin);
+      // console.log("CORS request origin:", origin); // Debugging
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, origin);
       } else {
@@ -76,6 +79,8 @@ app.use(passport.session());
 
 // Routes
 app.use("/api/users", users);
+app.use("/api/emails", emails);
+app.use("/api/onboardingRAG", RAG);
 
 app.get("/outlook/webhook", (req, res) => {
   console.log("🔹 Microsoft Graph validation request received");
@@ -327,6 +332,14 @@ app.post("/notifications", async (req, res) => {
               const emailContent = await getMessageDetails(accessToken, latestMessage.id);
               console.log(emailContent);
 
+              if (user.RAG == "enabled") {
+                console.log("RAG STARTED --------------------------------------------");
+
+                await enqueueEmbeddingTask(user.id, latestMessage.id, emailContent);
+
+                console.log("RAG ENDED ----------------------------------------------");
+              }
+
               const ruleKey = await classifyEmail(emailContent, user.rules, user.profile);
               console.log("Rule key:", ruleKey);
 
@@ -387,7 +400,7 @@ app.post("/notifications", async (req, res) => {
                         })
                       );
                       const calendarEvents = action.config.calendarEvents;
-                      const reply = await createDraftEmail(emailContent, action.config.draftTemplate, parsedFiles, calendarEvents, accessToken);
+                      const reply = await createDraftEmail(emailContent, action.config.draftTemplate, parsedFiles, calendarEvents, user.profile, accessToken);
                       await createDraft(accessToken, latestMessage.threadId, reply, latestMessage.id, fromEmail);
                       break;
                   }
@@ -421,6 +434,7 @@ app.post("/notifications", async (req, res) => {
 });
 
 app.get("/", (req, res) => {
+  console.log("Hello World");
   res.send("Hello World!");
 });
 
@@ -436,6 +450,7 @@ app.get("/getCookie", (req, res) => {
   res.send("Cookie has been set!");
 });
 
+app.use("/api/chat", chat);
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);

@@ -159,7 +159,10 @@ router.post("/attach-dev-listener", async (req, res) => {
         data: result.data,
       });
     } else {
-      return res.status(500).json({ error: "Failed to attach Dev listener", details: result.error });
+      return res.status(500).json({
+        error: "Failed to attach Dev listener",
+        details: result.error,
+      });
     }
   } catch (error) {
     console.error("Error detaching Dev listener:", error);
@@ -189,7 +192,10 @@ router.post("/attach-prod-listener", async (req, res) => {
         data: result.data,
       });
     } else {
-      return res.status(500).json({ error: "Failed to attach Prod listener", details: result.error });
+      return res.status(500).json({
+        error: "Failed to attach Prod listener",
+        details: result.error,
+      });
     }
   } catch (error) {
     console.error("Error detaching Gmail listener:", error);
@@ -713,33 +719,31 @@ router.post("/:id/toggle-listener", async (req, res) => {
     }
 
     let result;
-
-    // Handle based on the provider
-    if (provider === "google" || provider === "gmail") {
-      // Gmail Provider
-      const accessToken = await getAccessTokenFromRefreshToken(refreshToken);
-
+    if (provider == "google") {
       if (status === 0) {
-        // Detach Gmail listener
+        // If detaching, call stopGmailWatch()
         console.log("Detaching Gmail Listener...");
-        result = await stopGmailWatch(accessToken);
-        if (!result.success) {
-          return res.status(500).json({ error: "Failed to stop Gmail watch", details: result.error });
+        const stopResult = await stopGmailWatch(accessToken);
+        if (!stopResult.success) {
+          return res.status(500).json({
+            error: "Failed to stop Gmail watch",
+            details: stopResult.error,
+          });
         }
       } else {
-        // Attach Gmail listener - choose between dev and prod
+        // If attaching, determine which function to call
         if (process.env.DEV_TARGET_EMAILS === "true") {
-          console.log("Attaching Gmail Dev Watch...");
-          result = await startDevWatch(accessToken);
+          console.log("Attaching Dev Watch...");
+          const watchResult = await startDevWatch(accessToken);
+          if (!watchResult) {
+            return res.status(500).json({ error: "Failed to start Dev Gmail watch" });
+          }
         } else {
-          console.log("Attaching Gmail Production Watch...");
-          result = await watchGmailInbox(accessToken);
-        }
-
-        if (!result) {
-          return res.status(500).json({
-            error: `Failed to start ${process.env.DEV_TARGET_EMAILS === "true" ? "Dev" : "Production"} Gmail watch`,
-          });
+          console.log("Attaching Production Watch...");
+          const watchResult = await watchGmailInbox(accessToken);
+          if (!watchResult) {
+            return res.status(500).json({ error: "Failed to start Production Gmail watch" });
+          }
         }
       }
     } else if (provider === "microsoft" || provider === "outlook") {
@@ -775,7 +779,7 @@ router.post("/:id/toggle-listener", async (req, res) => {
     await userRef.update({ listenerStatus: status });
 
     return res.status(200).json({
-      message: `${provider.charAt(0).toUpperCase() + provider.slice(1)} listener ${status === 1 ? "attached" : "detached"} successfully.`,
+      message: `Listener ${status === 1 ? "attached" : "detached"} successfully.`,
     });
   } catch (error) {
     // Fixed this line to use provider from within try block if available

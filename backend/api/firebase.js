@@ -1,6 +1,8 @@
 const admin = require("firebase-admin");
 require("dotenv").config(); // loads env vars from .env file into process.env
 
+// console.log("FIREBASE_PRIVATE_KEY:", process.env.FIREBASE_PRIVATE_KEY);
+
 // Initialize Firebase Admin
 const serviceAccount = {
   type: "service_account",
@@ -16,8 +18,13 @@ const serviceAccount = {
     "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-8j22p%40inboxpilot-c4098.iam.gserviceaccount.com",
 };
 
+
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
+// const db = admin.firestore();
+// console.log(admin);
+
+// module.exports = { admin, db };
 module.exports = admin;

@@ -5,24 +5,18 @@ import { UserProfile } from "./user-profile";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/ui/app-sidebar";
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOutIcon } from "lucide-react";
+import UserProfileDropdown from "@/components/UserProfileDropdown";
 
 import { useRouter } from "next/navigation";
 
 import useCurrentUser from "@/hooks/useCurrentUser";
+import { useUserContext } from "@/contexts/UserContext";
 
 import axios from "axios";
 import { useEffect, useState } from "react";
 
 export default function ProfilePage() {
-  const { user, loading, error, clearUser } = useCurrentUser();
+  const { user, loading, error } = useUserContext();
   const [userInfo, setUserInfo] = useState(null);
 
   // const userInfo = [];
@@ -115,28 +109,10 @@ export default function ProfilePage() {
             <h1 className="text-3xl font-bold mb-6">Profile</h1>
             <div className="flex items-center space-x-4 pr-4">
               <div className="text-right">
-              <p className="font-medium">{user.name ? user.name : "John Doe"}</p>
-                <p className="text-sm text-gray-500">{user.email}</p>
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Avatar className="cursor-pointer bg-black text-white">
-                    <AvatarImage src="" alt="User avatar" />
-                    <AvatarFallback className="bg-black text-white">
-                      {user.email ? user.email.charAt(0).toUpperCase() : "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={handleLogout}
-                    className="cursor-pointer"
-                  >
-                    <LogOutIcon className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="flex items-center space-x-4" id="tour-finish">
+                <UserProfileDropdown name={user.name || "John Doe"} email={user.email} />
+              </div>
             </div>
           </div>
 

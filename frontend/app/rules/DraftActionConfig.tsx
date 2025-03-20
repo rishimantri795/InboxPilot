@@ -6,11 +6,12 @@ import { TrashIcon } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 import useCurrentUser from "@/hooks/useCurrentUser";
+import { useUserContext } from "@/contexts/UserContext";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 
 function DraftActionConfig({ action, onConfigChange, ruleIndex }) {
-  const { user } = useCurrentUser();
+  const { user } = useUserContext();
   const fileInputRef = useRef(null);
   const files = action.config.contextFiles || [];
 

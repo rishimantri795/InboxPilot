@@ -3,37 +3,32 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Inbox, Mail, Tag, Archive, MessageSquare, Zap, LogIn } from "lucide-react";
+import { Inbox, Mail, Tag, Archive, MessageSquare, Zap, LogIn, Sun, Moon } from "lucide-react";
 import useCurrentUser from "@/hooks/useCurrentUser";
+import { useUserContext } from "@/contexts/UserContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import logo from "./Inbox Pilot Logo.png"; // Import required for static images
+import logo from "@/images/Inbox Pilot Logo.png"; // Import required for static images
+import { useTheme } from "next-themes";
+//////TESSSST
 
 export default function Component() {
   const router = useRouter();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user, loading, error } = useCurrentUser();
+  const { user, loading, error, clearUser } = useUserContext();
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
-  // useEffect(() => {
-  //   const fetchCookie = async () => {
-  //     try {
-  //       let response = await fetch("https://api.theinboxpilot.com/getCookie", {
-  //         method: "GET",
-  //         credentials: "include",
-  //       });
-
-  //       if (response.ok) {
-  //         response = await response.json();
-  //         console.log("gotCookie");
-  //       }
-  //     } catch (error) {
-  //       console.log(error);
-  //     }
-  //   };
-  //   fetchCookie();
-  // }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  if (!mounted) return null;
+  const activeTheme = theme === "system" ? resolvedTheme : theme;
+  const handleToggleTheme = () => {
+    setTheme(activeTheme === "dark" ? "light" : "dark");
+  };
 
   const passPortAuth = async () => {
     try {
@@ -44,21 +39,35 @@ export default function Component() {
     }
   };
 
-  const googleAuth = async () => {
-    window.location.href = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/google/auth`;
+  const handleRulesClick = () => {
+    if (user) {
+      router.push("/rules");
+    } else {
+      setIsLoginOpen(true);
+    }
   };
 
-  const outlookAuth = async () => {
-    window.location.href = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/outlook/auth`;
+  const handleLogout = async () => {
+    try {
+      await clearUser();
+      router.push("/");
+    } catch (err) {
+      console.error("Error logging out:", err);
+    }
   };
 
   return (
     <div className="flex flex-col min-h-screen overflow-x-hidden scrollbar-hide">
       <header className="px-4 lg:px-6 h-14 flex items-center justify-between">
-        <a className="flex items-center justify-center" href="#">
-          <Image src={logo || "/placeholder.svg"} width={24} height={24} alt="InboxPilot" />
-          <span className="ml-2 text-2xl font-bold hidden sm:inline">InboxPilot</span>
-        </a>
+        <div className="flex items-center gap-4">
+          <a className="flex items-center justify-center" href="#">
+            <Image src={logo || "/placeholder.svg"} width={24} height={24} alt="InboxPilot" />
+            <span className="ml-2 text-2xl font-bold hidden sm:inline">InboxPilot</span>
+          </a>
+          <button onClick={handleToggleTheme} className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700" aria-label="Toggle Theme">
+            {activeTheme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </button>
+        </div>
         <nav className="hidden sm:flex items-center gap-4 sm:gap-6">
           <a className="text-sm font-medium hover:underline underline-offset-4" href="#features">
             Features
@@ -70,7 +79,7 @@ export default function Component() {
             Benefits
           </a>
         </nav>
-        <Button variant="outline" onClick={!user ? () => setIsLoginOpen(true) : () => router.push("/rules")}>
+        <Button variant="outline" onClick={handleRulesClick}>
           {!user ? "Log In" : "Rules"}
         </Button>
         <button className="sm:hidden p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
@@ -105,11 +114,11 @@ export default function Component() {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-12 items-center">
               <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-2">
-                  <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">Automate Your Inbox with InboxPilot</h1>
-                  <p className="max-w-[600px] text-gray-500 md:text-xl dark:text-gray-400">Manage your emails effortlessly with AI-powered automation. Group, label, draft responses, and more with natural language instructions.</p>
+                  <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">Fly through email with InboxPilot</h1>
+                  <p className="max-w-[600px] text-gray-500 md:text-xl dark:text-gray-400">Manage your inbox at the speed of thought with an AI Agent capable of handling your emails as you do.</p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  <Button size="lg" onClick={!user ? () => setIsLoginOpen(true) : () => router.push("/rules")} className="bg-gray-900 hover:bg-gray-800 text-white">
+                  <Button size="lg" onClick={handleRulesClick} className="bg-gray-900 hover:bg-gray-800 text-white">
                     Take Flight
                   </Button>
                   {/* <Button variant="outline">Learn More</Button> */}
@@ -124,36 +133,39 @@ export default function Component() {
         <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 dark:bg-gray-800">
           <div className="container px-4 md:px-6 mx-auto">
             <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-center mb-12">Key Features</h2>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
-              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
-                <Mail className="h-12 w-12 mb-4 text-black-500" />
-                <h3 className="text-xl font-bold mb-2">Smart Email Grouping</h3>
-                <p className="text-gray-500 dark:text-gray-400">Automatically organize your emails into logical groups.</p>
-              </div>
-              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
-                <Tag className="h-12 w-12 mb-4 text-black-500" />
-                <h3 className="text-xl font-bold mb-2">Intelligent Labeling</h3>
-                <p className="text-gray-500 dark:text-gray-400">Apply labels to your emails based on content and context.</p>
-              </div>
-              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
-                <MessageSquare className="h-12 w-12 mb-4 text-black-500" />
-                <h3 className="text-xl font-bold mb-2">Auto-Draft Responses</h3>
-                <p className="text-gray-500 dark:text-gray-400">Generate draft responses for common email types.</p>
-              </div>
-              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
-                <Archive className="h-12 w-12 mb-4 text-black-500" />
-                <h3 className="text-xl font-bold mb-2">Smart Archiving</h3>
-                <p className="text-gray-500 dark:text-gray-400">Automatically archive emails based on your rules.</p>
-              </div>
               <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
                 <Zap className="h-12 w-12 mb-4 text-black-500" />
                 <h3 className="text-xl font-bold mb-2">Natural Language Rules</h3>
                 <p className="text-gray-500 dark:text-gray-400">Create automation rules using simple, natural language.</p>
               </div>
               <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
+                <MessageSquare className="h-12 w-12 mb-4 text-black-500" />
+                <h3 className="text-xl font-bold mb-2">Smart Draft Responses</h3>
+                <p className="text-gray-500 dark:text-gray-400">Generate draft responses for routine emails using uploaded context.</p>
+              </div>
+              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
+                <Mail className="h-12 w-12 mb-4 text-black-500" />
+                <h3 className="text-xl font-bold mb-2">Semantic Search</h3>
+                <p className="text-gray-500 dark:text-gray-400">Search and summarize any information from your inbox using RAG</p>
+              </div>
+              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
+                <Tag className="h-12 w-12 mb-4 text-black-500" />
+                <h3 className="text-xl font-bold mb-2">Intelligent Labeling</h3>
+                <p className="text-gray-500 dark:text-gray-400">Apply labels to your emails based on content and context.</p>
+              </div>
+
+              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
+                <Archive className="h-12 w-12 mb-4 text-black-500" />
+                <h3 className="text-xl font-bold mb-2">Smart Archiving</h3>
+                <p className="text-gray-500 dark:text-gray-400">Automatically archive emails based on your rules.</p>
+              </div>
+
+              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
                 <Inbox className="h-12 w-12 mb-4 text-black-500" />
-                <h3 className="text-xl font-bold mb-2">Gmail Integration</h3>
-                <p className="text-gray-500 dark:text-gray-400">Seamlessly integrates with your Gmail account.</p>
+                <h3 className="text-xl font-bold mb-2">Email Integration</h3>
+                <p className="text-gray-500 dark:text-gray-400">Seamlessly integrate with your Gmail & Outlook accounts.</p>
               </div>
             </div>
           </div>
@@ -180,38 +192,57 @@ export default function Component() {
             </ol>
           </div>
         </section>
-        <section id="benefits" className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 dark:bg-gray-800">
+        {/* <section
+          id="benefits"
+          className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 dark:bg-gray-800"
+        >
           <div className="container px-4 md:px-6 mx-auto">
-            <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-center mb-12">Benefits</h2>
+            <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-center mb-12">
+              Benefits
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
               <div className="bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
                 <h3 className="text-xl font-bold mb-2">Save Time</h3>
-                <p className="text-gray-500 dark:text-gray-400">Reduce hours spent on email management each week.</p>
+                <p className="text-gray-500 dark:text-gray-400">
+                  Reduce hours spent on email management each week.
+                </p>
               </div>
               <div className="bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
-                <h3 className="text-xl font-bold mb-2">Increase Productivity</h3>
-                <p className="text-gray-500 dark:text-gray-400">Focus on important tasks while InboxPilot handles the rest.</p>
+                <h3 className="text-xl font-bold mb-2">
+                  Increase Productivity
+                </h3>
+                <p className="text-gray-500 dark:text-gray-400">
+                  Focus on important tasks while InboxPilot handles the rest.
+                </p>
               </div>
               <div className="bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
                 <h3 className="text-xl font-bold mb-2">Reduce Stress</h3>
-                <p className="text-gray-500 dark:text-gray-400">Say goodbye to email overload and inbox anxiety.</p>
+                <p className="text-gray-500 dark:text-gray-400">
+                  Say goodbye to email overload and inbox anxiety.
+                </p>
               </div>
               <div className="bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
                 <h3 className="text-xl font-bold mb-2">Customizable</h3>
-                <p className="text-gray-500 dark:text-gray-400">Tailor InboxPilot to your specific email management needs.</p>
+                <p className="text-gray-500 dark:text-gray-400">
+                  Tailor InboxPilot to your specific email management needs.
+                </p>
               </div>
               <div className="bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
                 <h3 className="text-xl font-bold mb-2">Always Learning</h3>
-                <p className="text-gray-500 dark:text-gray-400">Our AI improves over time, adapting to your email patterns.</p>
+                <p className="text-gray-500 dark:text-gray-400">
+                  Our AI improves over time, adapting to your email patterns.
+                </p>
               </div>
               <div className="bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
                 <h3 className="text-xl font-bold mb-2">Secure & Private</h3>
-                <p className="text-gray-500 dark:text-gray-400">Your data is encrypted and protected at all times.</p>
+                <p className="text-gray-500 dark:text-gray-400">
+                  Your data is encrypted and protected at all times.
+                </p>
               </div>
             </div>
           </div>
-        </section>
-        <section className="w-full py-12 md:py-24 lg:py-32">
+        </section> */}
+        <section className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 dark:bg-gray-800">
           <div className="container px-4 md:px-6 mx-auto">
             <div className="flex flex-col items-center space-y-4 text-center">
               <div className="space-y-2">
@@ -225,12 +256,9 @@ export default function Component() {
                     placeholder="Enter your email"
                     type="email"
                   /> */}
-                  <Button 
-                    onClick={() => window.open('https://docs.google.com/forms/d/e/1FAIpQLSdL48BJmTlv6GBFAG2RozbgpOK0EYB0uyMa6mEfl5oc5xo0xA/viewform?usp=dialog', '_blank')}
-                    type="button"
-                  >
-                    Join the Waitlist
-                  </Button>
+                <Button onClick={() => window.open("https://docs.google.com/forms/d/e/1FAIpQLSdL48BJmTlv6GBFAG2RozbgpOK0EYB0uyMa6mEfl5oc5xo0xA/viewform?usp=dialog", "_blank")} type="button">
+                  Join the Waitlist
+                </Button>
                 {/* </form> */}
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   By signing up, you agree to our{" "}
@@ -251,7 +279,7 @@ export default function Component() {
             <DialogDescription>Connect your Google account to start piloting your inbox with AI-powered email management.</DialogDescription>
           </DialogHeader>
           <div className="flex justify-center mt-4">
-            <Button onClick={googleAuth} className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white">
+            <Button onClick={passPortAuth} className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white">
               <svg className="h-5 w-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
@@ -259,16 +287,6 @@ export default function Component() {
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
               </svg>
               Continue with Google
-            </Button>
-
-            {/* Outlook Login */}
-            <Button onClick={outlookAuth} className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white w-full justify-center">
-              <svg className="h-5 w-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path fill="#0078D4" d="M12 2L2 5v14l10 3 10-3V5l-10-3zm6.5 12.86L12 18l-6.5-3.14V7.14L12 4l6.5 3.14v7.72z" />
-                <path fill="#50E6FF" d="M12 4l6.5 3.14v7.72L12 18V4z" />
-                <path fill="#0078D4" d="M8.5 14h7V7h-7v7zm3.25-6h1.5v2.5h2.5v1.5h-2.5V14h-1.5v-2.5h-2.5v-1.5h2.5V8z" />
-              </svg>
-              Continue with Outlook
             </Button>
           </div>
         </DialogContent>
