@@ -430,15 +430,6 @@ export default function RulesPage() {
     }
   };
 
-  const fetchListenerStatus = async () => {
-    try {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${user.id}/listener-status`);
-      setListenerStatus(response.data.status); // Should be 0 or 1
-    } catch (error) {
-      console.error("Failed to fetch listener status:", error);
-    }
-  };
-
   const toggleListener = async () => {
     console.log("Toggling listener");
     try {

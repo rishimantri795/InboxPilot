@@ -722,6 +722,8 @@ router.post("/:id/toggle-listener", async (req, res) => {
     if (provider == "google") {
       if (status === 0) {
         // If detaching, call stopGmailWatch()
+        // Fetch a new access token from the refresh token
+        const accessToken = await getAccessTokenFromRefreshToken(refreshToken);
         console.log("Detaching Gmail Listener...");
         const stopResult = await stopGmailWatch(accessToken);
         if (!stopResult.success) {
@@ -734,6 +736,8 @@ router.post("/:id/toggle-listener", async (req, res) => {
         // If attaching, determine which function to call
         if (process.env.DEV_TARGET_EMAILS === "true") {
           console.log("Attaching Dev Watch...");
+          // Fetch a new access token from the refresh token
+          const accessToken = await getAccessTokenFromRefreshToken(refreshToken);
           const watchResult = await startDevWatch(accessToken);
           if (!watchResult) {
             return res.status(500).json({ error: "Failed to start Dev Gmail watch" });

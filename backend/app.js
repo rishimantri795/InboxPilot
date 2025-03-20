@@ -18,7 +18,6 @@ const AWS = require("aws-sdk");
 const RAG = require("./routes/RAG.js");
 const chat = require("./routes/chat");
 const pdf = require("pdf-parse");
-const AWS = require("aws-sdk");
 const { enqueueOnboardingTask, enqueueEmbeddingTask } = require("./utils/worker.js");
 const app = express();
 const users = require("./routes/users");
