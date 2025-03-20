@@ -111,10 +111,7 @@ export default function UserProfileDropdown({
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
-          <LogOutIcon className="mr-2 h-4 w-4" />
-          <span>Log out</span>
-        </DropdownMenuItem>
+        
         {process.env.NEXT_PUBLIC_BACKEND_URL === "http://localhost:3010" && (
           <div>
             <DropdownMenuItem onClick={activateProduction} className="cursor-pointer">
@@ -146,6 +143,11 @@ export default function UserProfileDropdown({
               </>
             )}
           </DropdownMenuItem>
+
+        <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+          <LogOutIcon className="mr-2 h-4 w-4" />
+          <span>Log out</span>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   </>

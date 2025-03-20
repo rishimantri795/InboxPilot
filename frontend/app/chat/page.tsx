@@ -834,7 +834,7 @@ export default function ChatBotPage() {
         {/* Header Section with Glass Effect */}
         <div className="space-y-4 mb-4">
           {/* Main header content */}
-          <div className="backdrop-blur-md bg-white/80 dark:bg-black/80 rounded-2xl p-1">
+          <div className="backdrop-blur-md rounded-2xl p-1">
             <div className="flex md:flex-row md:justify-between md:items-center gap-6">
               <div className="flex items-center">
                 <div className="bg-gradient-to-tr from-black to-gray-800 dark:from-white dark:to-gray-200 rounded-2xl p-3 mr-4 shadow-lg transform hover:scale-105 transition-all">
@@ -851,7 +851,7 @@ export default function ChatBotPage() {
               </div>
 
               {/* User Profile */}
-              <div className="flex items-center space-x-4 backdrop-blur-md bg-white/80 dark:bg-black/80 px-6 py-3 rounded-xl">
+              <div className="flex items-center space-x-4 backdrop-blur-md px-6 py-3 rounded-xl">
                 <UserProfileDropdown
                   name={user?.name || "John Doe"}
                   email={user?.email || "john.doe@example.com"}

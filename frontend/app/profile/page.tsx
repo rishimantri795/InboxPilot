@@ -110,7 +110,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="container mx-auto px-4 h-[calc(100vh-2rem)] py-4 max-w-7xl flex flex-col w-full" >
-            <div className="backdrop-blur-md bg-white/80 dark:bg-black/80 rounded-2xl p-1 mb-4">
+            <div className="backdrop-blur-md  rounded-2xl p-1 mb-4">
               <div className="flex md:flex-row md:justify-between md:items-center gap-6">
                 <div className="flex items-center">
                   <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-gray-700 to-gray-900 dark:from-white dark:via-gray-200 dark:to-white bg-clip-text text-transparent">
@@ -118,7 +118,7 @@ export default function ProfilePage() {
                   </h1>
                 </div>
 
-                <div className="flex space-x-4 backdrop-blur-md bg-white/80 dark:bg-black/80 px-6 py-3 rounded-xl">
+                <div className="flex space-x-4 backdrop-blur-md bg-white/80 dark:bg-black/10 px-6 py-3 rounded-xl">
                   <UserProfileDropdown 
                     name={user.name || "John Doe"} 
                     email={user.email} 
