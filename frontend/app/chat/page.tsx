@@ -824,6 +824,8 @@ export default function ChatBotPage() {
       )}
 
       <AppSidebar currentTab="Recall" />
+      <div className="flex-1 flex flex-col items-center"> {/* Center content and expand */}
+
       <div className="ml-14 md:ml-4 self-start z-10"> {/* Keep trigger left-aligned and visible */}
         <SidebarTrigger />
       </div>
@@ -1368,6 +1370,8 @@ export default function ChatBotPage() {
           border-radius: 3px;
         }
       `}</style>
+    
+    </div>
     </SidebarProvider>
   );
 }

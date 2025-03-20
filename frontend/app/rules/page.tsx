@@ -484,6 +484,9 @@ export default function RulesPage() {
     return (
       <SidebarProvider>
         <AppSidebar currentTab="Rules" />
+
+        <div className="flex-1 flex flex-col items-center"> {/* Center content and expand */}
+
         <div className="ml-14 md:ml-4 self-start z-10"> {/* Keep trigger left-aligned and visible */}
             <SidebarTrigger />
         </div>
@@ -593,7 +596,7 @@ export default function RulesPage() {
           <ConfigureRuleDialog isOpen={isConfigureRuleOpen} onOpenChange={setIsConfigureRuleOpen} prebuiltRule={selectedPrebuiltRule} currentRule={currentRule} onSave={handleSaveRule} setCurrentRule={setCurrentRule} setRules={setRules} />
         </div>
 
-        
+      </div>
       </SidebarProvider>
     );
   }
