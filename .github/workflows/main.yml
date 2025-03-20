@@ -1,0 +1,26 @@
+name: Run Local Function on GitHub Actions
+
+on:
+  schedule:
+    - cron: "0 0 * * *"  # Runs every day at midnight UTC
+  workflow_dispatch:  # Allows manual execution
+
+jobs:
+  run-function:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set Up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install Dependencies
+        run: |
+          npm install axios @google-cloud/firestore
+
+      - name: Run Function
+        run: node scripts/renewOutlookSubscriptions.js
