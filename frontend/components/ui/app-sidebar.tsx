@@ -35,7 +35,7 @@ const items = [
     icon: User,
   },
   {
-    title: "Recall+", // New tab
+    title: "Recall", // New tab
     url: "/chat",
     icon: BotMessageSquare, // Use a valid icon
   },
@@ -122,7 +122,7 @@ export function AppSidebar({ currentTab }) {
                     className={`flex items-center gap-4 px-4 py-3 ${
                       theme === "dark" ? "text-white" : "text-black"
                     } ${
-                      currentTab === item.title ? theme === "dark" ? "bg-gray-700" : "bg-gray-300"
+                      currentTab === item.title ? theme === "dark" ? "bg-gray-700 rounded-none" : "bg-gray-300 rounded-none"
                      : ""
                     }`} 
                   >

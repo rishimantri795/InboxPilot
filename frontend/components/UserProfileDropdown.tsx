@@ -105,7 +105,7 @@ export default function UserProfileDropdown({
       </div>
       <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar className="cursor-pointer bg-black text-white">
+        <Avatar className="cursor-pointer bg-black text-white border-2 border-gray-300">
           <AvatarImage src="" alt="User avatar" />
           <AvatarFallback className="bg-black text-white">{email ? email.charAt(0).toUpperCase() : "U"}</AvatarFallback>
         </Avatar>

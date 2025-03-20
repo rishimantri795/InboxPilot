@@ -484,11 +484,20 @@ export default function RulesPage() {
     return (
       <SidebarProvider>
         <AppSidebar currentTab="Rules" />
-        <SidebarTrigger />
-        <div className="container mx-auto px-4 py-8">
+        <div className="ml-14 md:ml-4 self-start z-10"> {/* Keep trigger left-aligned and visible */}
+            <SidebarTrigger />
+        </div>
+        {/* <div className="container mx-auto px-4 py-8"> */}
+
+        {/* add more padding to the top */}
+        <div className="container mx-auto px-4 h-[calc(100vh-2rem)] py-4 max-w-7xl flex flex-col w-full mt-4">
           {/* Header Section */}
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold">Email Rules</h1>
+            {/* make the header multiple lines in small screen*/}
+            <h1 className="text-3xl font-bold text-center">
+              <span className="block sm:inline">Email</span>{" "}
+              <span className="block sm:inline">Rules</span>
+            </h1>
             <div className="flex items-center space-x-4" id="tour-finish">
               <UserProfileDropdown name={user.name || "John Doe"} email={user.email} tour={tour} />
             </div>

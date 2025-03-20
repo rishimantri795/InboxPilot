@@ -103,20 +103,34 @@ export default function ProfilePage() {
     return (
       <SidebarProvider>
         <AppSidebar currentTab="User Profile" />
-        <SidebarTrigger />
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold mb-6">Profile</h1>
-            <div className="flex items-center space-x-4 pr-4">
-              <div className="text-right">
-              </div>
-              <div className="flex items-center space-x-4" id="tour-finish">
-                <UserProfileDropdown name={user.name || "John Doe"} email={user.email} />
-              </div>
-            </div>
+        <div className="flex-1 flex flex-col items-center"> {/* Center content and expand */}
+          
+          <div className="ml-14 md:ml-4 self-start z-10"> {/* Keep trigger left-aligned and visible */}
+            <SidebarTrigger />
           </div>
 
-          <UserProfile initialInfo={userInfo} user={user.id} />
+          <div className="container mx-auto px-4 h-[calc(100vh-2rem)] py-4 max-w-7xl flex flex-col w-full" >
+            <div className="backdrop-blur-md bg-white/80 dark:bg-black/80 rounded-2xl p-1 mb-4">
+              <div className="flex md:flex-row md:justify-between md:items-center gap-6">
+                <div className="flex items-center">
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-gray-700 to-gray-900 dark:from-white dark:via-gray-200 dark:to-white bg-clip-text text-transparent">
+                    Profile
+                  </h1>
+                </div>
+
+                <div className="flex space-x-4 backdrop-blur-md bg-white/80 dark:bg-black/80 px-6 py-3 rounded-xl">
+                  <UserProfileDropdown 
+                    name={user.name || "John Doe"} 
+                    email={user.email} 
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1">
+              <UserProfile initialInfo={userInfo} user={user.id} />
+            </div>
+          </div>
         </div>
       </SidebarProvider>
     );
