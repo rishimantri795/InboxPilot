@@ -1,14 +1,25 @@
 const axios = require("axios");
+const admin = require("firebase-admin");
 
+// Initialize Firebase Admin SDK (only once)
+if (admin.apps.length === 0) {
+  admin.initializeApp();
+}
+const db = admin.firestore();
+
+// Import helper functions (replace with actual implementations)
+const { getAccessTokenFromRefreshTokenOutlook, subscribeToOutlookEmails, unsubscribeToOutlookEmails } = require("../backend/utils/outlookService");
 async function renewOutlookSubscriptions() {
   try {
     console.log("🔄 Running function for Outlook subscription renewal...");
 
-    // Mock: Replace with actual database calls if needed
-    const users = [
-      { id: "user1", refreshToken: "dummy_token", listenerStatus: 1 },
-      { id: "user2", refreshToken: "dummy_token", listenerStatus: 0 },
-    ];
+    const usersSnapshot = await db.collection("Users").get();
+    const users = usersSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+    if (users.length === 0) {
+      console.log("⚠️ No users found.");
+      return res.status(200).send("No users found.");
+    }
 
     for (const user of users) {
       if (!user.refreshToken) {
@@ -24,19 +35,31 @@ async function renewOutlookSubscriptions() {
       try {
         console.log(`🔹 Processing user: ${user.id}`);
 
-        // Replace with actual API request for access token
-        const accessToken = "mock_access_token";
+        const accessToken = await getAccessTokenFromRefreshTokenOutlook(user.refreshToken);
 
-        // Mock API call (replace with actual Microsoft Graph API request)
-        console.log(`✅ Renewed subscription for user ${user.id}`);
-      } catch (error) {
-        console.error(`❌ Error processing user ${user.id}:`, error.message);
+        const subscriptionsResponse = await axios.get("https://graph.microsoft.com/v1.0/subscriptions", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+
+        const subscriptions = subscriptionsResponse.data.value || [];
+
+        if (user.listenerStatus === 1) {
+          console.log(`🟡 No active subscription found for user ${user.id}. Creating a new one...`);
+          await unsubscribeToOutlookEmails(accessToken);
+          await subscribeToOutlookEmails(accessToken);
+          continue;
+        } else if (user.listenerStatus === 0) {
+          console.log(`🔕 Skipping subscription for user ${user.id}: Listener is disabled.`);
+        }
+      } catch (userError) {
+        console.error(`❌ Error processing user ${user.id}:`, userError.response ? userError.response.data : userError.message);
       }
     }
 
-    console.log("✅ Subscription renewal process completed.");
+    res.status(200).send("Subscription renewal process completed.");
   } catch (error) {
-    console.error("❌ Error renewing subscriptions:", error.message);
+    console.error("❌ Error renewing Outlook subscriptions:", error.response ? error.response.data : error.message);
+    res.status(500).send("Error renewing subscriptions.");
   }
 }
 
