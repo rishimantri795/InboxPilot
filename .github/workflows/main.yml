@@ -23,7 +23,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          npm install axios @google-cloud/firestore
+          npm install axios @google-cloud/firestore firebase-admin
 
       - name: Run Function
         run: node scripts/renewOutlookSubscriptions.js
