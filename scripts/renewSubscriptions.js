@@ -1,6 +1,15 @@
 const fs = require("fs");
 const axios = require("axios");
 
+const admin = require("firebase-admin");
+
+// Initialize Firebase Admin SDK if not already initialized
+if (admin.apps.length === 0) {
+  admin.initializeApp();
+}
+
+const db = admin.firestore(); // ✅ Define Firestore database instance
+
 const { getAccessTokenFromRefreshToken, watchGmailInbox, stopWatchGmailInbox } = require("../backend/utils/gmailService");
 
 async function renewSubscriptions() {
