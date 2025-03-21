@@ -3,6 +3,9 @@ require("dotenv").config(); // loads env vars from .env file into process.env
 
 // console.log("FIREBASE_PRIVATE_KEY:", process.env.FIREBASE_PRIVATE_KEY);
 
+console.log("HIII");
+console.log(process.env.FIREBASE_PROJECT_ID);
+
 // Initialize Firebase Admin
 const serviceAccount = {
   type: "service_account",
