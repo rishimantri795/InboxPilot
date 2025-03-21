@@ -21,7 +21,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          npm install axios @google-cloud/firestore firebase-admin dotenv
+          run: npm ci  # ✅ Ensures clean install from package-lock.json
 
       - name: Run Function
         run: node scripts/renewSubscriptions.js
