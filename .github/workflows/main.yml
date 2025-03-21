@@ -3,7 +3,7 @@ name: Run Local Function on GitHub Actions
 on:
   push:
   schedule:
-    - cron: "*/5 * * * *" # Runs every minute for testing
+    - cron: "*/1 * * * *" # Runs every minute for testing
   workflow_dispatch: # Allows manual execution
 
 jobs:
