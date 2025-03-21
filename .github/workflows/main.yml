@@ -33,6 +33,9 @@ jobs:
       - name: SECRET
         run: echo "My secret is ${{ secrets.FIREBASE_PRIVATE_KEY }}"
 
+      - name: VAR
+        run: echo "My variable is ${{ vars.FIREBASE_PROJECT_ID}}"
+
       - name: Install Dependencies
         run: npm ci
 
