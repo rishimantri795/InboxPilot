@@ -653,6 +653,8 @@ export default function ChatBotPage() {
       });
     }, 50);
 
+    isProcessing = true;
+
     try {
       // Optimistic update using backend endpoint
       await fetch(
@@ -774,7 +776,7 @@ export default function ChatBotPage() {
   };
 
   // Determine if we're in an active processing state
-  const isProcessing =
+  let isProcessing =
     onboardingStatus.phase !== "complete" &&
     onboardingStatus.phase !== "error" &&
     onboardingStatus.phase !== "waiting";
