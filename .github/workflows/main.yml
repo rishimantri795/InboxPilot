@@ -9,7 +9,10 @@ on:
 jobs:
   run-function:
     runs-on: ubuntu-latest
-    env:-
+    env:
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+      FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
 
     steps:
       - name: Checkout Repository
