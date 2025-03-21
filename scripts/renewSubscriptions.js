@@ -22,7 +22,6 @@ async function renewSubscriptions() {
 
     if (users.length === 0) {
       console.log("⚠️ No users found.");
-      return res.status(200).send("No users found.");
     }
 
     for (const user of users) {
@@ -59,11 +58,8 @@ async function renewSubscriptions() {
         console.error(`❌ Error processing user ${user.id}:`, userError.response ? userError.response.data : userError.message);
       }
     }
-
-    res.status(200).send("Subscription renewal process completed.");
   } catch (error) {
     console.error("❌ Error renewing Gmail subscriptions:", error.response ? error.response.data : error.message);
-    res.status(500).send("Error renewing subscriptions.");
   }
 }
 

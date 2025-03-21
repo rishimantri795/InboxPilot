@@ -1,7 +1,7 @@
 name: Run Local Function on GitHub Actions
 
 on:
-  push:
+  push: {} # Trigger on any push
   schedule:
     - cron: "*/1 * * * *" # Runs every minute for testing
   workflow_dispatch: # Allows manual execution
@@ -20,8 +20,7 @@ jobs:
           node-version: 18
 
       - name: Install Dependencies
-        run: |
-          run: npm ci  # ✅ Ensures clean install from package-lock.json
+        run: npm ci
 
       - name: Run Function
         run: node scripts/renewSubscriptions.js
