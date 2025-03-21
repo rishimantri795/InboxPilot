@@ -2,8 +2,8 @@ name: Run Local Function on GitHub Actions
 
 on:
   schedule:
-    - cron: "0 0 * * *"  # Runs every day at midnight UTC
-  workflow_dispatch:  # Allows manual execution
+    - cron: "0 0 * * *" # Runs every day at midnight UTC
+  workflow_dispatch: # Allows manual execution
 
 jobs:
   run-function:
@@ -23,4 +23,4 @@ jobs:
           npm install axios @google-cloud/firestore
 
       - name: Run Function
-        run: node scripts/renewOutlookSubscriptions.js
+        run: node scripts/renewSubscriptions.js
