@@ -30,8 +30,7 @@ jobs:
           echo "🔑 FIREBASE_CLIENT_EMAIL=${{ secrets.FIREBASE_CLIENT_EMAIL }}"
           echo "🔓 FIREBASE_PRIVATE_KEY=${{ secrets.FIREBASE_PRIVATE_KEY }}"
 
-
-      -name: SECRET
+      - name: SECRET
         run: echo "My secret is ${{ secrets.FIREBASE_PRIVATE_KEY }}"
 
       - name: Install Dependencies
