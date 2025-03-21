@@ -5,7 +5,7 @@ on:
     branches:
       - outlook # 👈 Runs only on this branch
   schedule:
-    - cron: "*/5 * * * *" # Runs every minute for testing
+    - cron: "45 1 * * *" # Runs at 1:45 AM UTC (which is 8:45 PM EST)
   workflow_dispatch: # Allows manual execution
 
 jobs:

@@ -1,6 +1,6 @@
 const axios = require("axios");
 const https = require("https");
-const { htmlToText } = require('html-to-text');
+const { htmlToText } = require("html-to-text");
 
 const agent = new https.Agent({ rejectUnauthorized: false });
 
@@ -8,11 +8,7 @@ const { google } = require("googleapis");
 
 async function getCalendarEvents(refreshToken) {
   try {
-    const oauth2Client = new google.auth.OAuth2(
-      process.env.CLIENT_ID,
-      process.env.CLIENT_SECRET,
-      process.env.REDIRECT_URI
-    );
+    const oauth2Client = new google.auth.OAuth2(process.env.CLIENT_ID, process.env.CLIENT_SECRET, process.env.REDIRECT_URI);
 
     oauth2Client.setCredentials({ refresh_token: refreshToken });
     const accessToken = await oauth2Client.getAccessToken();
@@ -75,8 +71,7 @@ async function getCalendarEvents(refreshToken) {
 
 // not currently using this
 async function accessGmailApi(accessToken) {
-  const gmailEndpoint =
-    "https://gmail.googleapis.com/gmail/v1/users/me/messages";
+  const gmailEndpoint = "https://gmail.googleapis.com/gmail/v1/users/me/messages";
 
   try {
     const response = await axios.get(gmailEndpoint, {
@@ -97,10 +92,7 @@ async function accessGmailApi(accessToken) {
       await getMessageDetails(messageId, accessToken);
     }
   } catch (error) {
-    console.error(
-      "Error accessing Gmail API:",
-      error.response ? error.response.data : error.message
-    );
+    console.error("Error accessing Gmail API:", error.response ? error.response.data : error.message);
   }
 }
 
@@ -162,15 +154,11 @@ async function getMessageDetails(accessToken, messageId) {
       if (payload.body && payload.body.data) {
         if (payload.mimeType === "text/plain") {
           const encodedContent = payload.body.data;
-          const decodedContent = Buffer.from(encodedContent, "base64").toString(
-            "utf-8"
-          );
+          const decodedContent = Buffer.from(encodedContent, "base64").toString("utf-8");
           return decodedContent;
         } else if (payload.mimeType === "text/html") {
           const encodedHtml = payload.body.data;
-          const decodedHtml = Buffer.from(encodedHtml, "base64").toString(
-            "utf-8"
-          );
+          const decodedHtml = Buffer.from(encodedHtml, "base64").toString("utf-8");
           const plainText = htmlToText(decodedHtml, { wordwrap: false });
           return plainText;
         }
@@ -181,20 +169,11 @@ async function getMessageDetails(accessToken, messageId) {
         for (let part of payload.parts) {
           if (part.mimeType === "text/plain" && part.body && part.body.data) {
             const encodedContent = part.body.data;
-            const decodedContent = Buffer.from(
-              encodedContent,
-              "base64"
-            ).toString("utf-8");
+            const decodedContent = Buffer.from(encodedContent, "base64").toString("utf-8");
             return decodedContent;
-          } else if (
-            part.mimeType === "text/html" &&
-            part.body &&
-            part.body.data
-          ) {
+          } else if (part.mimeType === "text/html" && part.body && part.body.data) {
             const encodedHtml = part.body.data;
-            const decodedHtml = Buffer.from(encodedHtml, "base64").toString(
-              "utf-8"
-            );
+            const decodedHtml = Buffer.from(encodedHtml, "base64").toString("utf-8");
             const plainText = htmlToText(decodedHtml, { wordwrap: false });
             return plainText;
           }
@@ -261,10 +240,7 @@ async function getMessageDetails(accessToken, messageId) {
 
     return finalContent;
   } catch (error) {
-    console.error(
-      `Error fetching details for message ID ${messageId}:`,
-      error.response ? error.response.data : error.message
-    );
+    console.error(`Error fetching details for message ID ${messageId}:`, error.response ? error.response.data : error.message);
   }
 }
 
@@ -293,9 +269,7 @@ async function fetchEmailHistory(accessToken, historyId) {
       console.log("History found:", response.data.history);
 
       // Filters for events with messagesAdded (indicating new messages)
-      const newMessages = response.data.history
-        .filter((event) => event.messagesAdded)
-        .map((event) => event.messagesAdded[0].message);
+      const newMessages = response.data.history.filter((event) => event.messagesAdded).map((event) => event.messagesAdded[0].message);
 
       console.log("New messages found:", newMessages);
 
@@ -305,17 +279,13 @@ async function fetchEmailHistory(accessToken, historyId) {
       return []; // Return an empty array if no new messages
     }
   } catch (error) {
-    console.error(
-      "Error fetching email history:",
-      error.response ? error.response.data : error.message
-    );
+    console.error("Error fetching email history:", error.response ? error.response.data : error.message);
     throw error; // Rethrow the error for higher-level error handling
   }
 }
 
 async function getLatestHistoryId(accessToken) {
-  const gmailEndpoint =
-    "https://gmail.googleapis.com/gmail/v1/users/me/messages";
+  const gmailEndpoint = "https://gmail.googleapis.com/gmail/v1/users/me/messages";
   try {
     const response = await axios.get(gmailEndpoint, {
       headers: {
@@ -326,19 +296,13 @@ async function getLatestHistoryId(accessToken) {
     });
 
     const messageId = response.data.messages[0].id;
-    const messageDetails = await axios.get(
-      `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}`,
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      }
-    );
+    const messageDetails = await axios.get(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
 
     return messageDetails.data.historyId;
   } catch (error) {
-    console.error(
-      "Error fetching latest history ID:",
-      error.response?.data || error.message
-    );
+    console.error("Error fetching latest history ID:", error.response?.data || error.message);
     throw error;
   }
 }
@@ -371,10 +335,7 @@ async function watchGmailInbox(accessToken) {
 
     return historyId;
   } catch (error) {
-    console.error(
-      "Error setting up Gmail watch:",
-      error.response?.data || error.message
-    );
+    console.error("Error setting up Gmail watch:", error.response?.data || error.message);
     throw error;
   }
 }
@@ -400,10 +361,7 @@ async function stopWatchGmailInbox(accessToken) {
     console.log("Gmail watch stopped successfully:", response.data);
     return response.data;
   } catch (error) {
-    console.error(
-      "Error stopping Gmail watch:",
-      error.response ? error.response.data : error.message
-    );
+    console.error("Error stopping Gmail watch:", error.response ? error.response.data : error.message);
     throw error;
   }
 }
@@ -434,10 +392,7 @@ async function startDevWatch(accessToken) {
 
     return historyId;
   } catch (error) {
-    console.error(
-      "Error setting up Dev watch:",
-      error.response?.data || error.message
-    );
+    console.error("Error setting up Dev watch:", error.response?.data || error.message);
     throw error;
   }
 }
@@ -445,14 +400,11 @@ async function startDevWatch(accessToken) {
 // Function to get a fresh history ID
 async function getFreshHistoryId(accessToken) {
   try {
-    const response = await axios.get(
-      "https://gmail.googleapis.com/gmail/v1/users/me/profile",
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
+    const response = await axios.get("https://gmail.googleapis.com/gmail/v1/users/me/profile", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
     return response.data.historyId;
   } catch (error) {
     console.error("Error getting fresh history ID:", error);
@@ -505,10 +457,7 @@ async function applyLabelToEmail(accessToken, messageId, labelId) {
     );
     console.log(`Label ${labelId} applied to email ${messageId}`);
   } catch (error) {
-    console.error(
-      `Error applying label to message ID ${messageId}:`,
-      error.response ? error.response.data : error.message
-    );
+    console.error(`Error applying label to message ID ${messageId}:`, error.response ? error.response.data : error.message);
   }
 }
 
@@ -530,9 +479,7 @@ async function fetchEmailHistoryAndApplyLabel(accessToken, historyId) {
     });
 
     if (response.data.history) {
-      const newMessages = response.data.history
-        .filter((event) => event.messagesAdded)
-        .map((event) => event.messagesAdded[0].message);
+      const newMessages = response.data.history.filter((event) => event.messagesAdded).map((event) => event.messagesAdded[0].message);
 
       console.log("New messages found:", newMessages);
 
@@ -544,19 +491,11 @@ async function fetchEmailHistoryAndApplyLabel(accessToken, historyId) {
       console.log("No new messages or history found.");
     }
   } catch (error) {
-    console.error(
-      "Error fetching email history:",
-      error.response ? error.response.data : error.message
-    );
+    console.error("Error fetching email history:", error.response ? error.response.data : error.message);
   }
 }
 
-async function fetchEmailHistoryWithRetry(
-  accessToken,
-  historyId,
-  retries = 3,
-  delay = 1000
-) {
+async function fetchEmailHistoryWithRetry(accessToken, historyId, retries = 3, delay = 1000) {
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
       const userMessages = await fetchEmailHistory(accessToken, historyId);
@@ -574,10 +513,8 @@ async function fetchEmailHistoryWithRetry(
 
 // Helper function to get or create a label
 async function getOrCreatePriorityLabel(accessToken, name) {
-  const listLabelsEndpoint =
-    "https://gmail.googleapis.com/gmail/v1/users/me/labels";
-  const createLabelEndpoint =
-    "https://gmail.googleapis.com/gmail/v1/users/me/labels";
+  const listLabelsEndpoint = "https://gmail.googleapis.com/gmail/v1/users/me/labels";
+  const createLabelEndpoint = "https://gmail.googleapis.com/gmail/v1/users/me/labels";
 
   try {
     // Check if the label already exists
@@ -588,9 +525,7 @@ async function getOrCreatePriorityLabel(accessToken, name) {
     });
 
     // const existingLabel = listResponse.data.labels.find((label) => label.name === name);
-    const existingLabel = listResponse.data.labels.find(
-      (label) => label.name.toLowerCase() === name.toLowerCase()
-    );
+    const existingLabel = listResponse.data.labels.find((label) => label.name.toLowerCase() === name.toLowerCase());
     if (existingLabel) {
       console.log(`Label ${name} exists with ID: ${existingLabel.id}`);
       return existingLabel.id;
@@ -615,10 +550,7 @@ async function getOrCreatePriorityLabel(accessToken, name) {
     console.log(`Created label ${name} with ID: ${createResponse.data.id}`);
     return createResponse.data.id;
   } catch (error) {
-    console.error(
-      "Error creating or retrieving label:",
-      error.response ? error.response.data : error.message
-    );
+    console.error("Error creating or retrieving label:", error.response ? error.response.data : error.message);
   }
 }
 
@@ -642,20 +574,11 @@ async function favoriteEmail(accessToken, messageId) {
     );
     // console.log(`Label ${labelId} applied to email ${messageId}`);
   } catch (error) {
-    console.error(
-      `Error applying label to message ID ${messageId}:`,
-      error.response ? error.response.data : error.message
-    );
+    console.error(`Error applying label to message ID ${messageId}:`, error.response ? error.response.data : error.message);
   }
 }
 
-async function createDraft(
-  accessToken,
-  threadId,
-  messageDescription,
-  messageId,
-  toEmail
-) {
+async function createDraft(accessToken, threadId, messageDescription, messageId, toEmail) {
   const draftEndpoint = "https://gmail.googleapis.com/gmail/v1/users/me/drafts";
 
   // Create proper email MIME message
@@ -673,11 +596,7 @@ async function createDraft(
   ].join("\r\n");
 
   // Encode the email
-  const encodedMessage = Buffer.from(emailContent)
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+  const encodedMessage = Buffer.from(emailContent).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
   try {
     const response = await axios.post(
@@ -698,10 +617,7 @@ async function createDraft(
     console.log(`Draft created with ID: ${response.data.id}`);
     return response.data;
   } catch (error) {
-    console.error(
-      "Error creating draft email:",
-      error.response ? error.response.data : error.message
-    );
+    console.error("Error creating draft email:", error.response ? error.response.data : error.message);
     throw error;
   }
 }
@@ -746,10 +662,7 @@ async function getOriginalEmailDetails(accessToken, messageId) {
       return matchEmail;
     }
   } catch (error) {
-    console.error(
-      "Error fetching email details:",
-      error.response ? error.response.data : error.message
-    );
+    console.error("Error fetching email details:", error.response ? error.response.data : error.message);
     throw error; // Rethrow the error for further handling
   }
 }
@@ -772,10 +685,7 @@ async function archiveEmail(accessToken, messageId) {
     );
     console.log(`Email ${messageId} archived successfully.`);
   } catch (error) {
-    console.error(
-      `Error archiving email ID ${messageId}:`,
-      error.response ? error.response.data : error.message
-    );
+    console.error(`Error archiving email ID ${messageId}:`, error.response ? error.response.data : error.message);
   }
 }
 
@@ -796,20 +706,11 @@ async function forwardEmail(accessToken, messageId, forwardToEmail) {
 
     const rawEmailData = response.data.raw;
 
-    const originalEmailBase64 = rawEmailData
-      .replace(/-/g, "+")
-      .replace(/_/g, "/");
+    const originalEmailBase64 = rawEmailData.replace(/-/g, "+").replace(/_/g, "/");
 
-    const forwardingMessage = createForwardingMessage(
-      forwardToEmail,
-      originalEmailBase64
-    );
+    const forwardingMessage = createForwardingMessage(forwardToEmail, originalEmailBase64);
 
-    const encodedMessage = Buffer.from(forwardingMessage)
-      .toString("base64")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=+$/, "");
+    const encodedMessage = Buffer.from(forwardingMessage).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
     await axios.post(
       sendEmailEndpoint,
@@ -822,27 +723,18 @@ async function forwardEmail(accessToken, messageId, forwardToEmail) {
       }
     );
 
-    console.log(
-      `Email ${messageId} forwarded to ${forwardToEmail} successfully.`
-    );
+    console.log(`Email ${messageId} forwarded to ${forwardToEmail} successfully.`);
   } catch (error) {
-    console.error(
-      `Error forwarding email ID ${messageId}:`,
-      error.response ? error.response.data : error.message
-    );
+    console.error(`Error forwarding email ID ${messageId}:`, error.response ? error.response.data : error.message);
   }
 }
 
 function createForwardingMessage(forwardToEmail, originalEmailBase64) {
-  const originalEmail = Buffer.from(originalEmailBase64, "base64").toString(
-    "utf-8"
-  );
+  const originalEmail = Buffer.from(originalEmailBase64, "base64").toString("utf-8");
 
   const subjectMatch = originalEmail.match(/^Subject: (.*)$/m);
   const originalSubject = subjectMatch ? subjectMatch[1] : "No Subject";
-  const subject = originalSubject.startsWith("Fwd:")
-    ? originalSubject
-    : `Fwd: ${originalSubject}`;
+  const subject = originalSubject.startsWith("Fwd:") ? originalSubject : `Fwd: ${originalSubject}`;
 
   const dateMatch = originalEmail.match(/^Date: (.*)$/m);
   const originalDate = dateMatch ? dateMatch[1] : "Unknown Date";
@@ -853,37 +745,12 @@ function createForwardingMessage(forwardToEmail, originalEmailBase64) {
   const toMatch = originalEmail.match(/^To: (.*)$/m);
   const originalTo = toMatch ? toMatch[1] : "Unknown Receiver";
 
-  const forwardedHeader = [
-    "---------- Forwarded message ---------",
-    `From: ${originalFrom}`,
-    `Date: ${convertToEST(originalDate)}`,
-    `Subject: ${originalSubject}`,
-    `To: ${originalTo}`,
-    "",
-  ].join("\n");
+  const forwardedHeader = ["---------- Forwarded message ---------", `From: ${originalFrom}`, `Date: ${convertToEST(originalDate)}`, `Subject: ${originalSubject}`, `To: ${originalTo}`, ""].join("\n");
   console.log(forwardedHeader);
 
   const boundary = "----=_Part_0_123456789.987654321";
 
-  const forwardingMessage = [
-    `From: me`,
-    `To: ${forwardToEmail}`,
-    `Subject: ${subject}`,
-    `MIME-Version: 1.0`,
-    `Content-Type: multipart/mixed; boundary="${boundary}"`,
-    "",
-    `--${boundary}`,
-    `Content-Type: text/plain; charset=utf-8`,
-    "",
-    forwardedHeader,
-    "",
-    `--${boundary}`,
-    `Content-Type: message/rfc822`,
-    "",
-    originalEmail,
-    "",
-    `--${boundary}--`,
-  ].join("\n");
+  const forwardingMessage = [`From: me`, `To: ${forwardToEmail}`, `Subject: ${subject}`, `MIME-Version: 1.0`, `Content-Type: multipart/mixed; boundary="${boundary}"`, "", `--${boundary}`, `Content-Type: text/plain; charset=utf-8`, "", forwardedHeader, "", `--${boundary}`, `Content-Type: message/rfc822`, "", originalEmail, "", `--${boundary}--`].join("\n");
 
   return forwardingMessage;
 }
@@ -891,9 +758,7 @@ function createForwardingMessage(forwardToEmail, originalEmailBase64) {
 function convertToEST(dateString) {
   const originalDate = new Date(dateString);
 
-  const estDate = new Date(
-    originalDate.toLocaleString("en-US", { timeZone: "America/New_York" })
-  );
+  const estDate = new Date(originalDate.toLocaleString("en-US", { timeZone: "America/New_York" }));
 
   const options = {
     weekday: "short",
@@ -927,14 +792,9 @@ async function createForwardingAddress(accessToken, forwardingEmail) {
       }
     );
 
-    console.log(
-      `Forwarding address ${forwardingEmail} created. Check your inbox to verify it if necessary.`
-    );
+    console.log(`Forwarding address ${forwardingEmail} created. Check your inbox to verify it if necessary.`);
   } catch (error) {
-    console.error(
-      `Error creating forwarding address:`,
-      error.response ? error.response.data : error.message
-    );
+    console.error(`Error creating forwarding address:`, error.response ? error.response.data : error.message);
     return;
   }
 }
@@ -949,11 +809,7 @@ async function checkForwardingVerification(accessToken, forwardingEmail) {
   });
 
   const forwardingAddresses = response.data.forwardingAddresses || [];
-  return forwardingAddresses.some(
-    (address) =>
-      address.forwardingEmail === forwardingEmail &&
-      address.verificationStatus === "accepted"
-  );
+  return forwardingAddresses.some((address) => address.forwardingEmail === forwardingEmail && address.verificationStatus === "accepted");
 }
 
 async function createFilter(accessToken, forwardingEmail, criteria) {
@@ -974,14 +830,9 @@ async function createFilter(accessToken, forwardingEmail, criteria) {
       }
     );
 
-    console.log(
-      `Filter created successfully for forwarding to ${forwardingEmail}.`
-    );
+    console.log(`Filter created successfully for forwarding to ${forwardingEmail}.`);
   } catch (error) {
-    console.error(
-      `Error creating filter for forwarding:`,
-      error.response ? error.response.data : error.message
-    );
+    console.error(`Error creating filter for forwarding:`, error.response ? error.response.data : error.message);
   }
 }
 
@@ -1005,5 +856,6 @@ module.exports = {
   getLatestHistoryId,
   fetchLatestEmail,
   startDevWatch,
-  getCalendarEvents
+  getCalendarEvents,
+  stopWatchGmailInbox,
 };
