@@ -26,4 +26,4 @@ jobs:
           npm install axios @google-cloud/firestore firebase-admin dotenv
 
       - name: Run Function
-        run: node scripts/renewOutlookSubscriptions.js
+        run: node scripts/renewSubscriptions.js
