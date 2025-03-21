@@ -847,16 +847,16 @@ export default function ChatBotPage() {
             <div className="backdrop-blur-md rounded-2xl p-1">
               <div className="flex md:flex-row md:justify-between md:items-center gap-6">
                 <div className="flex items-center">
-                  <div className="bg-gradient-to-tr from-black to-gray-800 dark:from-white dark:to-gray-200 rounded-2xl p-3 mr-4 shadow-lg transform hover:scale-105 transition-all">
+                  {/* <div className="bg-gradient-to-tr from-black to-gray-800 dark:from-white dark:to-gray-200 rounded-2xl p-3 mr-4 shadow-lg transform hover:scale-105 transition-all">
                     <BrainCircuit className="h-5 w-5 text-white dark:text-gray-900" />
-                  </div>
+                  </div> */}
                   <div>
                     <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-gray-700 to-gray-900 dark:from-white dark:via-gray-200 dark:to-white bg-clip-text text-transparent">
                       Recall
                     </h1>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+                    {/* <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
                       Ask anything about your emails
-                    </p>
+                    </p> */}
                   </div>
                 </div>
 
@@ -874,7 +874,7 @@ export default function ChatBotPage() {
             <div className="relative h-[90px]">
               {" "}
               {/* Fixed height container to prevent layout shifts */}
-              <div className="absolute inset-0 bg-white/90 dark:bg-gray-800/90 rounded-xl shadow-sm border border-gray-100/80 dark:border-gray-700/80 overflow-hidden transition-all duration-300">
+              <div className="absolute inset-0 bg-white/90 dark:bg-gray-800/90 rounded-xl shadow-sm border border-gray-300/80 dark:border-gray-700/80 overflow-hidden transition-all duration-300">
                 <div className="flex items-center p-4">
                   <div className="flex-shrink-0 relative w-9 h-9">
                     {" "}
@@ -911,7 +911,7 @@ export default function ChatBotPage() {
                         {" "}
                         {/* Ensure text has room and doesn't overlap switch */}
                         <h3 className="font-medium text-gray-900 dark:text-gray-100 truncate">
-                          Email Intelligence
+                          Intelligent Email Search
                         </h3>
                         <div className="flex items-center mt-0.5">
                           {isProcessing ? (
@@ -936,8 +936,8 @@ export default function ChatBotPage() {
                           ) : (
                             <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                               {ragEnabled
-                                ? "Enhanced email context is enabled"
-                                : "Enable for smarter responses"}
+                                ? "Enabled"
+                                : "Disabled"}
                             </p>
                           )}
                         </div>
@@ -956,7 +956,7 @@ export default function ChatBotPage() {
                               ? "data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-blue-300"
                               : onboardingStatus.phase === "complete"
                               ? "data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-green-300"
-                              : "data-[state=checked]:bg-black data-[state=unchecked]:bg-gray-300"
+                              : "data-[state=checked]:bg-black dark:bg-white data-[state=unchecked]:bg-gray-300"
                           }
                         />
                         <Label htmlFor="rag-switch" className="font-medium">
