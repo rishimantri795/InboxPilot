@@ -24,6 +24,9 @@ jobs:
         with:
           node-version: 18
 
+      -name: SECRET
+        run: echo "My secret is ${{ secrets.DOES_NOT_EXIST }}"
+
       - name: Install Dependencies
         run: npm ci
 
