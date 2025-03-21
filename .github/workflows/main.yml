@@ -2,10 +2,8 @@ name: Run Local Function on GitHub Actions
 
 on:
   push:
-    branches:
-      - outlook # 👈 Runs only on this branch
   schedule:
-    - cron: "45 1 * * *" # Runs at 1:45 AM UTC (which is 8:45 PM EST)
+    - cron: "*/5 * * * *" # Runs every minute for testing
   workflow_dispatch: # Allows manual execution
 
 jobs:
