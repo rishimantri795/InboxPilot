@@ -24,6 +24,13 @@ jobs:
         with:
           node-version: 18
 
+      - name: Debug Secrets (Unsafe)
+        run: |
+          echo "🔥 FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}"
+          echo "🔑 FIREBASE_CLIENT_EMAIL=${{ secrets.FIREBASE_CLIENT_EMAIL }}"
+          echo "🔓 FIREBASE_PRIVATE_KEY=${{ secrets.FIREBASE_PRIVATE_KEY }}"
+
+
       -name: SECRET
         run: echo "My secret is ${{ secrets.FIREBASE_PRIVATE_KEY }}"
 
