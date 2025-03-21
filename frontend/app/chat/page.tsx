@@ -532,6 +532,7 @@ export default function ChatBotPage() {
           );
 
           console.log(data);
+          user.RagQueued = "procdessed";
 
           if (response.ok) {
             console.log("Optimistic update successful");
@@ -542,6 +543,15 @@ export default function ChatBotPage() {
       }
 
       console.log("Onboarding progress:", data);
+
+      if (data.phase === "complete" && user?.RagQueued === "inTaskQueue") {
+        setOnboardingStatus({
+          phase: "initializing",
+          fetch: 0,
+          save: 0,
+          total: 0,
+        });
+      }
 
       if (data.phase === "complete") {
         console.log("Onboarding complete!");
@@ -614,6 +624,10 @@ export default function ChatBotPage() {
     }
   }, [loading, user]);
 
+  useEffect(() => {
+    setIsEnablingRag(user?.RAG === "enabled");
+  }, []);
+
   // Handle RAG permission response
   const handlePermissionResponse = (allow: boolean) => {
     setRagEnabled(allow);
@@ -657,18 +671,18 @@ export default function ChatBotPage() {
 
     try {
       // Optimistic update using backend endpoint
-      await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/onboardingRAG/optimisticRemove`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: user.id,
-            ragState: newRagState ? "enabling" : "disabling",
-          }),
-        }
-      );
+      // await fetch(
+      //   `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/onboardingRAG/optimisticRemove`,
+      //   {
+      //     method: "POST",
+      //     credentials: "include",
+      //     headers: { "Content-Type": "application/json" },
+      //     body: JSON.stringify({
+      //       userId: user.id,
+      //       ragState: newRagState ? "enabling" : "disabling",
+      //     }),
+      //   }
+      // );
 
       // Actual toggle operation
       const endpoint = newRagState
@@ -686,6 +700,7 @@ export default function ChatBotPage() {
       });
 
       // Start polling for progress
+      user.RagQueued = "inTaskQueue";
       fetchOnboardingProgress();
     } catch (error) {
       console.error("Failed to toggle RAG:", error);
