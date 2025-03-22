@@ -1,2 +1,3 @@
 .vercel
 frontend/.env
+node_modules/
