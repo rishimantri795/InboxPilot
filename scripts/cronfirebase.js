@@ -1,7 +1,11 @@
 const admin = require("firebase-admin");
 require("dotenv").config(); // loads env vars from .env file into process.env
 
-// console.log("FIREBASE_PRIVATE_KEY:", process.env.FIREBASE_PRIVATE_KEY);
+// Add debugging
+console.log("Firebase Config Check:");
+console.log("Project ID exists:", !!process.env.FIREBASE_PROJECT_ID);
+console.log("Client Email exists:", !!process.env.FIREBASE_CLIENT_EMAIL);
+console.log("Private Key exists:", !!process.env.FIREBASE_PRIVATE_KEY);
 
 // Initialize Firebase Admin
 const serviceAccount = {

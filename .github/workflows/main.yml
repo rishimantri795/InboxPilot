@@ -36,8 +36,7 @@ jobs:
         run: echo "My variable is ${{ vars.FIREBASE_PROJECT_ID}}"
 
       - name: Install Dependencies
-        run: |
-          npm ci
+        run: npm ci
 
       - name: Run Function
         run: node scripts/renewSubscriptions.js
