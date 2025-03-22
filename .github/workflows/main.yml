@@ -37,8 +37,10 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          cd frontend && npm ci
-          cd ../backend && npm ci
+          cd frontend 
+          npm ci
+          cd backend
+          npm ci
 
       - name: Run Function
         run: node scripts/renewSubscriptions.js
