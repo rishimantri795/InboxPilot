@@ -1005,5 +1005,6 @@ module.exports = {
   getLatestHistoryId,
   fetchLatestEmail,
   startDevWatch,
-  getCalendarEvents
+  getCalendarEvents,
+  stopWatchGmailInbox
 };

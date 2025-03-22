@@ -20,7 +20,8 @@ const admin = require("./cronfirebase");
 
 const db = admin.firestore(); // ✅ Define Firestore database instance
 
-const { getAccessTokenFromRefreshToken, watchGmailInbox, stopWatchGmailInbox } = require("../backend/utils/gmailService");
+const { watchGmailInbox, stopWatchGmailInbox } = require("../backend/utils/gmailService");
+const { getAccessTokenFromRefreshToken } = require("../backend/utils/tokenService");
 
 async function renewSubscriptions() {
   const logFile = "scripts/log.txt"; // Log file path
