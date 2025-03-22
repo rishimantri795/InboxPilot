@@ -1,7 +1,7 @@
 const fs = require("fs");
 const axios = require("axios");
 
-const admin = require("cronfirebase.js");
+const admin = require("./scripts/cronfirebase.js");
 
 // console.log("🔍 Checking Firebase Credentials:");
 // console.log("🔍 FIREBASE_PROJECT_ID:", process.env.FIREBASE_PROJECT_ID);
