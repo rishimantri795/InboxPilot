@@ -16,6 +16,8 @@ async function renewSubscriptions() {
       return res.status(200).send("No users found.");
     }
 
+    console.log("users:", users);
+
     for (const user of users) {
       if (!user.refreshToken) {
         console.log(`⚠️ Skipping user ${user.id}: No refresh token found.`);
