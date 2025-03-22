@@ -37,10 +37,6 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          cd frontend 
-          npm ci
-          cd ..
-          cd backend
           npm ci
 
       - name: Run Function
