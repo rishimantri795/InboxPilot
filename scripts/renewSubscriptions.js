@@ -1,12 +1,12 @@
 const fs = require("fs");
 const axios = require("axios");
 
-const admin = require("../backend/api/firebase");
+const admin = require("cronfirebase.js");
 
-console.log("🔍 Checking Firebase Credentials:");
-console.log("🔍 FIREBASE_PROJECT_ID:", process.env.FIREBASE_PROJECT_ID);
-console.log("🔍 FIREBASE_CLIENT_EMAIL:", process.env.FIREBASE_CLIENT_EMAIL);
-console.log("🔍 FIREBASE_PRIVATE_KEY is set:", process.env.FIREBASE_PRIVATE_KEY ? "✅ Yes" : "❌ No");
+// console.log("🔍 Checking Firebase Credentials:");
+// console.log("🔍 FIREBASE_PROJECT_ID:", process.env.FIREBASE_PROJECT_ID);
+// console.log("🔍 FIREBASE_CLIENT_EMAIL:", process.env.FIREBASE_CLIENT_EMAIL);
+// console.log("🔍 FIREBASE_PRIVATE_KEY is set:", process.env.FIREBASE_PRIVATE_KEY ? "✅ Yes" : "❌ No");
 // // Ensure Firebase is not already initialized
 // if (!admin.apps.length) {
 //   admin.initializeApp({
