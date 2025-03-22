@@ -1,6 +1,25 @@
 const fs = require("fs");
 const axios = require("axios");
 
+const admin = require("../backend/api/firebase");
+
+console.log("🔍 Checking Firebase Credentials:");
+console.log("🔍 FIREBASE_PROJECT_ID:", process.env.FIREBASE_PROJECT_ID);
+console.log("🔍 FIREBASE_CLIENT_EMAIL:", process.env.FIREBASE_CLIENT_EMAIL);
+console.log("🔍 FIREBASE_PRIVATE_KEY is set:", process.env.FIREBASE_PRIVATE_KEY ? "✅ Yes" : "❌ No");
+// // Ensure Firebase is not already initialized
+// if (!admin.apps.length) {
+//   admin.initializeApp({
+//     credential: admin.credential.cert({
+//       projectId: process.env.FIREBASE_PROJECT_ID,
+//       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+//       privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"), // Escape newlines properly
+//     }),
+//   });
+// }
+
+const db = admin.firestore(); // ✅ Define Firestore database instance
+
 const { getAccessTokenFromRefreshToken, watchGmailInbox, stopWatchGmailInbox } = require("../backend/utils/gmailService");
 
 async function renewSubscriptions() {
@@ -10,13 +29,12 @@ async function renewSubscriptions() {
 
     const usersSnapshot = await db.collection("Users").get();
     const users = usersSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    
+    console.log("users", users);
 
     if (users.length === 0) {
       console.log("⚠️ No users found.");
-      return res.status(200).send("No users found.");
     }
-
-    console.log("users:", users);
 
     for (const user of users) {
       if (!user.refreshToken) {
@@ -52,11 +70,8 @@ async function renewSubscriptions() {
         console.error(`❌ Error processing user ${user.id}:`, userError.response ? userError.response.data : userError.message);
       }
     }
-
-    res.status(200).send("Subscription renewal process completed.");
   } catch (error) {
     console.error("❌ Error renewing Gmail subscriptions:", error.response ? error.response.data : error.message);
-    res.status(500).send("Error renewing subscriptions.");
   }
 }
 
