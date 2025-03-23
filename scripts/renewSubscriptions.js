@@ -30,7 +30,7 @@ async function renewSubscriptions() {
     const usersSnapshot = await db.collection("Users").get();
     const users = usersSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     
-    console.log("users", users);
+    // console.log("users", users);
 
     if (users.length === 0) {
       console.log("⚠️ No users found.");
@@ -46,28 +46,30 @@ async function renewSubscriptions() {
         console.log(`🔕 Skipping user ${user.id}: Listener is disabled.`);
         continue;
       }
+      else
+      {
 
-      try {
-        console.log(`🔹 Processing user: ${user.id}`);
+        try {
+          console.log(`🔹 Processing user: ${user.id}`);
 
-        const accessToken = await getAccessTokenFromRefreshToken(user.refreshToken);
+          const accessToken = await getAccessTokenFromRefreshToken(user.refreshToken);
 
-        const subscriptionsResponse = await axios.get("https://graph.microsoft.com/v1.0/subscriptions", {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
+          // const subscriptionsResponse = await axios.get("https://graph.microsoft.com/v1.0/subscriptions", {
+          //   headers: { Authorization: `Bearer ${accessToken}` },
+          // });
 
-        const subscriptions = subscriptionsResponse.data.value || [];
+          // const subscriptions = subscriptionsResponse.data.value || [];
 
-        if (user.listenerStatus === 1) {
-          console.log(`🟡 No active subscription found for user ${user.id}. Creating a new one...`);
-          await stopWatchGmailInbox(accessToken);
-          await watchGmailInbox(accessToken);
-          continue;
-        } else if (user.listenerStatus === 0) {
-          console.log(`🔕 Skipping subscription for user ${user.id}: Listener is disabled.`);
+          if (user.listenerStatus === 1) {
+            console.log(`🟡 Listener is enabled for ${user.id}. Creating a new subscription...`);
+            await stopWatchGmailInbox(accessToken);
+            await watchGmailInbox(accessToken);
+            continue;
+          }
+          
+        } catch (userError) {
+          console.error(`❌ Error processing user ${user.id}:`, userError.response ? userError.response.data : userError.message);
         }
-      } catch (userError) {
-        console.error(`❌ Error processing user ${user.id}:`, userError.response ? userError.response.data : userError.message);
       }
     }
   } catch (error) {
