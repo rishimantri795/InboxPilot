@@ -102,6 +102,12 @@ export default function Component() {
         <nav className="hidden sm:flex items-center gap-4 sm:gap-6">
           <a
             className="text-sm font-medium hover:underline underline-offset-4"
+            href="#demo"
+          >
+            Demo
+          </a>
+          <a
+            className="text-sm font-medium hover:underline underline-offset-4"
             href="#features"
           >
             Features
@@ -112,12 +118,7 @@ export default function Component() {
           >
             How It Works
           </a>
-          <a
-            className="text-sm font-medium hover:underline underline-offset-4"
-            href="#benefits"
-          >
-            Benefits
-          </a>
+          
         </nav>
         <Button variant="outline" onClick={handleRulesClick}>
           {!user ? "Log In" : "Rules"}
@@ -223,9 +224,27 @@ export default function Component() {
             </div>
           </div>
         </section>
+        <section id="demo" className="w-full py-12 md:py-24 lg:py-32 bg-gray-200 dark:bg-gray-800">
+          <div className="container px-4 md:px-6 mx-auto">
+            <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-center mb-12">
+              See it in action
+            </h2>
+            <div className="flex justify-center">
+              <div className="relative w-full max-w-4xl aspect-video">
+                <iframe
+                  className="absolute top-0 left-0 w-full h-full rounded-lg shadow-lg"
+                  src="https://www.youtube.com/embed/axXQQ1MP9ps"
+                  title="InboxPilot Demo"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              </div>
+            </div>
+          </div>
+        </section>
         <section
           id="features"
-          className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 dark:bg-gray-800"
+          className="w-full py-12 md:py-24 lg:py-32"
         >
           <div className="container px-4 md:px-6 mx-auto">
             <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-center mb-12">
@@ -233,7 +252,7 @@ export default function Component() {
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
-              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
+              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md w-full max-w-sm">
                 <Zap className="h-12 w-12 mb-4 text-black-500" />
                 <h3 className="text-xl font-bold mb-2">
                   Natural Language Rules
@@ -242,7 +261,7 @@ export default function Component() {
                   Create automation rules using simple, natural language.
                 </p>
               </div>
-              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
+              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md w-full max-w-sm">
                 <MessageSquare className="h-12 w-12 mb-4 text-black-500" />
                 <h3 className="text-xl font-bold mb-2">
                   Smart Draft Responses
@@ -252,14 +271,14 @@ export default function Component() {
                   context.
                 </p>
               </div>
-              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
+              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md w-full max-w-sm">
                 <Mail className="h-12 w-12 mb-4 text-black-500" />
                 <h3 className="text-xl font-bold mb-2">Semantic Search</h3>
                 <p className="text-gray-500 dark:text-gray-400">
                   Search and summarize any information from your inbox using RAG
                 </p>
               </div>
-              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
+              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md w-full max-w-sm">
                 <Tag className="h-12 w-12 mb-4 text-black-500" />
                 <h3 className="text-xl font-bold mb-2">Intelligent Labeling</h3>
                 <p className="text-gray-500 dark:text-gray-400">
@@ -267,7 +286,7 @@ export default function Component() {
                 </p>
               </div>
 
-              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
+              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md w-full max-w-sm">
                 <Archive className="h-12 w-12 mb-4 text-black-500" />
                 <h3 className="text-xl font-bold mb-2">Smart Archiving</h3>
                 <p className="text-gray-500 dark:text-gray-400">
@@ -275,7 +294,7 @@ export default function Component() {
                 </p>
               </div>
 
-              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-950 p-6 rounded-lg shadow-md w-full max-w-sm">
+              <div className="flex flex-col items-center text-center bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md w-full max-w-sm">
                 <Inbox className="h-12 w-12 mb-4 text-black-500" />
                 <h3 className="text-xl font-bold mb-2">Email Integration</h3>
                 <p className="text-gray-500 dark:text-gray-400">
@@ -285,7 +304,7 @@ export default function Component() {
             </div>
           </div>
         </section>
-        <section id="how-it-works" className="w-full py-12 md:py-24 lg:py-32">
+        <section id="how-it-works" className="w-full py-12 md:py-24 lg:py-32 bg-gray-200 dark:bg-gray-800">
           <div className="container px-4 md:px-6 mx-auto">
             <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-center mb-12">
               How It Works
@@ -315,7 +334,7 @@ export default function Component() {
                 </div>
                 <h3 className="text-xl font-bold mb-2">Automated Actions</h3>
                 <p className="text-gray-500 dark:text-gray-400">
-                  InboxPilot performs actions to organize your inbox.
+                  InboxPilot performs the actions you would on your inbox.
                 </p>
               </li>
             </ol>
@@ -371,7 +390,7 @@ export default function Component() {
             </div>
           </div>
         </section> */}
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 dark:bg-gray-800">
+        <section className="w-full py-12 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6 mx-auto">
             <div className="flex flex-col items-center space-y-4 text-center">
               <div className="space-y-2">
@@ -402,12 +421,12 @@ export default function Component() {
                   Join the Waitlist
                 </Button>
                 {/* </form> */}
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                {/* <p className="text-xs text-gray-500 dark:text-gray-400">
                   By signing up, you agree to our{" "}
                   <a className="underline underline-offset-2" href="#">
                     Terms & Conditions
                   </a>
-                </p>
+                </p> */}
               </div>
             </div>
           </div>
@@ -460,14 +479,14 @@ export default function Component() {
         <p className="text-xs text-gray-500 dark:text-gray-400">
           © 2024 InboxPilot. All rights reserved.
         </p>
-        <nav className="sm:ml-auto flex gap-4 sm:gap-6">
+        {/* <nav className="sm:ml-auto flex gap-4 sm:gap-6">
           <a className="text-xs hover:underline underline-offset-4" href="#">
             Terms of Service
           </a>
           <a className="text-xs hover:underline underline-offset-4" href="#">
             Privacy
           </a>
-        </nav>
+        </nav> */}
       </footer>
     </div>
   );
