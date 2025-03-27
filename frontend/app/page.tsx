@@ -412,7 +412,7 @@ export default function Component() {
                 <Button
                   onClick={() =>
                     window.open(
-                      "https://docs.google.com/forms/d/e/1FAIpQLSdL48BJmTlv6GBFAG2RozbgpOK0EYB0uyMa6mEfl5oc5xo0xA/viewform?usp=dialog",
+                      "https://tally.so/r/nWqAGP",
                       "_blank"
                     )
                   }
