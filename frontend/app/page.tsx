@@ -207,8 +207,8 @@ export default function Component() {
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
                   <Button
                     size="lg"
-                    onClick={handleRulesClick}
-                    className="bg-gray-900 hover:bg-gray-800 text-white"
+                    onClick={() => window.open("https://tally.so/r/nWqAGP", "_blank")}
+                    className="bg-gray-900 hover:bg-gray-800 text-white dark:bg-gray-100 dark:hover:bg-gray-200 dark:text-gray-900" 
                   >
                     Take Flight
                   </Button>
@@ -477,9 +477,9 @@ export default function Component() {
       </Dialog>
 
       <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
-        <p className="text-xs text-gray-500 dark:text-gray-400">
+        {/* <p className="text-xs text-gray-500 dark:text-gray-400">
           © 2024 InboxPilot. All rights reserved.
-        </p>
+        </p> */}
          <nav className="sm:ml-auto flex gap-4 sm:gap-6">
           {/*<a className="text-xs hover:underline underline-offset-4" href="#">
             Terms of Service
