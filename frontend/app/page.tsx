@@ -13,6 +13,7 @@ import {
   LogIn,
   Sun,
   Moon,
+  Search
 } from "lucide-react";
 import useCurrentUser from "@/hooks/useCurrentUser";
 import { useUserContext } from "@/contexts/UserContext";
@@ -272,7 +273,7 @@ export default function Component() {
                 </p>
               </div>
               <div className="flex flex-col items-center text-center bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md w-full max-w-sm">
-                <Mail className="h-12 w-12 mb-4 text-black-500" />
+                <Search className="h-12 w-12 mb-4 text-black-500" />
                 <h3 className="text-xl font-bold mb-2">Semantic Search</h3>
                 <p className="text-gray-500 dark:text-gray-400">
                   Search and summarize any information from your inbox using RAG
