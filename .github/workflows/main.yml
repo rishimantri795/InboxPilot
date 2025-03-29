@@ -1,7 +1,7 @@
 name: Run Local Function on GitHub Actions
 
 on:
-  # push: {} # Trigger on any push
+  push: {} # Trigger on any push
   schedule:
     - cron: "0 0 * * *" # Runs every minute for testing
   workflow_dispatch: # Allows manual execution
