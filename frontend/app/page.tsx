@@ -280,7 +280,7 @@ export default function Component() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Log in to Inbox Pilot</DialogTitle>
-            <DialogDescription>Connect your Google account to start piloting your inbox with AI-powered email management.</DialogDescription>
+            <DialogDescription>Connect your Google or Outlook account to start piloting your inbox with AI-powered email management.</DialogDescription>
           </DialogHeader>
           <div className="flex justify-center gap-4 mt-4">
             <Button onClick={googleAuth} className="lex-1 flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white justify-center">
