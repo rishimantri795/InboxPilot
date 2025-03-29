@@ -34,7 +34,7 @@ async function renewSubscriptions() {
       try {
         console.log(`🔹 Processing user: ${user.id} (${user.provider})`);
 
-        if (user.provider === "outlook") {
+        if (user.provider === "microsoft") {
           const accessToken = await getAccessTokenFromRefreshTokenOutlook(user.refreshToken);
           console.log(`🔁 Renewing Outlook subscription for ${user.id}...`);
 
