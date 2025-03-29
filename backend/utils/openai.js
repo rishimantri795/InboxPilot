@@ -86,7 +86,7 @@ Be strict about whether a rule applies, especially when the email is promotional
 
 async function createDraftEmail(emailContent, promptDescription, files, calendarEvents, accessToken, provider, emailTime) {
   console.log("calendarEvents:", calendarEvents);
-  if ((!emailContent, !promptDescription)) {
+  if (!emailContent || !promptDescription) {
     return null;
   }
   let calendarToggle = false;
@@ -113,12 +113,13 @@ async function createDraftEmail(emailContent, promptDescription, files, calendar
   if (filesDetails === "") {
     filesDetails = "No files provided for context";
   }
+  let prompt;
   if (provider == "outlook") {
     prompt = `Here is an email for which we need to draft a response: ${emailContent}. This is the time of the email: ${emailTime}. Please complete the email draft with a suitable response based on this instruction: ${promptDescription}. Attached are the extracted contents of any pdf files the user may have uploaded as context: ${filesDetails}. The response should be concise and should address the main points of the email. ${calendarToggle ? `This is the user's events that they have on the calendar to use as context. Pay attention to the datetime of the email (can be any timezone) and the datetime of the events on the calendar (which are in UTC) while drafting the response: ${events}.` : ""} It should also be of the same tone as the original email. Only respond with the body of the draft email.`;
+  } else {
+    prompt = `Here is an email for which we need to draft a response: ${emailContent}. Please complete the email draft with a suitable response based on this instruction: ${promptDescription}. Attached are the extracted contents of any pdf files the user may have uploaded as context: ${filesDetails}. The response should be concise and should address the main points of the email. ${calendarToggle ? `This is the user's events that they have on the calendar to use as context. Pay attention to the datetime of the email (can be any timezone) and the datetime of the events on the calendar (which are in UTC) while drafting the response: ${events}.` : ""} It should also be of the same tone as the original email. Only respond with the body of the draft email.`;
+    // console.log("Promptt:", prompt);
   }
-  e;
-  const prompt = `Here is an email for which we need to draft a response: ${emailContent}. Please complete the email draft with a suitable response based on this instruction: ${promptDescription}. Attached are the extracted contents of any pdf files the user may have uploaded as context: ${filesDetails}. The response should be concise and should address the main points of the email. ${calendarToggle ? `This is the user's events that they have on the calendar to use as context. Pay attention to the datetime of the email (can be any timezone) and the datetime of the events on the calendar (which are in UTC) while drafting the response: ${events}.` : ""} It should also be of the same tone as the original email. Only respond with the body of the draft email.`;
-  // console.log("Promptt:", prompt);
   console.log("Prompt:", prompt);
   try {
     const completion = await openai.chat.completions.create({
