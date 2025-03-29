@@ -23,9 +23,10 @@ const app = express();
 const users = require("./routes/users");
 const emails = require("./routes/emails");
 
+const { fetchEmailHistory, getOrCreatePriorityLabel, applyLabelToEmail, fetchEmailHistoryWithRetry, fetchEmailHistoryAndApplyLabel, getMessageDetails, archiveEmail, forwardEmail, favoriteEmail, getOriginalEmailDetails, createDraft, getLatestHistoryId, fetchLatestEmail, getOriginalSMTPMessageId, getOriginalSubject } = require("./utils/gmailService.js");
+
 const { archiveOutlookEmail, favoriteOutlookEmail, forwardOutlookEmail, createOutlookDraft, fetchOutlookEmails, subscribeToOutlookEmails, getAccessTokenFromRefreshTokenOutlook, getRefreshTokenOutlook, applyCategoryToOutlookEmail, storeLatestMessageId, getLatestMessageId } = require("./utils/outlookService.js");
 
-const { fetchEmailHistory, getOrCreatePriorityLabel, applyLabelToEmail, fetchEmailHistoryWithRetry, fetchEmailHistoryAndApplyLabel, getMessageDetails, archiveEmail, forwardEmail, favoriteEmail, getOriginalEmailDetails, createDraft, getLatestHistoryId, fetchLatestEmail } = require("./utils/gmailService.js");
 const { classifyEmail, createDraftEmail } = require("./utils/openai.js");
 
 app.set("trust proxy", 1); // Trust first proxy
@@ -406,7 +407,9 @@ app.post("/notifications", async (req, res) => {
                       );
                       const calendarEvents = action.config.calendarEvents;
                       const reply = await createDraftEmail(emailContent, action.config.draftTemplate, parsedFiles, calendarEvents, user.profile, accessToken);
-                      await createDraft(accessToken, latestMessage.threadId, reply, latestMessage.id, fromEmail);
+                      const originalSMTPMessageId = await getOriginalSMTPMessageId(accessToken, latestMessage.id);
+                      const originalSubject = await getOriginalSubject(accessToken, latestMessage.id);
+                      await createDraft(accessToken, latestMessage.threadId, reply, latestMessage.id, fromEmail, originalSMTPMessageId, originalSubject);
                       break;
                   }
                 }

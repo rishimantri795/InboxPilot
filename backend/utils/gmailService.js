@@ -249,7 +249,7 @@ async function fetchEmailHistory(accessToken, historyId) {
   const gmailEndpoint = `https://gmail.googleapis.com/gmail/v1/users/me/history`;
   const params = {
     startHistoryId: historyId,
-    labelId: "INBOX", // Only fetch inbox emails
+    labelId: ["INBOX"], // Only fetch inbox emails
   };
 
   try {
@@ -422,7 +422,8 @@ async function fetchLatestEmail(accessToken) {
   const params = new URLSearchParams({
     labelIds: "INBOX", // Filter for inbox messages
     maxResults: "1", // Only fetch the latest email
-    sortOrder: "desc", // Sort by the most recent first
+    // sortOrder: "desc", // Sort by the most recent first
+    q: "category:primary", // Filter for emails from primary category
   });
 
   try {
@@ -466,7 +467,7 @@ async function fetchEmailHistoryAndApplyLabel(accessToken, historyId) {
   const gmailEndpoint = `https://gmail.googleapis.com/gmail/v1/users/me/history`;
   const params = {
     startHistoryId: historyId,
-    labelId: "INBOX",
+    labelId: ["INBOX"],
   };
 
   try {
@@ -578,7 +579,35 @@ async function favoriteEmail(accessToken, messageId) {
   }
 }
 
-async function createDraft(accessToken, threadId, messageDescription, messageId, toEmail) {
+async function getOriginalSMTPMessageId(accessToken, gmailMessageId) {
+  const url = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${gmailMessageId}?format=full`;
+  const response = await axios.get(url, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  const headers = response.data.payload.headers || [];
+
+  const messageIdHeader = headers.find((header) => header.name.toLowerCase() === "message-id");
+
+  return messageIdHeader ? messageIdHeader.value : null;
+}
+
+async function getOriginalSubject(accessToken, messageId) {
+  const url = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=metadata`;
+  const response = await axios.get(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  const headers = response.data.payload.headers;
+  const subjectHeader = headers.find((h) => h.name.toLowerCase() === "subject");
+
+  // Return the actual subject string if found
+  return subjectHeader ? subjectHeader.value : "";
+}
+
+async function createDraft(accessToken, threadId, messageDescription, messageId, toEmail, originalSMTPMessageId, subject) {
   const draftEndpoint = "https://gmail.googleapis.com/gmail/v1/users/me/drafts";
 
   // Create proper email MIME message
@@ -587,10 +616,9 @@ async function createDraft(accessToken, threadId, messageDescription, messageId,
     "MIME-Version: 1.0",
     "Content-Transfer-Encoding: 7bit",
     `To: ${toEmail}`,
-    "Subject: Re: ", // "Re:" prefix for replies
-    `In-Reply-To: ${messageId}`,
-    `References: ${messageId}`,
-    `Thread-Id: ${threadId}`,
+    `Subject: Re: ${subject}`, // "Re:" prefix for replies
+    `In-Reply-To: ${originalSMTPMessageId}`,
+    `References: ${originalSMTPMessageId}`,
     "", // Empty line separates headers from body
     messageDescription,
   ].join("\r\n");
@@ -857,5 +885,7 @@ module.exports = {
   fetchLatestEmail,
   startDevWatch,
   getCalendarEvents,
-  stopWatchGmailInbox
+  stopWatchGmailInbox,
+  getOriginalSMTPMessageId,
+  getOriginalSubject,
 };
