@@ -3,13 +3,18 @@ name: Run Local Function on GitHub Actions
 on:
   push: {} # Trigger on any push
   schedule:
-    - cron: "*/1 * * * *" # Runs every minute for testing
+    - cron: "0 0 * * *" # Runs every minute for testing
   workflow_dispatch: # Allows manual execution
 
 jobs:
   run-function:
     runs-on: ubuntu-latest
-    env:-
+    env:
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+      FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+      CLIENT_ID: ${{ secrets.CLIENT_ID }}
+      CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
 
     steps:
       - name: Checkout Repository

@@ -34,7 +34,18 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // Parses URL-encoded bodies
 app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
 
-const allowedOrigins = ["http://localhost:3000", "https://theinboxpilot.com", "http://localhost:5173", "https://www.theinboxpilot.com"];
+const s3 = new AWS.S3({
+  region: process.env.AWS_REGION,
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+});
+
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://theinboxpilot.com",
+  "http://localhost:5173",
+  "https://www.theinboxpilot.com",
+];
 
 app.use(
   cors({

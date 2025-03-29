@@ -857,5 +857,5 @@ module.exports = {
   fetchLatestEmail,
   startDevWatch,
   getCalendarEvents,
-  stopWatchGmailInbox,
+  stopWatchGmailInbox
 };

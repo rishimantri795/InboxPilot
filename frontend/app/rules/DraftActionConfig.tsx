@@ -134,7 +134,7 @@ function DraftActionConfig({ action, onConfigChange, ruleIndex }) {
           }
         />
         <Label htmlFor="calendarEvents">
-          Provide Google Calendar as Context
+          Use Google Calendar
         </Label>
       </div>
 
@@ -151,7 +151,7 @@ function DraftActionConfig({ action, onConfigChange, ruleIndex }) {
           <p className="text-sm text-gray-600">Files added:</p>
           <ul className="mt-1 space-y-1">
             {files.map((file, index) => (
-              <li key={index} className="flex items-center justify-between bg-gray-100 p-2 rounded">
+              <li key={index} className="flex items-center justify-between bg-gray-100 p-2 rounded dark:bg-black">
                 <span className="text-sm">{file.name || file.fileName || "No file name"}</span>
                 <Button variant="ghost" size="icon" onClick={() => handleRemoveFile(index)}>
                   <TrashIcon className="h-4 w-4" />
