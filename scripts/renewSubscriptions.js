@@ -2,38 +2,22 @@ const fs = require("fs");
 const axios = require("axios");
 
 const admin = require("./cronfirebase");
-// console.log("🔍 Checking Firebase Credentials:");
-// console.log("🔍 FIREBASE_PROJECT_ID:", process.env.FIREBASE_PROJECT_ID);
-// console.log("🔍 FIREBASE_CLIENT_EMAIL:", process.env.FIREBASE_CLIENT_EMAIL);
-// console.log("🔍 FIREBASE_PRIVATE_KEY is set:", process.env.FIREBASE_PRIVATE_KEY ? "✅ Yes" : "❌ No");
-// // Ensure Firebase is not already initialized
-// if (!admin.apps.length) {
-//   admin.initializeApp({
-//     credential: admin.credential.cert({
-//       projectId: process.env.FIREBASE_PROJECT_ID,
-//       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-//       privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"), // Escape newlines properly
-//     }),
-//   });
-// }
-
-const db = admin.firestore(); // ✅ Define Firestore database instance
+const db = admin.firestore();
 
 const { watchGmailInbox, stopWatchGmailInbox } = require("../backend/utils/gmailService");
 const { getAccessTokenFromRefreshToken } = require("../backend/utils/tokenService");
+const { subscribeToOutlookEmails, unsubscribeToOutlookEmails, getAccessTokenFromRefreshTokenOutlook } = require("../backend/utils/outlookService");
 
 async function renewSubscriptions() {
-  const logFile = "scripts/log.txt"; // Log file path
   try {
-    console.log("🔄 Running function for Gmail subscription renewal...");
+    console.log("🔄 Running subscription renewal for all users...");
 
     const usersSnapshot = await db.collection("Users").get();
     const users = usersSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    
-    // console.log("users", users);
 
     if (users.length === 0) {
       console.log("⚠️ No users found.");
+      return;
     }
 
     for (const user of users) {
@@ -46,34 +30,39 @@ async function renewSubscriptions() {
         console.log(`🔕 Skipping user ${user.id}: Listener is disabled.`);
         continue;
       }
-      else
-      {
 
-        try {
-          console.log(`🔹 Processing user: ${user.id}`);
+      try {
+        console.log(`🔹 Processing user: ${user.id} (${user.provider})`);
 
-          const accessToken = await getAccessTokenFromRefreshToken(user.refreshToken);
+        if (user.provider === "outlook") {
+          const accessToken = await getAccessTokenFromRefreshTokenOutlook(user.refreshToken);
+          console.log(`🔁 Renewing Outlook subscription for ${user.id}...`);
 
-          // const subscriptionsResponse = await axios.get("https://graph.microsoft.com/v1.0/subscriptions", {
-          //   headers: { Authorization: `Bearer ${accessToken}` },
-          // });
-
-          // const subscriptions = subscriptionsResponse.data.value || [];
-
-          if (user.listenerStatus === 1) {
-            console.log(`🟡 Listener is enabled for ${user.id}. Creating a new subscription...`);
-            await stopWatchGmailInbox(accessToken);
-            await watchGmailInbox(accessToken);
-            continue;
+          if (user.outlookSubscriptionId) {
+            await unsubscribeToOutlookEmails(accessToken, user.outlookSubscriptionId);
           }
-          
-        } catch (userError) {
-          console.error(`❌ Error processing user ${user.id}:`, userError.response ? userError.response.data : userError.message);
+
+          const subscription = await subscribeToOutlookEmails(accessToken);
+          if (subscription && subscription.id) {
+            await db.collection("Users").doc(user.id).update({
+              outlookSubscriptionId: subscription.id,
+            });
+            console.log(`✅ Outlook subscription updated for ${user.id}`);
+          }
+        } else {
+          const accessToken = await getAccessTokenFromRefreshToken(user.refreshToken);
+          console.log(`🔁 Renewing Gmail subscription for ${user.id}...`);
+
+          await stopWatchGmailInbox(accessToken);
+          await watchGmailInbox(accessToken);
+          console.log(`✅ Gmail subscription updated for ${user.id}`);
         }
+      } catch (userError) {
+        console.error(`❌ Error processing user ${user.id}:`, userError.response ? userError.response.data : userError.message);
       }
     }
   } catch (error) {
-    console.error("❌ Error renewing Gmail subscriptions:", error.response ? error.response.data : error.message);
+    console.error("❌ Error renewing subscriptions:", error.response ? error.response.data : error.message);
   }
 }
 

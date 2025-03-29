@@ -34,6 +34,8 @@ const {
   createDraft,
   getLatestHistoryId,
   fetchLatestEmail,
+  getOriginalSMTPMessageId,
+  getOriginalSubject
 } = require("./utils/gmailService.js");
 const { classifyEmail, createDraftEmail } = require("./utils/openai.js");
 
@@ -283,12 +285,16 @@ app.post("/notifications", async (req, res) => {
                         user.profile,
                         accessToken
                       );
+                      const originalSMTPMessageId = await getOriginalSMTPMessageId(accessToken, latestMessage.id);
+                      const originalSubject = await getOriginalSubject(accessToken, latestMessage.id);
                       await createDraft(
                         accessToken,
                         latestMessage.threadId,
                         reply,
                         latestMessage.id,
-                        fromEmail
+                        fromEmail,
+                        originalSMTPMessageId,
+                        originalSubject
                       );
                       break;
                   }
