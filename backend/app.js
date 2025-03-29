@@ -40,12 +40,7 @@ const s3 = new AWS.S3({
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
 });
 
-const allowedOrigins = [
-  "http://localhost:3000",
-  "https://theinboxpilot.com",
-  "http://localhost:5173",
-  "https://www.theinboxpilot.com",
-];
+const allowedOrigins = ["http://localhost:3000", "https://theinboxpilot.com", "http://localhost:5173", "https://www.theinboxpilot.com"];
 
 app.use(
   cors({
@@ -342,13 +337,13 @@ app.post("/notifications", async (req, res) => {
               const emailContent = await getMessageDetails(accessToken, latestMessage.id);
               console.log(emailContent);
 
-              // if (user.RAG == "enabled") {
-              //   console.log("RAG STARTED --------------------------------------------");
+              if (user.RAG == "enabled") {
+                console.log("RAG STARTED --------------------------------------------");
 
-              //   await enqueueEmbeddingTask(user.id, latestMessage.id, emailContent);
+                await enqueueEmbeddingTask(user.id, latestMessage.id, emailContent);
 
-              //   console.log("RAG ENDED ----------------------------------------------");
-              // }
+                console.log("RAG ENDED ----------------------------------------------");
+              }
 
               const ruleKey = await classifyEmail(emailContent, user.rules, user.profile);
               console.log("Rule key:", ruleKey);
