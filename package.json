@@ -11,6 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "backend": "file:backend",
-    "inboxpilot": "file:frontend"
+    "inboxpilot": "file:frontend",
+    "swr": "^2.3.3"
   }
 }
