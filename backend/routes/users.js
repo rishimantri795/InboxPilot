@@ -744,6 +744,7 @@ router.post("/:id/toggle-listener", async (req, res) => {
           }
         } else {
           console.log("Attaching Production Watch...");
+          const accessToken = await getAccessTokenFromRefreshToken(refreshToken);
           const watchResult = await watchGmailInbox(accessToken);
           if (!watchResult) {
             return res.status(500).json({ error: "Failed to start Production Gmail watch" });
