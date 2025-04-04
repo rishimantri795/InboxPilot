@@ -7,7 +7,7 @@ const nodemailer = require("nodemailer");
 
 const agent = new https.Agent({ rejectUnauthorized: false });
 
-async function getAccessTokenFromRefreshToken(storedRefreshToken, userId = null) {
+async function getAccessTokenFromRefreshToken(storedRefreshToken) {
   const tokenEndpoint = "https://oauth2.googleapis.com/token";
 
   const params = new URLSearchParams();
@@ -29,16 +29,33 @@ async function getAccessTokenFromRefreshToken(storedRefreshToken, userId = null)
   } catch (error) {
     console.error("❌ Error fetching access token:", error.response?.data || error.message);
 
-    if (userId && error.response && error.response.status === 400 && error.response.data.error === "invalid_grant") {
+    const isInvalidRefresh = error.response && error.response.status === 400 && error.response.data.error === "invalid_grant";
+
+    if (isInvalidRefresh) {
       try {
-        const userDoc = await db.collection("Users").doc(userId).get();
-        if (userDoc.exists) {
+        const response = await axios.post("https://oauth2.googleapis.com/revoke", new URLSearchParams({ token: refreshToken }).toString(), {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+        });
+        console.log("✅ Refresh token revoked.");
+      } catch (error) {
+        console.error("❌ Failed to revoke token:", error.response?.data || error.message);
+      }
+
+      try {
+        const snapshot = await db.collection("Users").where("refreshToken", "==", storedRefreshToken).limit(1).get();
+
+        if (!snapshot.empty) {
+          const userDoc = snapshot.docs[0];
+          const userRef = userDoc.ref;
           const userEmail = userDoc.data().email;
 
-          await db.collection("Users").doc(userId).update({ refreshToken: 0 });
-          console.log(`⚠️ Invalid refresh token. Cleared for user ${userEmail}`);
+          // Clear invalid token
+          await userRef.update({ refreshToken: 0 });
+          console.log(`⚠️ Cleared invalid refresh token for user ${userEmail}`);
 
-          // send reauth email
+          // Send re-auth email
           if (userEmail) {
             const transporter = nodemailer.createTransport({
               service: "gmail",
@@ -61,11 +78,13 @@ async function getAccessTokenFromRefreshToken(storedRefreshToken, userId = null)
             };
 
             await transporter.sendMail(mailOptions);
-            console.log("📧 Reauth email sent to", userEmail);
+            console.log("📧 Re-auth email sent to:", userEmail);
           }
+        } else {
+          console.log("⚠️ No user found with that refresh token.");
         }
-      } catch (err) {
-        console.error("⚠️ Error handling invalid refresh token:", err);
+      } catch (lookupError) {
+        console.error("🔥 Failed to clear refresh token or send email:", lookupError);
       }
     }
 
