@@ -33,7 +33,7 @@ async function getAccessTokenFromRefreshToken(storedRefreshToken) {
 
     if (isInvalidRefresh) {
       try {
-        const response = await axios.post("https://oauth2.googleapis.com/revoke", new URLSearchParams({ token: refreshToken }).toString(), {
+        const response = await axios.post("https://oauth2.googleapis.com/revoke", new URLSearchParams({ token: storedRefreshToken }).toString(), {
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
           },
