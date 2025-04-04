@@ -39,7 +39,7 @@ router.get("/google/auth", (req, res) => {
     scope: ["profile", "email", "https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.modify", "https://www.googleapis.com/auth/calendar.readonly", "https://www.googleapis.com/auth/calendar.events.readonly", "https://www.googleapis.com/auth/calendar"],
     accessType: "offline", // requests a refresh token so we have access even after user logs out
     prompt: "consent",
-    approvalPrompt: "force",
+    // approvalPrompt: "force",
   })(req, res);
 });
 
