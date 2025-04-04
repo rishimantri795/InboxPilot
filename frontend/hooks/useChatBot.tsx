@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import io from "socket.io-client";
 import useCurrentUser from "./useCurrentUser";
 
 interface Message {
@@ -9,10 +10,16 @@ interface Message {
 export function useChatBot(ragEnabled: boolean) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [status, setStatus] = useState<string>("");
   const { user, loading, error } = useCurrentUser();
   const [emailIds, setEmailIds] = useState<string[]>([]);
+  const [socket, setSocket] = useState(null);
 
-  // Fetch chat history when component mounts or user changes
+  useEffect(() => {
+    console.log(status);
+  }, [status]);
+
+  // Fetch chat history
   useEffect(() => {
     const fetchChatHistory = async () => {
       if (loading || !user?.id) return;
@@ -43,6 +50,68 @@ export function useChatBot(ragEnabled: boolean) {
     fetchChatHistory();
   }, [user?.id, loading]);
 
+  // Establish WebSocket connection
+  useEffect(() => {
+    if (loading || error || !user?.id) return;
+
+    const newSocket = io(
+      process.env.NEXT_PUBLIC_RAG_URL || "http://localhost:3023",
+      {
+        query: { userId: user.id, refreshToken: user.refreshToken },
+        reconnection: true,
+        reconnectionDelay: 1000,
+      }
+    );
+
+    setSocket(newSocket);
+
+    newSocket.on("connect", () => {
+      console.log("WebSocket connected");
+    });
+
+    newSocket.on("confirmation", (data) => {
+      const botMessage: Message = { role: "bot", content: data.message };
+      setMessages((prev) => [...prev, botMessage]);
+      setStatus("awaiting confirmation");
+      setIsTyping(false);
+      setEmailIds(data.emailId ? [data.emailId] : []);
+    });
+
+    newSocket.on("status", (status) => {
+      setStatus(status);
+      setIsTyping(status !== "awaiting confirmation");
+    });
+
+    newSocket.on("response", (data) => {
+      console.log("Received bot response from websocket+++++++++++++++");
+      setStatus("");
+      const botMessage: Message = {
+        role: "bot",
+        content: data.response || data.message,
+      };
+      setMessages((prev) => [...prev, botMessage]);
+      saveMessageToFirebase("bot", botMessage.content);
+      setEmailIds(data.emailIds || []);
+      setIsTyping(false);
+    });
+
+    newSocket.on("error", (errorMsg) => {
+      const errorMessage: Message = { role: "bot", content: errorMsg };
+      setMessages((prev) => [...prev, errorMessage]);
+      saveMessageToFirebase("bot", errorMessage.content);
+      setIsTyping(false);
+    });
+
+    newSocket.on("disconnect", () => {
+      console.log("WebSocket disconnected");
+    });
+
+    return () => {
+      newSocket.disconnect();
+      setSocket(null);
+    };
+  }, [user?.id, loading, error]);
+
   // Save message to Firebase
   const saveMessageToFirebase = async (sender: string, content: string) => {
     if (!user?.id) return;
@@ -51,98 +120,42 @@ export function useChatBot(ragEnabled: boolean) {
       await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/chat/message`, {
         method: "POST",
         credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          sender,
-          message: content,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sender, message: content }),
       });
     } catch (error) {
       console.error("Error saving message to Firebase:", error);
     }
   };
 
-  // Send message function
+  // Send message via WebSocket
   const sendMessage = useCallback(
     async (content: string) => {
-      if (loading) {
-        console.warn("User data is still loading...");
+      if (loading || error || !user || !user.id || !socket) {
+        console.warn("Cannot send message: User or socket not available.");
         return;
       }
 
-      if (error) {
-        console.error("Error fetching user:", error);
-        return;
-      }
-
-      if (!user || !user.id) {
-        console.warn("User is not available yet. Cannot send message.");
-        return;
-      }
-
-      // Add user message to UI immediately
       const userMessage: Message = { role: "user", content };
       setMessages((prev) => [...prev, userMessage]);
-
-      // Save user message to Firebase
       await saveMessageToFirebase("user", content);
 
-      setIsTyping(true);
-
-      try {
-        setEmailIds([]);
-        // Send message to chatbot API
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_RAG_URL}/augmentedEmailSearch`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId: user.id, query: content }),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to send message");
-        }
-
-        const data = await response.json();
-        console.log(data);
-
-        // Add AI response to the chat
-        const botMessage: Message = {
-          role: "bot",
-          content: data.completion.response,
-        };
-        setMessages((prev) => [...prev, botMessage]);
-
-        // Save bot message to Firebase
-        await saveMessageToFirebase("bot", data.completion.response);
-        console.log(
-          `Message sent to chatbot API. Response Ids: ${data.completion.emailIds.join(
-            ", "
-          )}`
-        );
-        setEmailIds(data.completion.emailIds);
-      } catch (error) {
-        console.error("Error sending message:", error);
-        // Add error message
-        const errorMessage: Message = {
-          role: "bot",
-          content:
-            "Sorry, I couldn't process your request. Please try again later.",
-        };
-        setMessages((prev) => [...prev, errorMessage]);
-
-        // Save error message to Firebase
-        await saveMessageToFirebase("bot", errorMessage.content);
-      } finally {
-        setIsTyping(false);
+      if (status === "awaiting confirmation") {
+        socket.emit("confirmationResponse", content);
+        return;
       }
+
+      socket.emit("fromclient", content);
+      setIsTyping(true);
     },
-    [ragEnabled, user, loading, error]
+    [user, loading, error, socket, status]
   );
 
-  return { messages, sendMessage, isTyping, emailIds };
+  return {
+    messages,
+    sendMessage,
+    isTyping,
+    emailIds,
+    status,
+  };
 }
