@@ -28,64 +28,59 @@ async function getAccessTokenFromRefreshToken(storedRefreshToken) {
     return newAccessToken;
   } catch (error) {
     console.error("❌ Error fetching access token:", error.response?.data || error.message);
+    try {
+      const response = await axios.post("https://oauth2.googleapis.com/revoke", new URLSearchParams({ token: storedRefreshToken }).toString(), {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      });
+      console.log("✅ Refresh token revoked.");
+    } catch (error) {
+      console.error("❌ Failed to revoke token:", error.response?.data || error.message);
+    }
 
-    const isInvalidRefresh = error.response && error.response.status === 400 && error.response.data.error === "invalid_grant";
+    try {
+      const snapshot = await db.collection("Users").where("refreshToken", "==", storedRefreshToken).limit(1).get();
 
-    if (isInvalidRefresh) {
-      try {
-        const response = await axios.post("https://oauth2.googleapis.com/revoke", new URLSearchParams({ token: storedRefreshToken }).toString(), {
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-        });
-        console.log("✅ Refresh token revoked.");
-      } catch (error) {
-        console.error("❌ Failed to revoke token:", error.response?.data || error.message);
-      }
+      if (!snapshot.empty) {
+        const userDoc = snapshot.docs[0];
+        const userRef = userDoc.ref;
+        const userEmail = userDoc.data().email;
 
-      try {
-        const snapshot = await db.collection("Users").where("refreshToken", "==", storedRefreshToken).limit(1).get();
+        // Clear invalid token
+        await userRef.update({ refreshToken: 0 });
+        console.log(`⚠️ Cleared invalid refresh token for user ${userEmail}`);
 
-        if (!snapshot.empty) {
-          const userDoc = snapshot.docs[0];
-          const userRef = userDoc.ref;
-          const userEmail = userDoc.data().email;
+        // Send re-auth email
+        if (userEmail) {
+          const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+              user: process.env.EMAIL_USER,
+              pass: process.env.EMAIL_PASS,
+            },
+          });
 
-          // Clear invalid token
-          await userRef.update({ refreshToken: 0 });
-          console.log(`⚠️ Cleared invalid refresh token for user ${userEmail}`);
-
-          // Send re-auth email
-          if (userEmail) {
-            const transporter = nodemailer.createTransport({
-              service: "gmail",
-              auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS,
-              },
-            });
-
-            const mailOptions = {
-              from: `"Inbox Pilot" <${process.env.EMAIL_USER}>`,
-              to: userEmail,
-              subject: "Please Reauthorize Inbox Pilot",
-              html: `
+          const mailOptions = {
+            from: `"Inbox Pilot" <${process.env.EMAIL_USER}>`,
+            to: userEmail,
+            subject: "Please Reauthorize Inbox Pilot",
+            html: `
                 <p>Hi there,</p>
                 <p>We couldn't refresh your access to Gmail. Please sign in again to continue using Inbox Pilot features:</p>
                 <a href="${process.env.FRONTEND_URL}/login">Click here to sign in</a>
                 <p>Thanks,<br>The Inbox Pilot Team</p>
               `,
-            };
+          };
 
-            await transporter.sendMail(mailOptions);
-            console.log("📧 Re-auth email sent to:", userEmail);
-          }
-        } else {
-          console.log("⚠️ No user found with that refresh token.");
+          await transporter.sendMail(mailOptions);
+          console.log("📧 Re-auth email sent to:", userEmail);
         }
-      } catch (lookupError) {
-        console.error("🔥 Failed to clear refresh token or send email:", lookupError);
+      } else {
+        console.log("⚠️ No user found with that refresh token.");
       }
+    } catch (lookupError) {
+      console.error("🔥 Failed to clear refresh token or send email:", lookupError);
     }
 
     return null;
