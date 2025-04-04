@@ -48,7 +48,7 @@ async function getAccessTokenFromRefreshToken(storedRefreshToken) {
         const userEmail = userDoc.data().email;
 
         // Clear invalid token
-        await userRef.update({ refreshToken: 0 });
+        await userRef.update({ refreshToken: -1 });
         console.log(`⚠️ Cleared invalid refresh token for user ${userEmail}`);
 
         // Send re-auth email
