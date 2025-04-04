@@ -28,7 +28,7 @@
     "method-override": "^3.0.0",
     "multer": "^1.4.5-lts.1",
     "natural": "^8.0.1",
-    "nodemailer": "^6.9.15",
+    "nodemailer": "^6.10.0",
     "nodemon": "^3.1.9",
     "openai": "^4.77.3",
     "p-limit": "^3.1.0",

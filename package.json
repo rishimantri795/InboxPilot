@@ -12,6 +12,7 @@
   "dependencies": {
     "backend": "file:backend",
     "inboxpilot": "file:frontend",
+    "nodemailer": "^6.10.0",
     "swr": "^2.3.3"
   }
 }
