@@ -19,13 +19,13 @@ const { getAccessTokenFromRefreshToken } = require("../utils/tokenService.js");
 const { fetchOutlookEmails, unsubscribeToOutlookEmails, subscribeToOutlookEmails, getAccessTokenFromRefreshTokenOutlook, getRefreshTokenOutlook } = require("../utils/outlookService.js");
 
 // initiates the google OAuth authentication process
-router.get("/google/auth", (req, res) => {
-  passport.authenticate("google", {
-    scope: ["profile", "email", "https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.modify"],
-    accessType: "offline", // requests a refresh token so we have access even after user logs out
-    approvalPrompt: "force",
-  })(req, res);
-});
+// router.get("/google/auth", (req, res) => {
+//   passport.authenticate("google", {
+//     scope: ["profile", "email", "https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.modify"],
+//     accessType: "offline", // requests a refresh token so we have access even after user logs out
+//     approvalPrompt: "force",
+//   })(req, res);
+// });
 
 const s3 = new AWS.S3({
   region: process.env.AWS_REGION,
@@ -38,6 +38,7 @@ router.get("/google/auth", (req, res) => {
   passport.authenticate("google", {
     scope: ["profile", "email", "https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.modify", "https://www.googleapis.com/auth/calendar.readonly", "https://www.googleapis.com/auth/calendar.events.readonly", "https://www.googleapis.com/auth/calendar"],
     accessType: "offline", // requests a refresh token so we have access even after user logs out
+    prompt: "consent",
     approvalPrompt: "force",
   })(req, res);
 });
