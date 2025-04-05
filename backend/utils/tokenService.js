@@ -8,6 +8,10 @@ const nodemailer = require("nodemailer");
 const agent = new https.Agent({ rejectUnauthorized: false });
 
 async function getAccessTokenFromRefreshToken(storedRefreshToken) {
+  if (storedRefreshToken === -1) {
+    console.warn("🚫 Skipping token refresh for invalidated token (-1)");
+    return null;
+  }
   const tokenEndpoint = "https://oauth2.googleapis.com/token";
 
   const params = new URLSearchParams();
@@ -63,7 +67,7 @@ async function getAccessTokenFromRefreshToken(storedRefreshToken) {
               `,
           };
 
-          // await transporter.sendMail(mailOptions);
+          await transporter.sendMail(mailOptions);
           console.log("📧 Re-auth email sent to:", userEmail);
         }
       } else {
