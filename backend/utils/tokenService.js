@@ -68,6 +68,7 @@ async function getAccessTokenFromRefreshToken(storedRefreshToken) {
           };
 
           await transporter.sendMail(mailOptions);
+          return null;
           console.log("📧 Re-auth email sent to:", userEmail);
         }
       } else {
