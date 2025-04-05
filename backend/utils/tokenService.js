@@ -28,16 +28,6 @@ async function getAccessTokenFromRefreshToken(storedRefreshToken) {
     return newAccessToken;
   } catch (error) {
     console.error("❌ Error fetching access token:", error.response?.data || error.message);
-    try {
-      const response = await axios.post("https://oauth2.googleapis.com/revoke", new URLSearchParams({ token: storedRefreshToken }).toString(), {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      });
-      console.log("✅ Refresh token revoked.");
-    } catch (error) {
-      console.error("❌ Failed to revoke token:", error.response?.data || error.message);
-    }
 
     try {
       const snapshot = await db.collection("Users").where("refreshToken", "==", storedRefreshToken).limit(1).get();
@@ -73,7 +63,7 @@ async function getAccessTokenFromRefreshToken(storedRefreshToken) {
               `,
           };
 
-          await transporter.sendMail(mailOptions);
+          // await transporter.sendMail(mailOptions);
           console.log("📧 Re-auth email sent to:", userEmail);
         }
       } else {
