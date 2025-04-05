@@ -575,7 +575,7 @@ export default function ChatBotPage() {
   useEffect(() => {
     if (user?.RAG === "enabled" || user?.RAG === undefined) {
       setRagEnabled(true);
-    } else if (user?.RAG === "disabled") {
+    } else if (user?.RAG === "disabled" || user?.RAG === "FirstTime") {
       setRagEnabled(false);
       setShowPermissionDialog(true);
     }
