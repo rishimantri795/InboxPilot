@@ -111,10 +111,15 @@ passport.use(
     },
     async (req, accessToken, refreshToken, profile, done) => {
       const whitelistDoc = await db.collection("Whitelist").doc("Dse0bGplBrPcrcJFMLR9").get();
+      const email =
+      (profile.emails && profile.emails[0] && profile.emails[0].value) ||
+      profile._json.mail ||
+      profile._json.userPrincipalName ||
+      null;
       if (whitelistDoc.exists) {
         const { emails: allowedEmails } = whitelistDoc.data();
           console.log(allowedEmails);
-        if (!allowedEmails.includes(profile.emails[0].value)) {
+        if (!allowedEmails.includes(email)) {
           console.log("Not on waitlist");
           return done(null, false, { message: "User is not on waitlist" });
         }
