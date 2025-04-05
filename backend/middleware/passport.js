@@ -31,6 +31,17 @@ passport.use(
     },
     async function (accessToken, refreshToken, profile, done) {
       try {
+        const whitelistDoc = await db.collection("Whitelist").doc("Dse0bGplBrPcrcJFMLR9").get();
+        if (whitelistDoc.exists) {
+          const { emails: allowedEmails } = whitelistDoc.data();
+            console.log(allowedEmails);
+          if (!allowedEmails.includes(profile.emails[0].value)) {
+            console.log("Not on waitlist");
+            return done(null, false, { message: "User is not on waitlist" });
+          }
+        } else {
+          return done(null, false, { message: "Error with whitelist" });
+        }
         // check if user exists in db matching the email passed in
         const userSnapshot = await db
           .collection("Users")
@@ -99,6 +110,17 @@ passport.use(
       tenant: "common",
     },
     async (req, accessToken, refreshToken, profile, done) => {
+      const whitelistDoc = await db.collection("Whitelist").doc("Dse0bGplBrPcrcJFMLR9").get();
+      if (whitelistDoc.exists) {
+        const { emails: allowedEmails } = whitelistDoc.data();
+          console.log(allowedEmails);
+        if (!allowedEmails.includes(profile.emails[0].value)) {
+          console.log("Not on waitlist");
+          return done(null, false, { message: "User is not on waitlist" });
+        }
+      } else {
+        return done(null, false, { message: "Error with whitelist" });
+      }
       try {
         const userRef = db.collection("Users").doc(profile.id);
         const userDoc = await userRef.get();
