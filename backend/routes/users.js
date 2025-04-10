@@ -223,7 +223,7 @@ router.post("/verifyToken", async (req, res) => {
     //   message: "User authenticated",
     // });
     const uid = decodedToken.uid;
-    const name = decodedToken.name || "John Doe";
+    const name = decodedToken.name || decodedToken.email.split('@')[0];
 
     // Generate a new user ID (you can also let Firestore generate it)
     const newUserRef = db.collection("Users").doc(uid); // This generates a new document reference

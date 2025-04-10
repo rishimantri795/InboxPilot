@@ -482,7 +482,7 @@ export default function RulesPage() {
               <span className="block sm:inline">Rules</span>
             </h1>
             <div className="flex items-center space-x-4" id="tour-finish">
-              <UserProfileDropdown name={user.name || "John Doe"} email={user.email} tour={tour} />
+              <UserProfileDropdown name={user.name || user.email.split('@')[0]} email={user.email} tour={tour} />
             </div>
           </div>
 

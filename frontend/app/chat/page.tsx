@@ -900,7 +900,7 @@ export default function ChatBotPage() {
                 {/* User Profile */}
                 <div className="flex items-center space-x-4 backdrop-blur-md px-6 py-3 rounded-xl">
                   <UserProfileDropdown
-                    name={user?.name || "John Doe"}
+                    name={user?.name || user?.email.split('@')[0]}
                     email={user?.email || "john.doe@example.com"}
                   />
                 </div>

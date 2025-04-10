@@ -120,7 +120,7 @@ export default function ProfilePage() {
 
                 <div className="flex space-x-4 backdrop-blur-md bg-white/80 dark:bg-black/10 px-6 py-3 rounded-xl">
                   <UserProfileDropdown 
-                    name={user.name || "John Doe"} 
+                    name={user.name || user.email.split('@')[0]} 
                     email={user.email} 
                   />
                 </div>

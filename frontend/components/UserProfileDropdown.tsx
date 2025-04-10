@@ -100,7 +100,7 @@ export default function UserProfileDropdown({
   return (
     <>
       <div className="text-right">
-        <p className="font-medium">{name ? name : "John Doe"}</p>
+        <p className="font-medium">{name ? name : email.split('@')[0]}</p>
         <p className="text-sm text-gray-500">{email}</p>
       </div>
       <DropdownMenu>
