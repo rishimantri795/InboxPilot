@@ -138,7 +138,7 @@ export function useChatBot(ragEnabled: boolean) {
 
       const userMessage: Message = { role: "user", content };
       setMessages((prev) => [...prev, userMessage]);
-      await saveMessageToFirebase("user", content);
+      // await saveMessageToFirebase("user", content); // changed
 
       if (status === "awaiting confirmation") {
         socket.emit("confirmationResponse", content);
